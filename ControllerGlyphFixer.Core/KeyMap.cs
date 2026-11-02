@@ -160,6 +160,9 @@ namespace ControllerGlyphFixer.Core
         /// <param name="button">Button name as written in the mapping file.</param>
         /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
         /// <returns>A sprite tag or a badge such as "[R4]" (using the label when one is set).</returns>
+        // TODO(F5): show Steam's controller glyph images for buttons Valheim has no art for
+        // (R4/R5, L4/L5, trackpads) instead of text badges: load the PNGs into a custom TMP sprite
+        // asset in the plugin and pass a second glyph lookup here, keeping the badge as fallback.
         private string FormatButton(string button, Func<string, string> valheimGlyph)
         {
             string normalized = Normalize(button);
