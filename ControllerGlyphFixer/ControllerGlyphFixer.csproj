@@ -44,7 +44,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="JotunnLib" Version="2.27.1" />
+    <PackageReference Include="JotunnLib" Version="2.30.2" />
+    <!-- Compile only: at runtime the shared ValheimModding-YamlDotNet package provides YamlDotNet.dll -->
+    <PackageReference Include="YamlDotNet" Version="16.3.0" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Core logic is compiled into this assembly so only ControllerGlyphFixer.dll is deployed -->
+    <Compile Include="..\ControllerGlyphFixer.Core\**\*.cs" Exclude="..\ControllerGlyphFixer.Core\bin\**;..\ControllerGlyphFixer.Core\obj\**" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

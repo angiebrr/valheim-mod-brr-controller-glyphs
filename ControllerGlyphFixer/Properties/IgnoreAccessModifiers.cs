@@ -1,17 +1,16 @@
-﻿// Veilheim
-// a Valheim mod
-// 
-// File:    IgnoreAccessModifiers.cs
-// Project: Veilheim
+﻿// ------------------------------------------------------------------------------------------------
+// IgnoreAccessModifiers.cs: lets the Mono JIT skip access checks for publicized game members.
+// ------------------------------------------------------------------------------------------------
 
 using System.Security.Permissions;
 
-// SecurityPermision set to minimum
-// for skipping access modifiers check from the mono JIT
-// The same attribute are added to the assembly when ticking
-// Unsafe Code in the Project settings
-// This is done here to allow an explanation of the trick and
-// not in an outside source you could potentially miss.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+// From the Jotunn mod stub (originally Veilheim). We compile against publicized Valheim
+// assemblies (private members made public), so at runtime the Mono JIT must skip access
+// modifier checks. SecurityPermission is set to the minimum needed for that. Ticking
+// "Unsafe code" in the project settings adds the same attribute; it's done here so the trick
+// is explained in the code instead of hidden in a setting.
 
 #pragma warning disable CS0618 // Type or member is obsolete
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]

@@ -1,5 +1,11 @@
-﻿using System.Reflection;
+﻿// ------------------------------------------------------------------------------------------------
+// AssemblyInfo.cs: assembly metadata for ControllerGlyphFixer.dll.
+// ------------------------------------------------------------------------------------------------
+
+using System.Reflection;
 using System.Runtime.InteropServices;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -9,6 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ControllerGlyphFixer")]
+// TODO: copyright and description are still the stub's; update before any public release.
 [assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

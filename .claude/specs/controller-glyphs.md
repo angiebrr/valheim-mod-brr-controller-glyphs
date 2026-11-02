@@ -45,20 +45,27 @@ stays vanilla.
 
 ## Shared pieces
 
-### `GlyphMode.ShowControllerGlyphs`
-True when all of:
-- config `General.Enabled` is true,
+### Controller glyphs on (`GlyphService.ShowKeyPrompts`, decided by `GlyphMode.Decide`)
+Read live on every prompt. True when all of:
+- config `General.Enabled` and `General.KeyPrompts` are true,
 - `ZInput.IsGamepadEnabled()` (gamepad not disabled in Valheim settings),
 - a gamepad device is present (`UnityEngine.InputSystem.Gamepad.current != null`),
 - the Settings screen is not open (`Settings.instance == null`), so the keyboard
   rebinding UI keeps showing real keyboard keys.
 
-On startup, log every connected gamepad device (name + layout) to confirm Steam Input
-exposes a virtual gamepad. **Open question 1** depends on this.
+Log connected gamepads (name + layout) on startup and whenever one connects or disconnects.
+Steam Input's virtual controller connects after plugins load, so the startup line alone
+shows none (open question 1, answered).
 
 ### Mapping table (YAML)
 - File: `<profile>/BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`
-  (next to the `.cfg`; default copy shipped/created on first run).
+  (next to the `.cfg`).
+- **No mapping is built into the mod.** If the file is missing, the plugin writes
+  `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
+  glyphs (F1) still work; keyboard-only keys stay as keys until the file is edited.
+  Uncommenting an example (deleting its `#`) must be enough to enable it (tested).
+- My layout lives in the test fixture `ControllerGlyphFixer.Core.Tests/Fixtures/steam-controller.yaml`
+  and, as my real config, in the profile's mapping file. Later the VDF generator produces it.
 - Maps a key name to display output: Valheim key names (`Q`, `LeftShift`, `Keypad1`,
   `1`–`8`), plus aliases for spellings mods use (`Alpha1`, `KeypadNumber1`, `Left Shift`).
 - Output is a TMP string: a Valheim sprite tag for buttons Valheim has art for
@@ -67,7 +74,7 @@ exposes a virtual gamepad. **Open question 1** depends on this.
 - Parsed with YamlDotNet from the shared `ValheimModding-YamlDotNet` package (see
   Dependencies). Parsing lives in the pure library.
 
-Initial mapping:
+My mapping (test fixture and profile config):
 
 | Key | My button |
 |---|---|
@@ -83,16 +90,22 @@ Initial mapping:
 | `LeftShift` | left trackpad click down (AzuCraftyBoxes fill all) |
 
 ### Pure library: `ControllerGlyphFixer.Core`
-- Separate `netstandard2.0` (or `net48`) class library with no Unity/BepInEx references,
-  referenced by the plugin project. xUnit test project `ControllerGlyphFixer.Core.Tests`
-  targets a modern .NET.
+- Separate `netstandard2.0` class library with no Unity/BepInEx references. The plugin
+  compiles Core's source files into `ControllerGlyphFixer.dll` (linked `Compile` items), so
+  only one DLL is deployed and `publish.ps1` needs no changes. xUnit test project
+  `ControllerGlyphFixer.Core.Tests` references the Core project and targets a modern .NET.
 - Holds **all decision logic** ("functional core"); Harmony patches are a thin
   "imperative shell" that gathers inputs from the game, calls Core, and applies the result.
 - API sketch:
-  - `KeyMap.Parse(string yaml) -> KeyMap`
-  - `KeyMap.TryTranslateKey(string keyName, out string display)` (case-insensitive, aliases)
+  - `KeyMap.Parse(string yaml) -> KeyMap` (throws `KeyMapException`)
+  - `KeyMap.Translate(string keyName, Func<string, string> valheimGlyph) -> string` (null if
+    unmapped; case-insensitive, aliases; `valheimGlyph` turns a Valheim control name such as
+    `buttonSouth` into a sprite tag, else the button shows as a `[badge]`)
+  - `ValheimButtons.TryGetControl` (A/B/X/Y/LB/... → Valheim control names)
+  - `SpriteStyle.For(string glyphSetting, string gamepadType)`, `SpriteStyle.Tag(style, sprite)`
+    (mirrors ZInput's xbox/ps5/switch2 choice)
   - `GlyphMode.Decide(bool enabled, bool gamepadEnabled, bool gamepadPresent, bool settingsOpen) -> bool`
-  - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, KeyMap map) -> string` (F1/F2)
+  - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, Func<string, string> translateKey) -> string` (F1/F2)
   - `HotbarLabels.For(int slotIndex, string currentText, bool showGlyphs, KeyMap map) -> string` (F3)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
 - See **Testing strategy** for what the tests cover.
@@ -127,7 +140,7 @@ EpicLoot.
 - **Patch:** postfix on `ZInput.GetBoundKeyString(string name, bool emptyStringOnMissing)`
   (public instance method, `assembly_utils`). Every `$KEY_` token resolves through it via
   `Localization.Translate` → `Localization.GetBoundKeyString` → this method.
-- **Behaviour:** if `ShowControllerGlyphs` and `name` does not start with `Joy`, look up
+- **Behaviour:** if `ShowKeyPrompts` and `name` does not start with `Joy`, look up
   `"Joy" + name` (with `emptyStringOnMissing: true`, guarded against recursion). If
   non-empty, return it (Valheim's own glyph for the current `ZInput.CurrentGlyph` style).
   Otherwise fall through to F2.
@@ -145,7 +158,7 @@ EpicLoot.
 
 ### F3. Hotbar slot labels
 - **Patch:** postfix on `HotkeyBar.UpdateIcons(Player)` (private, `assembly_valheim`).
-- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowControllerGlyphs` and the
+- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowKeyPrompts` and the
   text is a mapped key (`1`–`8`), replace it. Only rewrite text; never add or remove objects.
 - **Note:** vanilla sets the label once when elements are created: empty in gamepad mode,
   `1`–`8` otherwise. In gamepad mode we need to write the label ourselves (slot index + 1
@@ -153,11 +166,17 @@ EpicLoot.
 - **Risk:** medium (private but long-stable).
 - **Compat:** AzuExtendedPlayerInventory quick slots draw their own labels. Check whether F4
   or a small dedicated postfix is needed.
+- **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
+  labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
+  buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
+- **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
+  Steam; the game only sees the key sent by the second button). Labels can always show the
+  combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
 
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
   the single place all hover text (vanilla and mods) is assigned to `m_hoverName.text`.
-- **Behaviour:** if `ShowControllerGlyphs`, run `HintRewriter.Rewrite` on `m_hoverName.text`:
+- **Behaviour:** if `ShowKeyPrompts`, run `HintRewriter.Rewrite` on `m_hoverName.text`:
   - Replace a key name only inside a key-hint wrapper: `[...]`,
     `[<color=yellow><b>...</b></color>]`, or `<b>...</b>`, and only if the whole inner
     text is a mapped key name or alias. Never touch free text.
@@ -167,17 +186,42 @@ EpicLoot.
 - **Risk:** medium (one private method; mod-agnostic).
 - **Cost:** runs every frame while hovering. Skip the rewrite if the text is unchanged since
   last frame.
+- **In-game finding (2026-11-02):** AzuCraftyBoxes' chest hint shows `LT + X` in gamepad mode
+  but `[E + LeftShift] Crafting Chest` after keyboard/trackpad input. `E` isn't in my mapping:
+  it's Valheim's Use key, which I press as X. So F4 must also translate keys Valheim has bound
+  to an action (key -> Valheim binding -> its Joy glyph, e.g. E -> Use -> X), not only keys in
+  the mapping file. Vanilla chest hover text also differs by mode (yellow, no brackets around
+  glyphs in gamepad mode; white with `[ ]` otherwise); the bracket cleanup above covers part of it.
 
 ### F5. Glyph appearance
 - No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
   otherwise). Later option: Steam's controller glyph PNGs as a custom TMP sprite asset.
 
-### F6. Hint panels and menu-button badges (deferred)
+### F6. Hint panels and menu-button badges
 - Bottom-right `KeyHints` panels, build-menu hints (`m_buildMenuHintsGP` / `KB`),
   `UIInputHint` gamepad/keyboard variants, `UIGamePad` button badges.
-- Do **not** patch until F1 is checked in game: many panels contain `$KEY_` text that F1
-  may already fix. For anything still wrong, find the component with UnityExplorer and add
-  a narrow visibility postfix (e.g. on `UIInputHint.UpdateInputHints`).
+- For anything still wrong after F1, find the component with UnityExplorer and add a narrow
+  visibility postfix (e.g. on `UIInputHint.UpdateInputHints`).
+- **In-game finding (2026-11-02):** F1 keeps world/hover prompts as controller glyphs even
+  with trackpad (mouse) input. **The inventory screen does not:** keyboard-mapped buttons or
+  trackpad cursor movement switch its hints to keyboard. Those hints are object visibility
+  (gamepad vs keyboard variants), not `$KEY_` text, so F6 is needed for the inventory. Next
+  step: identify the inventory hint objects/components with UnityExplorer.
+- **Constraint:** the trackpad cursor must keep working in the inventory (don't force
+  gamepad mode; only show the gamepad hint variants).
+- **Bug found 2026-11-02:** after keyboard input, the combat hint bar (Attack/Block/Dodge)
+  showed controller glyphs on keyboard key-cap boxes: `UIInputHint` picked its keyboard version
+  and F1 put glyphs in it.
+- **Implemented (option A, chosen over a transpiler or faking `IsGamepadActive`):** postfix
+  on `UIInputHint.UpdateInputHints` re-picks the version with Core `HintVisibility.Decide`
+  (gamepad version while glyphs are on; vanilla when off; vanilla when the hint has no gamepad
+  version). Copies vanilla's visibility condition (FIXME). Covered by the `KeyPrompts` toggle.
+  If the inventory also needs `UIGamePad` badges, reconsider a shared approach (the
+  transpiler or scoped `IsGamepadActive` options) instead of copying more conditions.
+- **Verified in game (2026-11-02):** combat bar and inventory bottom hint bar stay on controller
+  glyphs after keyboard/trackpad input, no key-cap boxes; trackpad cursor still works.
+  **Still switching:** the `UIGamePad` badges on inventory buttons (e.g. `Y`, `LSt`) disappear
+  after trackpad input. Next F6 target.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
@@ -196,9 +240,10 @@ runner; keep logic in Core and patches thin. Four layers:
 
 ### 1. Unit tests (`ControllerGlyphFixer.Core.Tests`, xUnit, .NET 10) — TDD, seconds
 Red → green → refactor for every Core function. Required cases:
-- `KeyMap`: every row of the initial mapping; aliases (`Alpha1`, `KeypadNumber1`,
-  `Left Shift`, `$button_lshift`); case-insensitivity; unknown keys pass through; combos;
-  invalid YAML gives a clear error.
+- `KeyMap`: every row of the fixture mapping (tests supply the mapping; Core has none);
+  aliases (`Alpha1`, `KeypadNumber1`, `Left Shift`, `$button_lshift`); case-insensitivity;
+  unknown keys pass through; combos; invalid YAML gives a clear error; the template maps
+  nothing, and uncommenting its examples yields a valid map; empty sections are allowed.
 - `GlyphMode.Decide`: truth table of the four inputs.
 - `BoundKeyResolver.Resolve`:
   - `("Use", "E", showGlyphs: true, joy → A sprite)` → A sprite.
@@ -247,9 +292,11 @@ types without the native engine is fragile and tests less than the in-game self-
 - `ControllerGlyphFixer.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
 - `ControllerGlyphFixer.Core.Tests/` (net10.0, xUnit, references Core)
 - `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext)
-- `ControllerGlyphFixer/` (plugin, references Core; Core.dll deployed with the plugin,
-  YamlDotNet.dll not deployed)
-- `dotnet test` runs layers 1 and 2.
+- `ControllerGlyphFixer/` (plugin; compiles Core sources in; YamlDotNet NuGet with
+  `ExcludeAssets="runtime"` so YamlDotNet.dll is not deployed)
+- `dotnet test ControllerGlyphFixer.sln` runs layers 1 and 2. Build through the solution:
+  JotunnLib finds `Environment.props` via `$(SolutionDir)`, so building the plugin project
+  alone loses the BepInEx paths.
 
 ## Phases
 
@@ -259,8 +306,10 @@ thin patches → in-game self-test checks → manual checklist.
 1. **v1:** bump JotunnLib NuGet and manifest dependencies to the installed versions; set up
    Core + both test projects; `KeyMap`, `GlyphMode`, `BoundKeyResolver` (TDD); F1 + F2
    postfix; config; startup gamepad log; `cgf_selftest`. Verify in game.
-2. **v2:** F3 hotbar, F4 hover rewriter (TDD for `HotbarLabels` and `HintRewriter`).
-3. **v3:** F6 targeted visibility patches, only for panels still wrong in game.
+2. **v2:** F3 hotbar + AzuExtendedPlayerInventory extra slots, F4 hover rewriter (TDD for
+   `HotbarLabels` and `HintRewriter`).
+3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
+   2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 
 ## In-game test checklist (per phase)
@@ -276,12 +325,16 @@ thin patches → in-game self-test checks → manual checklist.
 
 ## Open questions
 
-1. Does Steam Input expose a virtual gamepad to Unity's Input System with this layout?
-   (If not, `ShowControllerGlyphs` needs another signal, e.g. "gamepad input seen this session".)
+1. ~~Does Steam Input expose a virtual gamepad to Unity's Input System with this layout?~~
+   **Answered 2026-11-02: yes.** It appears as `Xbox Controller (XInputControllerWindows)`, but
+   connects after plugins load (around character selection). The glyph check reads
+   `Gamepad.current` live, so glyphs turn on once it connects; the plugin logs connects and
+   disconnects.
 2. Exact key strings mods write in hover text (`Z` vs `KeyCode.Z` vs localized). Collect
    from game before finalizing aliases.
-3. Does `ZInput.CurrentGlyph` stay correct (Xbox vs PlayStation style) while the game is in
-   keyboard mode?
+3. ~~Does `ZInput.CurrentGlyph` stay correct (Xbox vs PlayStation style) while the game is in
+   keyboard mode?~~ **Answered 2026-11-02: yes** (`Auto` + `XInput` gives xbox glyphs while
+   Valheim's input mode is keyboard).
 
 ## Reference: verified game internals (Valheim 1.0, decompiled 2026-11-01)
 
