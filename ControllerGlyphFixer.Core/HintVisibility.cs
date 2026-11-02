@@ -56,15 +56,23 @@ namespace ControllerGlyphFixer.Core
             bool hasGamepadMouseHint,
             bool showGlyphs)
         {
+            // Controller glyphs on: only the gamepad version, whatever the last input was
             if (showGlyphs && hasGamepadHint)
             {
-                return new HintVisibility(visible, false, false);
+                return new HintVisibility(gamepad: visible, keyboardMouse: false, gamepadMouse: false);
             }
 
-            return new HintVisibility(
-                visible && gamepadActive && (!hasGamepadMouseHint || !mouseActive),
-                visible && !gamepadActive && mouseActive,
-                visible && gamepadActive && mouseActive);
+            // Vanilla: gamepad version for gamepad input, unless the mouse is active and there's a
+            // gamepad+mouse version to show instead
+            bool showGamepad = visible && gamepadActive && (!hasGamepadMouseHint || !mouseActive);
+
+            // Vanilla: keyboard version for keyboard/mouse input
+            bool showKeyboardMouse = visible && !gamepadActive && mouseActive;
+
+            // Vanilla: gamepad+mouse version when both are active (e.g. trackpad cursor in gamepad mode)
+            bool showGamepadMouse = visible && gamepadActive && mouseActive;
+
+            return new HintVisibility(showGamepad, showKeyboardMouse, showGamepadMouse);
         }
     }
 }
