@@ -83,16 +83,22 @@ Initial mapping:
 | `LeftShift` | left trackpad click down (AzuCraftyBoxes fill all) |
 
 ### Pure library: `ControllerGlyphFixer.Core`
-- Separate `netstandard2.0` (or `net48`) class library with no Unity/BepInEx references,
-  referenced by the plugin project. xUnit test project `ControllerGlyphFixer.Core.Tests`
-  targets a modern .NET.
+- Separate `netstandard2.0` class library with no Unity/BepInEx references. The plugin
+  compiles Core's source files into `ControllerGlyphFixer.dll` (linked `Compile` items), so
+  only one DLL is deployed and `publish.ps1` needs no changes. xUnit test project
+  `ControllerGlyphFixer.Core.Tests` references the Core project and targets a modern .NET.
 - Holds **all decision logic** ("functional core"); Harmony patches are a thin
   "imperative shell" that gathers inputs from the game, calls Core, and applies the result.
 - API sketch:
-  - `KeyMap.Parse(string yaml) -> KeyMap`
-  - `KeyMap.TryTranslateKey(string keyName, out string display)` (case-insensitive, aliases)
+  - `KeyMap.Parse(string yaml) -> KeyMap` (throws `KeyMapException`)
+  - `KeyMap.Translate(string keyName, Func<string, string> valheimGlyph) -> string` (null if
+    unmapped; case-insensitive, aliases; `valheimGlyph` turns a Valheim control name such as
+    `buttonSouth` into a sprite tag, else the button shows as a `[badge]`)
+  - `ValheimButtons.TryGetControl` (A/B/X/Y/LB/... → Valheim control names)
+  - `SpriteStyle.For(string glyphSetting, string gamepadType)`, `SpriteStyle.Tag(style, sprite)`
+    (mirrors ZInput's xbox/ps5/switch2 choice)
   - `GlyphMode.Decide(bool enabled, bool gamepadEnabled, bool gamepadPresent, bool settingsOpen) -> bool`
-  - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, KeyMap map) -> string` (F1/F2)
+  - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, Func<string, string> translateKey) -> string` (F1/F2)
   - `HotbarLabels.For(int slotIndex, string currentText, bool showGlyphs, KeyMap map) -> string` (F3)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
 - See **Testing strategy** for what the tests cover.
@@ -247,9 +253,11 @@ types without the native engine is fragile and tests less than the in-game self-
 - `ControllerGlyphFixer.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
 - `ControllerGlyphFixer.Core.Tests/` (net10.0, xUnit, references Core)
 - `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext)
-- `ControllerGlyphFixer/` (plugin, references Core; Core.dll deployed with the plugin,
-  YamlDotNet.dll not deployed)
-- `dotnet test` runs layers 1 and 2.
+- `ControllerGlyphFixer/` (plugin; compiles Core sources in; YamlDotNet NuGet with
+  `ExcludeAssets="runtime"` so YamlDotNet.dll is not deployed)
+- `dotnet test ControllerGlyphFixer.sln` runs layers 1 and 2. Build through the solution:
+  JotunnLib finds `Environment.props` via `$(SolutionDir)`, so building the plugin project
+  alone loses the BepInEx paths.
 
 ## Phases
 

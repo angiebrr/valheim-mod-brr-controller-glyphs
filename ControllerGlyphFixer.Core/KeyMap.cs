@@ -46,6 +46,9 @@ namespace ControllerGlyphFixer.Core
             m_labels = labels;
         }
 
+        /// <summary>Number of mapped keys.</summary>
+        public int Count => m_keys.Count;
+
         public static KeyMap Parse(string yaml)
         {
             var keys = new Dictionary<string, IReadOnlyList<string>>();

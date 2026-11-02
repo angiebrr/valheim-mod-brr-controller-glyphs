@@ -129,5 +129,12 @@ public class KeyMapTests
         var map = KeyMap.Parse("");
 
         Assert.Null(map.Translate("Q", FakeGlyph));
+        Assert.Equal(0, map.Count);
+    }
+
+    [Fact]
+    public void Count_is_the_number_of_mapped_keys()
+    {
+        Assert.Equal(20, Default.Count);
     }
 }
