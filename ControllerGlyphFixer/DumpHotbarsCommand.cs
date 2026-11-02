@@ -49,8 +49,19 @@ namespace ControllerGlyphFixer
         /// <param name="args">Optional delay in seconds.</param>
         public override void Run(string[] args)
         {
-            if (args.Length > 0 && float.TryParse(args[0], System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out float delay) && delay > 0f)
+            // First numeric argument; tolerates args that include the command name itself
+            float delay = 0f;
+            foreach (string arg in args)
+            {
+                if (float.TryParse(arg, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out delay))
+                {
+                    break;
+                }
+            }
+
+            Report($"Arguments: [{string.Join(", ", args)}]");
+            if (delay > 0f)
             {
                 Report($"Dumping in {delay} s; close the console and use the input you want to capture");
                 m_coroutineHost.StartCoroutine(DumpAfter(delay));
