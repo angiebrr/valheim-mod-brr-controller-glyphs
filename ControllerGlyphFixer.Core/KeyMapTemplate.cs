@@ -1,3 +1,9 @@
+// ------------------------------------------------------------------------------------------------
+// KeyMapTemplate.cs: the example mapping file written when none exists.
+// ------------------------------------------------------------------------------------------------
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 namespace ControllerGlyphFixer.Core
 {
     /// <summary>
@@ -6,6 +12,10 @@ namespace ControllerGlyphFixer.Core
     /// </summary>
     public static class KeyMapTemplate
     {
+        /// <summary>
+        /// Template contents. Example lines are "#  entry" so that deleting the '#' enables them
+        /// (covered by a test); header lines must not use that pattern.
+        /// </summary>
         public const string Yaml = @"# ControllerGlyphFixer key mapping
 #
 # keys:    keyboard key -> the controller button(s) your Steam Input layout presses to send it.

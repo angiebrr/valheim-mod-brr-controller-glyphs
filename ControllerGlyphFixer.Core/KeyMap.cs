@@ -1,3 +1,7 @@
+// ------------------------------------------------------------------------------------------------
+// KeyMap.cs: parses the YAML key mapping and renders keys as the controller buttons that send them.
+// ------------------------------------------------------------------------------------------------
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,6 +9,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace ControllerGlyphFixer.Core
 {
@@ -14,13 +20,19 @@ namespace ControllerGlyphFixer.Core
     /// </summary>
     public sealed class KeyMap
     {
+        /// <summary>Joins the buttons of a combo, e.g. "[R4] + (D-pad up glyph)".</summary>
         private const string ButtonSeparator = " + ";
 
-        private static readonly Regex DigitPattern = new Regex(@"^(?:alpha|digit)(\d)$");
-        private static readonly Regex KeypadPattern = new Regex(@"^(?:keypadnumber|keypad|numpad|num)(\d)$");
+        /// <summary>Top-row digit spellings ("Alpha1", "Digit1") that mean the key "1".</summary>
+        private static readonly Regex DigitPattern = new (@"^(?:alpha|digit)(\d)$");
 
-        // Valheim's localized key tokens (ZInput.s_keyLocalizationMap) back to key names
-        private static readonly Dictionary<string, string> BuiltInAliases = new Dictionary<string, string>
+        /// <summary>Numpad spellings ("Num 1", "Numpad1", "KeypadNumber1") that mean "Keypad1".</summary>
+        private static readonly Regex KeypadPattern = new (@"^(?:keypadnumber|keypad|numpad|num)(\d)$");
+
+        /// <summary>Valheim's localized key tokens (ZInput.s_keyLocalizationMap) back to key names.</summary>
+        // TODO(open question 2): collect the exact key strings mods write in hover text (e.g.
+        // KeyCode names, "Left Shift") in game and add any that normalization doesn't cover.
+        private static readonly Dictionary<string, string> BuiltInAliases = new ()
         {
             { "$buttonlshift", "leftshift" },
             { "$buttonrshift", "rightshift" },
@@ -32,10 +44,21 @@ namespace ControllerGlyphFixer.Core
             { "$buttonreturn", "enter" },
         };
 
+        /// <summary>Normalized key name to the buttons pressed for it, in order.</summary>
         private readonly Dictionary<string, IReadOnlyList<string>> m_keys;
+
+        /// <summary>Normalized alias to normalized key name, from the file's aliases section.</summary>
         private readonly Dictionary<string, string> m_aliases;
+
+        /// <summary>Normalized button name to badge text, from the file's labels section.</summary>
         private readonly Dictionary<string, string> m_labels;
 
+        /// <summary>
+        /// Creates a map from parsed sections; use <see cref="Parse"/>.
+        /// </summary>
+        /// <param name="keys">Normalized key name to buttons.</param>
+        /// <param name="aliases">Normalized alias to normalized key name.</param>
+        /// <param name="labels">Normalized button name to badge text.</param>
         private KeyMap(
             Dictionary<string, IReadOnlyList<string>> keys,
             Dictionary<string, string> aliases,
@@ -49,12 +72,19 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Number of mapped keys.</summary>
         public int Count => m_keys.Count;
 
+        /// <summary>
+        /// Parses a mapping file with optional "labels", "aliases" and "keys" sections.
+        /// </summary>
+        /// <param name="yaml">File contents; null or empty gives an empty map.</param>
+        /// <returns>The parsed map.</returns>
+        /// <exception cref="KeyMapException">The YAML is invalid or doesn't match the format.</exception>
         public static KeyMap Parse(string yaml)
         {
             var keys = new Dictionary<string, IReadOnlyList<string>>();
             var aliases = new Dictionary<string, string>();
             var labels = new Dictionary<string, string>();
 
+            // The representation model keeps every scalar a string, so Y/N/yes/no stay key names
             var stream = new YamlStream();
             try
             {
@@ -110,8 +140,10 @@ namespace ControllerGlyphFixer.Core
         /// <summary>
         /// Returns the display string for a key, or null if the key isn't mapped.
         /// </summary>
+        /// <param name="keyName">Key name in any supported spelling (e.g. "Q", "Alpha1", "$button_lshift").</param>
         /// <param name="valheimGlyph">Returns Valheim's sprite tag for a Valheim control name
         /// (e.g. "buttonSouth"), or null if there is no art for it.</param>
+        /// <returns>The buttons joined with " + ", each as a sprite tag or a [badge]; null if unmapped.</returns>
         public string Translate(string keyName, Func<string, string> valheimGlyph)
         {
             if (string.IsNullOrEmpty(keyName) || !m_keys.TryGetValue(Resolve(keyName), out var buttons))
@@ -122,6 +154,12 @@ namespace ControllerGlyphFixer.Core
             return string.Join(ButtonSeparator, buttons.Select(button => FormatButton(button, valheimGlyph)));
         }
 
+        /// <summary>
+        /// Renders one button: Valheim's glyph when it has art, otherwise a [badge].
+        /// </summary>
+        /// <param name="button">Button name as written in the mapping file.</param>
+        /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <returns>A sprite tag or a badge such as "[R4]" (using the label when one is set).</returns>
         private string FormatButton(string button, Func<string, string> valheimGlyph)
         {
             string normalized = Normalize(button);
@@ -137,6 +175,11 @@ namespace ControllerGlyphFixer.Core
             return "[" + (m_labels.TryGetValue(normalized, out string label) ? label : button) + "]";
         }
 
+        /// <summary>
+        /// Turns any supported spelling of a key into the normalized name used in <see cref="m_keys"/>.
+        /// </summary>
+        /// <param name="keyName">Key name as Valheim or a mod wrote it.</param>
+        /// <returns>The normalized key name (file aliases, then built-in aliases and patterns).</returns>
         private string Resolve(string keyName)
         {
             string normalized = Normalize(keyName);
@@ -165,11 +208,23 @@ namespace ControllerGlyphFixer.Core
             return normalized;
         }
 
+        /// <summary>
+        /// Lowercases a name and drops spaces, '_' and '-', so "Left Shift" equals "left_shift".
+        /// </summary>
+        /// <param name="name">Key or button name.</param>
+        /// <returns>The normalized name.</returns>
         internal static string Normalize(string name)
         {
             return new string(name.Where(c => c != ' ' && c != '_' && c != '-').ToArray()).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Returns a section's entries, treating an empty section ("keys:" alone) as no entries.
+        /// </summary>
+        /// <param name="node">The section's value node.</param>
+        /// <param name="sectionName">Section name, for error messages.</param>
+        /// <returns>The section as a mapping node.</returns>
+        /// <exception cref="KeyMapException">The section isn't a set of "name: value" entries.</exception>
         private static YamlMappingNode Mapping(YamlNode node, string sectionName)
         {
             if (node is YamlMappingNode mapping)
@@ -186,6 +241,13 @@ namespace ControllerGlyphFixer.Core
             throw new KeyMapException($"Section '{sectionName}' must be a set of 'name: value' entries (line {node.Start.Line})");
         }
 
+        /// <summary>
+        /// Reads a key's buttons: a single button ("Q: L5") or a non-empty list ("1": [R4, DPadUp]).
+        /// </summary>
+        /// <param name="node">The key's value node.</param>
+        /// <param name="key">Key name, for error messages.</param>
+        /// <returns>The button names in order.</returns>
+        /// <exception cref="KeyMapException">The value is empty, a nested mapping, or an empty list.</exception>
         private static IReadOnlyList<string> Buttons(YamlNode node, string key)
         {
             switch (node)
@@ -199,6 +261,13 @@ namespace ControllerGlyphFixer.Core
             }
         }
 
+        /// <summary>
+        /// Returns a node's text when it's a non-empty scalar.
+        /// </summary>
+        /// <param name="node">The node to read.</param>
+        /// <param name="what">What the value is, for error messages (e.g. "key name").</param>
+        /// <returns>The scalar's text.</returns>
+        /// <exception cref="KeyMapException">The node isn't a non-empty scalar.</exception>
         private static string ScalarText(YamlNode node, string what)
         {
             if (node is YamlScalarNode scalar && !string.IsNullOrWhiteSpace(scalar.Value))
@@ -210,8 +279,16 @@ namespace ControllerGlyphFixer.Core
         }
     }
 
+    /// <summary>
+    /// The mapping file is invalid; the message says what's wrong and where.
+    /// </summary>
     public sealed class KeyMapException : Exception
     {
+        /// <summary>
+        /// Creates the exception.
+        /// </summary>
+        /// <param name="message">What's wrong with the file, including the line when known.</param>
+        /// <param name="inner">The underlying YAML parser error, if any.</param>
         public KeyMapException(string message, Exception inner = null) : base(message, inner)
         {
         }

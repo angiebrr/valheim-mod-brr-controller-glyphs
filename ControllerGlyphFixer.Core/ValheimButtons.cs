@@ -1,4 +1,10 @@
+// ------------------------------------------------------------------------------------------------
+// ValheimButtons.cs: mapping-file button names that Valheim has glyph art for.
+// ------------------------------------------------------------------------------------------------
+
 using System.Collections.Generic;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace ControllerGlyphFixer.Core
 {
@@ -9,7 +15,10 @@ namespace ControllerGlyphFixer.Core
     /// </summary>
     public static class ValheimButtons
     {
-        private static readonly Dictionary<string, string> Controls = new Dictionary<string, string>
+        /// <summary>Normalized mapping-file button name to Valheim control name.</summary>
+        // TODO: add stick directions (leftStick_up, rightStick_left, ...) and the PlayStation
+        // touchpad (touchpadButton); Valheim has art for them but my layout doesn't need them yet.
+        private static readonly Dictionary<string, string> Controls = new ()
         {
             { "a", "buttonSouth" },
             { "b", "buttonEast" },
@@ -30,7 +39,12 @@ namespace ControllerGlyphFixer.Core
             { "dpadleft", "dpad_left" },
         };
 
+        /// <summary>
+        /// Looks up the Valheim control name for a mapping-file button name.
+        /// </summary>
         /// <param name="normalizedButton">Lowercase button name without spaces, '_' or '-'.</param>
+        /// <param name="control">The Valheim control name (e.g. "buttonSouth") when found.</param>
+        /// <returns>True if Valheim has art for the button.</returns>
         public static bool TryGetControl(string normalizedButton, out string control)
         {
             return Controls.TryGetValue(normalizedButton, out control);

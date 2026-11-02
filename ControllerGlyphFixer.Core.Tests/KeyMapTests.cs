@@ -1,15 +1,33 @@
+// ------------------------------------------------------------------------------------------------
+// KeyMapTests.cs: unit tests for parsing the key mapping and translating keys to buttons.
+// ------------------------------------------------------------------------------------------------
+
 using ControllerGlyphFixer.Core;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace ControllerGlyphFixer.Core.Tests;
 
+/// <summary>
+/// Tests for <see cref="KeyMap"/> and <see cref="KeyMapTemplate"/>. The mapping under test comes
+/// from Fixtures/steam-controller.yaml; Core has no built-in mapping.
+/// </summary>
 public class KeyMapTests
 {
-    // Stands in for Valheim's sprite lookup: known Valheim control names render as <control>
-    private static string FakeGlyph(string control) => $"<{control}>";
-
+    /// <summary>My Steam Controller layout, loaded from the test fixture file.</summary>
     private static readonly KeyMap SteamController = KeyMap.Parse(
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "steam-controller.yaml")));
 
+    /// <summary>
+    /// Stands in for Valheim's sprite lookup: known Valheim control names render as &lt;control&gt;.
+    /// </summary>
+    /// <param name="control">Valheim control name (e.g. "buttonSouth").</param>
+    /// <returns>The control name in angle brackets.</returns>
+    private static string FakeGlyph(string control) => $"<{control}>";
+
+    /// <summary>Every row of the fixture mapping renders as the expected glyphs and badges.</summary>
+    /// <param name="key">Key name.</param>
+    /// <param name="expected">Expected display string.</param>
     [Theory]
     [InlineData("1", "[R4] + <dpad_up>")]
     [InlineData("2", "[R4] + <dpad_right>")]
@@ -36,6 +54,9 @@ public class KeyMapTests
         Assert.Equal(expected, SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>Spellings Valheim and mods use for a key translate the same as its canonical name.</summary>
+    /// <param name="spelling">Alternative spelling.</param>
+    /// <param name="canonical">The key name used in the mapping file.</param>
     [Theory]
     [InlineData("Alpha1", "1")]
     [InlineData("Digit1", "1")]
@@ -51,6 +72,8 @@ public class KeyMapTests
         Assert.Equal(SteamController.Translate(canonical, FakeGlyph), SteamController.Translate(spelling, FakeGlyph));
     }
 
+    /// <summary>Keys not in the mapping (and missing-binding messages) translate to null.</summary>
+    /// <param name="key">Key name that isn't mapped.</param>
     [Theory]
     [InlineData("E")]
     [InlineData("Tab")]
@@ -62,6 +85,7 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>A key's value can be one button or a list of buttons.</summary>
     [Fact]
     public void Scalar_and_list_button_values_are_both_accepted()
     {
@@ -71,16 +95,17 @@ public class KeyMapTests
         Assert.Equal("<rightShoulder> + <buttonSouth>", map.Translate("E", FakeGlyph));
     }
 
+    /// <summary>YAML 1.1 boolean words (Y, N, ...) stay key and button names.</summary>
     [Fact]
     public void Yaml_boolean_lookalikes_stay_key_names()
     {
-        // YAML 1.1 treats Y/N/yes/no as booleans; key and button names must stay strings
         var map = KeyMap.Parse("keys:\n  N: Y\n  Y: N\n");
 
         Assert.Equal("<buttonNorth>", map.Translate("N", FakeGlyph));
         Assert.Equal("[N]", map.Translate("Y", FakeGlyph));
     }
 
+    /// <summary>The labels section changes a badge's text.</summary>
     [Fact]
     public void Labels_override_badge_text()
     {
@@ -89,6 +114,7 @@ public class KeyMapTests
         Assert.Equal("[Back R]", map.Translate("Q", FakeGlyph));
     }
 
+    /// <summary>Button names match Valheim art regardless of case.</summary>
     [Fact]
     public void Button_names_are_case_insensitive()
     {
@@ -97,6 +123,7 @@ public class KeyMapTests
         Assert.Equal("<dpad_up> + <buttonSouth>", map.Translate("Q", FakeGlyph));
     }
 
+    /// <summary>When Valheim returns no sprite for a button, it shows as a badge.</summary>
     [Fact]
     public void Missing_valheim_art_falls_back_to_a_badge()
     {
@@ -105,6 +132,7 @@ public class KeyMapTests
         Assert.Equal("[A]", map.Translate("Q", _ => null));
     }
 
+    /// <summary>The aliases section adds spellings for a key.</summary>
     [Fact]
     public void Yaml_aliases_add_spellings()
     {
@@ -113,6 +141,8 @@ public class KeyMapTests
         Assert.Equal("[L5]", map.Translate("Pickup", FakeGlyph));
     }
 
+    /// <summary>Invalid files throw <see cref="KeyMapException"/> with a message.</summary>
+    /// <param name="yaml">An invalid mapping file.</param>
     [Theory]
     [InlineData("keys: [")]
     [InlineData("keys:\n  Q: { a: b }\n")]
@@ -124,6 +154,7 @@ public class KeyMapTests
         Assert.False(string.IsNullOrWhiteSpace(ex.Message));
     }
 
+    /// <summary>An empty file is a valid, empty map.</summary>
     [Fact]
     public void Empty_yaml_gives_an_empty_map()
     {
@@ -133,12 +164,14 @@ public class KeyMapTests
         Assert.Equal(0, map.Count);
     }
 
+    /// <summary>Count is the number of entries in the keys section.</summary>
     [Fact]
     public void Count_is_the_number_of_mapped_keys()
     {
         Assert.Equal(20, SteamController.Count);
     }
 
+    /// <summary>The template written on first run is valid and maps nothing.</summary>
     [Fact]
     public void Template_parses_and_maps_nothing()
     {
@@ -147,11 +180,11 @@ public class KeyMapTests
         Assert.Equal(0, map.Count);
     }
 
+    /// <summary>Deleting the '#' in front of the template's examples is enough to enable them.</summary>
     [Fact]
     public void Uncommenting_the_template_examples_gives_a_working_map()
     {
-        // Users enable an example by deleting its leading '#', nothing else.
-        // Example lines are "#  entry" (two spaces, then the entry); header text isn't.
+        // Example lines are "#  entry" (two spaces, then the entry); header text isn't
         string uncommented = string.Join("\n", KeyMapTemplate.Yaml.Split('\n')
             .Select(line => line.Length > 3 && line.StartsWith("#  ") && line[3] != ' ' ? line.Substring(1) : line));
 
@@ -163,6 +196,7 @@ public class KeyMapTests
         Assert.Equal("[LPad Up]", map.Translate("LeftShift", FakeGlyph));
     }
 
+    /// <summary>A section header with nothing under it ("keys:") is allowed.</summary>
     [Fact]
     public void Sections_with_no_entries_are_allowed()
     {
