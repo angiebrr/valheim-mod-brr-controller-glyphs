@@ -30,8 +30,8 @@ namespace ControllerGlyphFixer.Core
         /// <param name="gamepadType">ZInput.ConnectedGamepadType (GamepadType) name, used when
         /// the setting is "Auto".</param>
         /// <returns>"xbox", "ps5" or "switch2"; "xbox" for anything unknown.</returns>
-        // TODO(open question 3): check in game that CurrentGlyph stays correct while Valheim is in
-        // keyboard mode, since we now show glyphs in that mode too.
+        // CurrentGlyph and ConnectedGamepadType stay correct while Valheim is in keyboard mode
+        // (Auto + XInput -> xbox; checked in game 2026-11-02).
         public static string For(string glyphSetting, string gamepadType)
         {
             switch (glyphSetting)

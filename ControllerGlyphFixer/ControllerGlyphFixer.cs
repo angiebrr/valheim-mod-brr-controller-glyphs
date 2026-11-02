@@ -66,7 +66,16 @@ namespace ControllerGlyphFixer
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
 
             LogGamepads();
+            InputSystem.onDeviceChange += OnDeviceChange;
             Jotunn.Logger.LogInfo("ControllerGlyphFixer has landed");
+        }
+
+        /// <summary>
+        /// Called by Unity when the plugin is destroyed: stops listening for device changes.
+        /// </summary>
+        private void OnDestroy()
+        {
+            InputSystem.onDeviceChange -= OnDeviceChange;
         }
 
         /// <summary>
@@ -115,20 +124,43 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Logs every connected gamepad, to confirm Steam Input exposes a virtual gamepad.
+        /// Logs gamepads already connected when the plugin loads. Steam Input's virtual controller
+        /// usually connects later (around character selection); <see cref="OnDeviceChange"/> logs that.
         /// </summary>
         private static void LogGamepads()
         {
             var gamepads = InputSystem.devices.OfType<Gamepad>().ToList();
             if (gamepads.Count == 0)
             {
-                Jotunn.Logger.LogInfo("No gamepad devices found; controller glyphs stay off until one connects");
+                Jotunn.Logger.LogInfo("No gamepad connected yet; controller glyphs turn on when one connects");
                 return;
             }
 
             foreach (Gamepad gamepad in gamepads)
             {
                 Jotunn.Logger.LogInfo($"Gamepad: {gamepad.displayName} ({gamepad.layout})");
+            }
+        }
+
+        /// <summary>
+        /// Logs gamepads connecting and disconnecting, so the log shows when glyphs turn on or off.
+        /// </summary>
+        /// <param name="device">The device that changed.</param>
+        /// <param name="change">What happened to it.</param>
+        private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
+        {
+            if (!(device is Gamepad))
+            {
+                return;
+            }
+
+            if (change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
+            {
+                Jotunn.Logger.LogInfo($"Gamepad connected: {device.displayName} ({device.layout})");
+            }
+            else if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected)
+            {
+                Jotunn.Logger.LogInfo($"Gamepad disconnected: {device.displayName} ({device.layout})");
             }
         }
     }

@@ -47,9 +47,8 @@ namespace ControllerGlyphFixer
         /// read, not set at construction, because its inputs change while the game runs (controller
         /// plugged in, Settings opened, config toggled).
         /// </summary>
-        // FIXME(open question 1): if Steam Input doesn't expose a virtual gamepad, Gamepad.current is
-        // null and glyphs stay off. Check the startup log / cgf_selftest; if so, switch to another
-        // signal such as "gamepad input seen this session".
+        // Steam Input exposes a virtual XInput controller ("Xbox Controller"), but it connects after
+        // plugins load, so Gamepad.current is null at startup and becomes set later (checked 2026-11-02).
         internal bool ShowKeyPrompts => GlyphMode.Decide(
             enabled: m_enabled.Value && m_keyPrompts.Value,
             gamepadEnabled: ZInput.IsGamepadEnabled(),

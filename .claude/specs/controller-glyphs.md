@@ -53,8 +53,9 @@ True when all of:
 - the Settings screen is not open (`Settings.instance == null`), so the keyboard
   rebinding UI keeps showing real keyboard keys.
 
-On startup, log every connected gamepad device (name + layout) to confirm Steam Input
-exposes a virtual gamepad. **Open question 1** depends on this.
+Log connected gamepads (name + layout) on startup and whenever one connects or disconnects.
+Steam Input's virtual controller connects after plugins load, so the startup line alone
+shows none (open question 1, answered).
 
 ### Mapping table (YAML)
 - File: `<profile>/BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`
@@ -291,12 +292,16 @@ thin patches → in-game self-test checks → manual checklist.
 
 ## Open questions
 
-1. Does Steam Input expose a virtual gamepad to Unity's Input System with this layout?
-   (If not, `ShowControllerGlyphs` needs another signal, e.g. "gamepad input seen this session".)
+1. ~~Does Steam Input expose a virtual gamepad to Unity's Input System with this layout?~~
+   **Answered 2026-11-02: yes.** It appears as `Xbox Controller (XInputControllerWindows)`, but
+   connects after plugins load (around character selection). The glyph check reads
+   `Gamepad.current` live, so glyphs turn on once it connects; the plugin logs connects and
+   disconnects.
 2. Exact key strings mods write in hover text (`Z` vs `KeyCode.Z` vs localized). Collect
    from game before finalizing aliases.
-3. Does `ZInput.CurrentGlyph` stay correct (Xbox vs PlayStation style) while the game is in
-   keyboard mode?
+3. ~~Does `ZInput.CurrentGlyph` stay correct (Xbox vs PlayStation style) while the game is in
+   keyboard mode?~~ **Answered 2026-11-02: yes** (`Auto` + `XInput` gives xbox glyphs while
+   Valheim's input mode is keyboard).
 
 ## Reference: verified game internals (Valheim 1.0, decompiled 2026-11-01)
 
