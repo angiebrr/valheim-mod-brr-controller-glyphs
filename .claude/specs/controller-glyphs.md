@@ -166,6 +166,12 @@ EpicLoot.
 - **Risk:** medium (private but long-stable).
 - **Compat:** AzuExtendedPlayerInventory quick slots draw their own labels. Check whether F4
   or a small dedicated postfix is needed.
+- **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
+  labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
+  buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
+- **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
+  Steam; the game only sees the key sent by the second button). Labels can always show the
+  combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
 
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
@@ -185,12 +191,18 @@ EpicLoot.
 - No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
   otherwise). Later option: Steam's controller glyph PNGs as a custom TMP sprite asset.
 
-### F6. Hint panels and menu-button badges (deferred)
+### F6. Hint panels and menu-button badges
 - Bottom-right `KeyHints` panels, build-menu hints (`m_buildMenuHintsGP` / `KB`),
   `UIInputHint` gamepad/keyboard variants, `UIGamePad` button badges.
-- Do **not** patch until F1 is checked in game: many panels contain `$KEY_` text that F1
-  may already fix. For anything still wrong, find the component with UnityExplorer and add
-  a narrow visibility postfix (e.g. on `UIInputHint.UpdateInputHints`).
+- For anything still wrong after F1, find the component with UnityExplorer and add a narrow
+  visibility postfix (e.g. on `UIInputHint.UpdateInputHints`).
+- **In-game finding (2026-11-02):** F1 keeps world/hover prompts as controller glyphs even
+  with trackpad (mouse) input. **The inventory screen does not:** keyboard-mapped buttons or
+  trackpad cursor movement switch its hints to keyboard. Those hints are object visibility
+  (gamepad vs keyboard variants), not `$KEY_` text, so F6 is needed for the inventory. Next
+  step: identify the inventory hint objects/components with UnityExplorer.
+- **Constraint:** the trackpad cursor must keep working in the inventory (don't force
+  gamepad mode; only show the gamepad hint variants).
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
@@ -275,8 +287,10 @@ thin patches → in-game self-test checks → manual checklist.
 1. **v1:** bump JotunnLib NuGet and manifest dependencies to the installed versions; set up
    Core + both test projects; `KeyMap`, `GlyphMode`, `BoundKeyResolver` (TDD); F1 + F2
    postfix; config; startup gamepad log; `cgf_selftest`. Verify in game.
-2. **v2:** F3 hotbar, F4 hover rewriter (TDD for `HotbarLabels` and `HintRewriter`).
-3. **v3:** F6 targeted visibility patches, only for panels still wrong in game.
+2. **v2:** F3 hotbar + AzuExtendedPlayerInventory extra slots, F4 hover rewriter (TDD for
+   `HotbarLabels` and `HintRewriter`).
+3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
+   2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 
 ## In-game test checklist (per phase)
