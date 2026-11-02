@@ -15,17 +15,6 @@ namespace ControllerGlyphFixer
     /// <summary>
     /// Reads game state for the Core decisions. All logic lives in Core; keep this thin.
     /// </summary>
-    /// <remarks>
-    /// Two kinds of inputs:
-    /// <list type="bullet">
-    /// <item>Constructor dependencies: things fixed for the service's lifetime (the key map, the
-    /// config entries). Built once by the plugin; the fields never change.</item>
-    /// <item>Live game state: read from Valheim (<c>ZInput</c>, <c>Gamepad.current</c>,
-    /// <c>Settings.instance</c>) every time a prompt is resolved, because it changes while the game
-    /// runs (controller plugged in, Settings opened, config toggled). Reading it is this class's job,
-    /// so it isn't hidden behind an interface; the decisions it feeds are tested in Core.</item>
-    /// </list>
-    /// </remarks>
     internal sealed class GlyphService
     {
         /// <summary>The loaded key mapping.</summary>
@@ -53,7 +42,11 @@ namespace ControllerGlyphFixer
         /// <summary>Number of keys in the loaded mapping.</summary>
         internal int MappedKeyCount => m_keyMap.Count;
 
-        /// <summary>Whether $KEY_ prompts should show controller glyphs right now (F1 + F2).</summary>
+        /// <summary>
+        /// Whether $KEY_ prompts should show controller glyphs right now (F1 + F2). Computed on each
+        /// read, not set at construction, because its inputs change while the game runs (controller
+        /// plugged in, Settings opened, config toggled).
+        /// </summary>
         // FIXME(open question 1): if Steam Input doesn't expose a virtual gamepad, Gamepad.current is
         // null and glyphs stay off. Check the startup log / cgf_selftest; if so, switch to another
         // signal such as "gamepad input seen this session".
