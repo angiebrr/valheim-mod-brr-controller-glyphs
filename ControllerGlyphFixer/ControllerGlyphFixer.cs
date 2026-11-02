@@ -2,15 +2,15 @@
 using Jotunn.Entities;
 using Jotunn.Managers;
 
-namespace JotunnModStub
+namespace ControllerGlyphFixer
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency(Jotunn.Main.ModGuid)]
     //[NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
-    internal class JotunnModStub : BaseUnityPlugin
+    internal class ControllerGlyphFixer : BaseUnityPlugin
     {
-        public const string PluginGUID = "com.jotunn.jotunnmodstub";
-        public const string PluginName = "JotunnModStub";
+        public const string PluginGUID = "com.angiebrr.controllerglyphfixer";
+        public const string PluginName = "ControllerGlyphFixer";
         public const string PluginVersion = "0.0.1";
         
         // Use this class to add your own localization to the game
@@ -20,7 +20,7 @@ namespace JotunnModStub
         private void Awake()
         {
             // Jotunn comes with its own Logger class to provide a consistent Log style for all mods using it
-            Jotunn.Logger.LogInfo("ModStub has landed");
+            Jotunn.Logger.LogInfo("ControllerGlyphFixer has landed");
             
             // To learn more about Jotunn's features, go to
             // https://valheim-modding.github.io/Jotunn/tutorials/overview.html
