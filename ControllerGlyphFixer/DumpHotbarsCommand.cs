@@ -13,9 +13,11 @@ using UnityEngine;
 namespace ControllerGlyphFixer
 {
     /// <summary>
-    /// Development aid for F3. Run "cgf_dumphotbars" in the F5 console; it logs every HotkeyBar on
-    /// screen (Valheim's hotbar and copies such as AzuEPI's quick-slot bar) with each slot's label
-    /// text, plus every Harmony patch on HotkeyBar methods and which mod owns it.
+    /// Development aid for F3. Run "cgf_dumphotbars [seconds]" in the F5 console; it logs every
+    /// HotkeyBar on screen (Valheim's hotbar and copies such as AzuEPI's quick-slot bar) with each
+    /// slot's label text, plus every Harmony patch on HotkeyBar methods and which mod owns it.
+    /// The optional delay lets you switch to gamepad input after pressing Enter (which is itself
+    /// keyboard input).
     /// </summary>
     // TODO(phase 2): remove or fold into cgf_selftest once F3's patch targets are settled.
     internal class DumpHotbarsCommand : ConsoleCommand
@@ -23,17 +25,56 @@ namespace ControllerGlyphFixer
         /// <summary>Prefix on every output line, for grepping LogOutput.log.</summary>
         private const string Prefix = "[cgf-dumphotbars] ";
 
+        /// <summary>Runs the delayed dump (console commands can't start coroutines themselves).</summary>
+        private readonly MonoBehaviour m_coroutineHost;
+
+        /// <summary>
+        /// Creates the command.
+        /// </summary>
+        /// <param name="coroutineHost">A live MonoBehaviour (the plugin) to run the delayed dump on.</param>
+        internal DumpHotbarsCommand(MonoBehaviour coroutineHost)
+        {
+            m_coroutineHost = coroutineHost ? coroutineHost : throw new System.ArgumentNullException(nameof(coroutineHost));
+        }
+
         /// <summary>Command name typed in the console.</summary>
         public override string Name => "cgf_dumphotbars";
 
         /// <summary>Help text shown by the console's help command.</summary>
-        public override string Help => "ControllerGlyphFixer: log every hotbar, its slot labels, and mods patching HotkeyBar";
+        public override string Help => "[seconds] ControllerGlyphFixer: log every hotbar, its slot labels, and mods patching HotkeyBar";
+
+        /// <summary>
+        /// Dumps now, or after the number of seconds given as the first argument.
+        /// </summary>
+        /// <param name="args">Optional delay in seconds.</param>
+        public override void Run(string[] args)
+        {
+            if (args.Length > 0 && float.TryParse(args[0], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float delay) && delay > 0f)
+            {
+                Report($"Dumping in {delay} s; close the console and use the input you want to capture");
+                m_coroutineHost.StartCoroutine(DumpAfter(delay));
+                return;
+            }
+
+            Dump();
+        }
+
+        /// <summary>
+        /// Waits (in real time, so it works while paused) and then dumps.
+        /// </summary>
+        /// <param name="seconds">Delay in seconds.</param>
+        /// <returns>The coroutine.</returns>
+        private static System.Collections.IEnumerator DumpAfter(float seconds)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            Dump();
+        }
 
         /// <summary>
         /// Logs the patches on HotkeyBar, then each hotbar and its slot labels.
         /// </summary>
-        /// <param name="args">Command arguments (unused).</param>
-        public override void Run(string[] args)
+        private static void Dump()
         {
             Report($"Input mode is gamepad: {ZInput.IsGamepadActive()}");
 

@@ -66,7 +66,7 @@ namespace ControllerGlyphFixer
             InputHintPatch.Glyphs = glyphs;
             ApplyPatch(typeof(InputHintPatch));
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
-            CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand());
+            CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand(this));
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
