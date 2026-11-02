@@ -39,35 +39,31 @@ namespace ControllerGlyphFixer
         /// <summary>Plugin version; also used for the assembly version.</summary>
         public const string PluginVersion = "0.0.1";
 
-        /// <summary>Config General.Enabled: master switch for the whole mod.</summary>
-        internal static ConfigEntry<bool> Enabled;
-
-        /// <summary>Config General.KeyPrompts: controller glyphs and mapped buttons in $KEY_ prompts (F1 + F2).</summary>
-        internal static ConfigEntry<bool> KeyPrompts;
-
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
-        internal static readonly Harmony Harmony = new (PluginGUID);
+        private readonly Harmony m_harmony = new (PluginGUID);
 
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
         private static string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
         /// <summary>
-        /// Called by Unity when BepInEx loads the plugin: sets everything up.
+        /// Called by Unity when BepInEx loads the plugin: builds every object with its
+        /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
         // TODO(phase 2): bind HotbarLabels (F3) and HoverText (F4) toggles and apply their patches.
         // TODO: give config entries ConfigurationManagerAttributes (order, sections) for the in-game UI.
         private void Awake()
         {
-            Enabled = Config.Bind("General", "Enabled", true,
+            ConfigEntry<bool> enabled = Config.Bind("General", "Enabled", true,
                 "Master switch. When off, prompts behave like vanilla.");
-            KeyPrompts = Config.Bind("General", "KeyPrompts", true,
+            ConfigEntry<bool> keyPrompts = Config.Bind("General", "KeyPrompts", true,
                 "While a gamepad is connected, show controller glyphs in $KEY_ prompts even after keyboard input, " +
                 "and show keyboard-only keys as the Steam Input buttons from the mapping file.");
 
-            Glyphs.KeyMap = LoadKeyMap();
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts);
 
+            BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
-            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand());
+            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
 
             LogGamepads();
             Jotunn.Logger.LogInfo("ControllerGlyphFixer has landed");
@@ -97,7 +93,7 @@ namespace ControllerGlyphFixer
             {
                 Jotunn.Logger.LogError($"Couldn't load key mapping {MappingPath}: {ex.Message}. " +
                                        "Controller glyphs still work; keyboard-only keys stay as keys.");
-                return KeyMap.Parse("");
+                return KeyMap.Empty;
             }
         }
 
@@ -106,11 +102,11 @@ namespace ControllerGlyphFixer
         /// that feature, with a warning, instead of the whole mod.
         /// </summary>
         /// <param name="patchClass">A class with [HarmonyPatch] attributes.</param>
-        private static void ApplyPatch(Type patchClass)
+        private void ApplyPatch(Type patchClass)
         {
             try
             {
-                Harmony.CreateClassProcessor(patchClass).Patch();
+                m_harmony.CreateClassProcessor(patchClass).Patch();
             }
             catch (Exception ex)
             {

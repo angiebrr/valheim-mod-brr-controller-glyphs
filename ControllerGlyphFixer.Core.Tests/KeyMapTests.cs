@@ -164,6 +164,14 @@ public class KeyMapTests
         Assert.Equal(0, map.Count);
     }
 
+    /// <summary>The shared empty map has no keys and translates nothing.</summary>
+    [Fact]
+    public void Empty_map_has_no_keys()
+    {
+        Assert.Equal(0, KeyMap.Empty.Count);
+        Assert.Null(KeyMap.Empty.Translate("Q", FakeGlyph));
+    }
+
     /// <summary>Count is the number of entries in the keys section.</summary>
     [Fact]
     public void Count_is_the_number_of_mapped_keys()

@@ -2,6 +2,7 @@
 // SelfTestCommand.cs: "cgf_selftest" console command, the in-game integration check.
 // ------------------------------------------------------------------------------------------------
 
+using System;
 using System.Linq;
 using HarmonyLib;
 using Jotunn.Entities;
@@ -21,6 +22,18 @@ namespace ControllerGlyphFixer
     {
         /// <summary>Prefix on every result line, for grepping LogOutput.log.</summary>
         private const string Prefix = "[cgf-selftest] ";
+
+        /// <summary>The service whose decisions are checked.</summary>
+        private readonly GlyphService m_glyphs;
+
+        /// <summary>
+        /// Creates the command.
+        /// </summary>
+        /// <param name="glyphs">The service the patches use.</param>
+        internal SelfTestCommand(GlyphService glyphs)
+        {
+            m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
+        }
 
         /// <summary>Command name typed in the console.</summary>
         public override string Name => "cgf_selftest";
@@ -42,9 +55,9 @@ namespace ControllerGlyphFixer
             Check("Gamepad device present", gamepad != null,
                 gamepad != null ? $"{gamepad.displayName} ({gamepad.layout})" : "Gamepad.current is null");
 
-            Info($"Key mapping has {Glyphs.KeyMap.Count} keys");
+            Info($"Key mapping has {m_glyphs.MappedKeyCount} keys");
 
-            bool showGlyphs = Glyphs.ShowKeyPrompts;
+            bool showGlyphs = m_glyphs.ShowKeyPrompts;
             Info($"Controller glyphs on: {showGlyphs}; Valheim input mode is gamepad: {ZInput.IsGamepadActive()}; " +
                  $"glyph setting {ZInput.CurrentGlyph}, gamepad type {ZInput.ConnectedGamepadType}");
 
@@ -58,7 +71,7 @@ namespace ControllerGlyphFixer
 
             Check("$KEY_Use shows a controller glyph", use.Contains("<sprite"), use);
 
-            string expectedHotbar1 = Glyphs.TranslateKey("1");
+            string expectedHotbar1 = m_glyphs.TranslateKey("1");
             if (expectedHotbar1 == null)
             {
                 Info($"Key 1 isn't in the mapping; $KEY_Hotbar1 = {hotbar1}");

@@ -19,6 +19,12 @@ namespace ControllerGlyphFixer.Patches
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetBoundKeyString))]
     internal static class BoundKeyStringPatch
     {
+        /// <summary>
+        /// Set by the plugin before patching. Harmony patch methods must be static, so this is the
+        /// one static seam; the postfix does nothing while it's null.
+        /// </summary>
+        internal static GlyphService Glyphs;
+
         /// <summary>Set after the first error so a broken patch doesn't flood the log.</summary>
         private static bool s_loggedError;
 
@@ -32,14 +38,20 @@ namespace ControllerGlyphFixer.Patches
         [HarmonyPriority(Priority.Low)]
         private static void Postfix(ZInput __instance, string name, ref string __result)
         {
+            GlyphService glyphs = Glyphs;
+            if (glyphs == null)
+            {
+                return;
+            }
+
             try
             {
                 __result = BoundKeyResolver.Resolve(
                     name,
                     __result,
-                    Glyphs.ShowKeyPrompts,
+                    glyphs.ShowKeyPrompts,
                     joyName => __instance.GetBoundKeyString(joyName, emptyStringOnMissing: true),
-                    Glyphs.TranslateKey);
+                    glyphs.TranslateKey);
             }
             catch (Exception ex)
             {

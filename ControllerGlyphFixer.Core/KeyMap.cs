@@ -69,6 +69,9 @@ namespace ControllerGlyphFixer.Core
             m_labels = labels;
         }
 
+        /// <summary>A map with no keys; every key translates to null. Safe to share (maps are immutable).</summary>
+        public static KeyMap Empty { get; } = new (new (), new (), new ());
+
         /// <summary>Number of mapped keys.</summary>
         public int Count => m_keys.Count;
 
