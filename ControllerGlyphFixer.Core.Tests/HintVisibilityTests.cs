@@ -20,15 +20,16 @@ public class HintVisibilityTests
     /// <param name="mouseActive">ZInput.IsMouseActive().</param>
     /// <param name="hasGamepadMouseHint">The hint has a gamepad+mouse version.</param>
     [Theory]
-    [InlineData(true, true, false, false)]
-    [InlineData(true, true, false, true)]
-    [InlineData(true, true, true, false)]
-    [InlineData(true, true, true, true)]
-    [InlineData(true, false, true, false)]
-    [InlineData(true, false, true, true)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(false, false, true, true)]
+    //          visible, gamepad, mouse, has gamepad+mouse version
+    [InlineData(true, true, false, false)]   // gamepad input -> gamepad version
+    [InlineData(true, true, false, true)]    // gamepad input -> gamepad version (gamepad+mouse version unused)
+    [InlineData(true, true, true, false)]    // gamepad + mouse, no gamepad+mouse version -> gamepad version
+    [InlineData(true, true, true, true)]     // gamepad + mouse -> gamepad+mouse version
+    [InlineData(true, false, true, false)]   // keyboard/mouse input -> keyboard version
+    [InlineData(true, false, true, true)]    // keyboard/mouse input -> keyboard version (gamepad+mouse version unused)
+    [InlineData(true, false, false, false)]  // keyboard but no mouse device -> nothing shown
+    [InlineData(false, true, false, false)]  // hidden hint (button disabled / group inactive), gamepad -> nothing
+    [InlineData(false, false, true, true)]   // hidden hint, keyboard/mouse -> nothing
     public void Glyphs_off_matches_vanilla(bool visible, bool gamepadActive, bool mouseActive, bool hasGamepadMouseHint)
     {
         HintVisibility result = HintVisibility.Decide(visible, gamepadActive, mouseActive,
@@ -45,10 +46,11 @@ public class HintVisibilityTests
     /// <param name="mouseActive">ZInput.IsMouseActive().</param>
     /// <param name="hasGamepadMouseHint">The hint has a gamepad+mouse version.</param>
     [Theory]
+    //          gamepad, mouse, has gamepad+mouse version
     [InlineData(false, true, false)]   // after keyboard/mouse input (the black key-cap bug)
-    [InlineData(false, true, true)]
+    [InlineData(false, true, true)]    // after keyboard/mouse input, hint also has a gamepad+mouse version
     [InlineData(true, true, true)]     // trackpad cursor while in gamepad mode
-    [InlineData(true, false, false)]
+    [InlineData(true, false, false)]   // plain gamepad input (same as vanilla)
     public void Glyphs_on_shows_only_the_gamepad_version(bool gamepadActive, bool mouseActive, bool hasGamepadMouseHint)
     {
         HintVisibility result = HintVisibility.Decide(visible: true, gamepadActive, mouseActive,
