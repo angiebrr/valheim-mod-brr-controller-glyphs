@@ -47,9 +47,10 @@ namespace ControllerGlyphFixer
         /// <param name="args">Command arguments (unused).</param>
         public override void Run(string[] args)
         {
-            var patchInfo = Harmony.GetPatchInfo(AccessTools.Method(typeof(ZInput), nameof(ZInput.GetBoundKeyString)));
             Check("GetBoundKeyString postfix applied",
-                patchInfo != null && patchInfo.Postfixes.Any(p => p.owner == ControllerGlyphFixer.PluginGUID));
+                HasOurPostfix(AccessTools.Method(typeof(ZInput), nameof(ZInput.GetBoundKeyString))));
+            Check("UIInputHint.UpdateInputHints postfix applied",
+                HasOurPostfix(AccessTools.Method(typeof(UIInputHint), nameof(UIInputHint.UpdateInputHints))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
@@ -80,6 +81,17 @@ namespace ControllerGlyphFixer
 
             Check("$KEY_Hotbar1 shows the mapped buttons", hotbar1 == expectedHotbar1,
                 $"got {hotbar1}, expected {expectedHotbar1}");
+        }
+
+        /// <summary>
+        /// Whether this mod has a postfix on a method.
+        /// </summary>
+        /// <param name="method">The patched method.</param>
+        /// <returns>True if one of the method's postfixes belongs to this mod.</returns>
+        private static bool HasOurPostfix(System.Reflection.MethodBase method)
+        {
+            var patchInfo = Harmony.GetPatchInfo(method);
+            return patchInfo != null && patchInfo.Postfixes.Any(p => p.owner == ControllerGlyphFixer.PluginGUID);
         }
 
         /// <summary>

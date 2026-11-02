@@ -77,6 +77,28 @@ public class PatchTargetTests
         }
     }
 
+    /// <summary>The F6 patch target and the members its postfix reads and calls exist.</summary>
+    [GameFact]
+    public void UIInputHint_members_used_by_the_F6_patch_exist()
+    {
+        Type hint = GameAssemblies.Type("assembly_guiutils", "UIInputHint");
+
+        Assert.NotNull(hint.GetMethod("UpdateInputHints", Instance, null, Type.EmptyTypes, null));
+        Assert.NotNull(hint.GetMethod("UpdateVisiblityAndLayout", Instance, null,
+            new[] { GameAssemblies.Type("UnityEngine.CoreModule", "UnityEngine.GameObject"), typeof(bool).InGame() }, null));
+
+        AssertField(hint, "m_gamepadHint", "GameObject");
+        AssertField(hint, "m_mouseKeyboardHint", "GameObject");
+        AssertField(hint, "m_gamepadMouseHint", "GameObject");
+        AssertField(hint, "m_button", "Button");
+        AssertField(hint, "m_group", "UIGroupHandler");
+        AssertField(hint, "alternativeGroupHandler", "UIGroupHandler");
+
+        PropertyInfo isActive = GameAssemblies.Type("assembly_guiutils", "UIGroupHandler").GetProperty("IsActive", Instance);
+        Assert.NotNull(isActive);
+        Assert.Equal("System.Boolean", isActive.PropertyType.FullName);
+    }
+
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
     [GameFact]
     public void Settings_instance_exists_for_the_rebinding_screen_check()
@@ -107,6 +129,19 @@ public class PatchTargetTests
         PropertyInfo property = type.GetProperty(name, Static);
         Assert.True(property != null, $"{type.Name}.{name} not found");
         Assert.Equal(typeName, property.PropertyType.Name);
+    }
+
+    /// <summary>
+    /// Asserts an instance field exists with the given type name.
+    /// </summary>
+    /// <param name="type">Type to inspect.</param>
+    /// <param name="name">Field name.</param>
+    /// <param name="typeName">Expected field type name (short name).</param>
+    private static void AssertField(Type type, string name, string typeName)
+    {
+        FieldInfo field = type.GetField(name, Instance);
+        Assert.True(field != null, $"{type.Name}.{name} not found");
+        Assert.Equal(typeName, field.FieldType.Name);
     }
 
     /// <summary>

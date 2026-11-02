@@ -56,13 +56,15 @@ namespace ControllerGlyphFixer
             ConfigEntry<bool> enabled = Config.Bind("General", "Enabled", true,
                 "Master switch. When off, prompts behave like vanilla.");
             ConfigEntry<bool> keyPrompts = Config.Bind("General", "KeyPrompts", true,
-                "While a gamepad is connected, show controller glyphs in $KEY_ prompts even after keyboard input, " +
-                "and show keyboard-only keys as the Steam Input buttons from the mapping file.");
+                "While a gamepad is connected, show controller glyphs in $KEY_ prompts and hint panels even after " +
+                "keyboard input, and show keyboard-only keys as the Steam Input buttons from the mapping file.");
 
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
+            InputHintPatch.Glyphs = glyphs;
+            ApplyPatch(typeof(InputHintPatch));
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
 
             LogGamepads();
@@ -149,7 +151,7 @@ namespace ControllerGlyphFixer
         /// <param name="change">What happened to it.</param>
         private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
         {
-            if (!(device is Gamepad))
+            if (device is not Gamepad)
             {
                 return;
             }

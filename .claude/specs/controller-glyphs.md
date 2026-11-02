@@ -203,6 +203,15 @@ EpicLoot.
   step: identify the inventory hint objects/components with UnityExplorer.
 - **Constraint:** the trackpad cursor must keep working in the inventory (don't force
   gamepad mode; only show the gamepad hint variants).
+- **Bug found 2026-11-02:** after keyboard input, the combat hint bar (Attack/Block/Dodge)
+  showed controller glyphs on keyboard key-cap boxes: `UIInputHint` picked its keyboard version
+  and F1 put glyphs in it.
+- **Implemented (option A, chosen over a transpiler or faking `IsGamepadActive`):** postfix
+  on `UIInputHint.UpdateInputHints` re-picks the version with Core `HintVisibility.Decide`
+  (gamepad version while glyphs are on; vanilla when off; vanilla when the hint has no gamepad
+  version). Copies vanilla's visibility condition (FIXME). Covered by the `KeyPrompts` toggle.
+  If the inventory also needs `UIGamePad` badges, reconsider a shared approach (the
+  transpiler or scoped `IsGamepadActive` options) instead of copying more conditions.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
