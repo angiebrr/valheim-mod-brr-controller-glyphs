@@ -23,7 +23,11 @@ namespace ControllerGlyphFixer
     /// </summary>
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    //[NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
+    // Client-side only: changes prompt text on this player's screen and sends nothing over the
+    // network, so servers and other players never need it. Change this only if the mod ever adds
+    // RPCs or synced config.
+    // Fully qualified: a "using Jotunn.Utils" would make Paths ambiguous with BepInEx.Paths
+    [Jotunn.Utils.NetworkCompatibility(Jotunn.Utils.CompatibilityLevel.NotEnforced, Jotunn.Utils.VersionStrictness.None)]
     internal class ControllerGlyphFixer : BaseUnityPlugin
     {
         /// <summary>BepInEx plugin ID; also names the config and mapping files. Don't change it.</summary>
