@@ -186,6 +186,12 @@ EpicLoot.
 - **Risk:** medium (one private method; mod-agnostic).
 - **Cost:** runs every frame while hovering. Skip the rewrite if the text is unchanged since
   last frame.
+- **In-game finding (2026-11-02):** AzuCraftyBoxes' chest hint shows `LT + X` in gamepad mode
+  but `[E + LeftShift] Crafting Chest` after keyboard/trackpad input. `E` isn't in my mapping:
+  it's Valheim's Use key, which I press as X. So F4 must also translate keys Valheim has bound
+  to an action (key -> Valheim binding -> its Joy glyph, e.g. E -> Use -> X), not only keys in
+  the mapping file. Vanilla chest hover text also differs by mode (yellow, no brackets around
+  glyphs in gamepad mode; white with `[ ]` otherwise); the bracket cleanup above covers part of it.
 
 ### F5. Glyph appearance
 - No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
@@ -212,6 +218,10 @@ EpicLoot.
   version). Copies vanilla's visibility condition (FIXME). Covered by the `KeyPrompts` toggle.
   If the inventory also needs `UIGamePad` badges, reconsider a shared approach (the
   transpiler or scoped `IsGamepadActive` options) instead of copying more conditions.
+- **Verified in game (2026-11-02):** combat bar and inventory bottom hint bar stay on controller
+  glyphs after keyboard/trackpad input, no key-cap boxes; trackpad cursor still works.
+  **Still switching:** the `UIGamePad` badges on inventory buttons (e.g. `Y`, `LSt`) disappear
+  after trackpad input. Next F6 target.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
