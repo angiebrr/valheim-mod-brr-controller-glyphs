@@ -84,6 +84,7 @@ namespace ControllerGlyphFixer.Core
         public static KeyMap Parse(string yaml)
         {
             var keys = new Dictionary<string, IReadOnlyList<string>>();
+            var keyLines = new Dictionary<string, (string Key, int Line)>();
             var aliases = new Dictionary<string, string>();
             var labels = new Dictionary<string, string>();
 
@@ -117,7 +118,18 @@ namespace ControllerGlyphFixer.Core
                         foreach (var entry in Mapping(section.Value, sectionName).Children)
                         {
                             string key = ScalarText(entry.Key, "key name");
-                            keys[Normalize(key)] = Buttons(entry.Value, key);
+                            int line = (int)entry.Key.Start.Line;
+
+                            // Stored under the same standard name lookups use ("Numpad1" -> "keypad1")
+                            string canonical = Canonical(Normalize(key));
+                            if (keyLines.TryGetValue(canonical, out var first))
+                            {
+                                throw new KeyMapException(
+                                    $"'{key}' (line {line}) is the same key as '{first.Key}' (line {first.Line})");
+                            }
+
+                            keyLines[canonical] = (key, line);
+                            keys[canonical] = Buttons(entry.Value, key);
                         }
                         break;
                     case "aliases":
@@ -194,6 +206,17 @@ namespace ControllerGlyphFixer.Core
                 normalized = target;
             }
 
+            return Canonical(normalized);
+        }
+
+        /// <summary>
+        /// Turns a normalized key name into its standard form with the built-in aliases and patterns
+        /// ("$buttonlshift" -> "leftshift", "alpha1" -> "1", "numpad1" -> "keypad1").
+        /// </summary>
+        /// <param name="normalized">A name from <see cref="Normalize"/>.</param>
+        /// <returns>The standard key name.</returns>
+        private static string Canonical(string normalized)
+        {
             if (BuiltInAliases.TryGetValue(normalized, out string builtIn))
             {
                 return builtIn;

@@ -106,7 +106,9 @@ My mapping (test fixture and profile config):
     (mirrors ZInput's xbox/ps5/switch2 choice)
   - `GlyphMode.Decide(bool enabled, bool gamepadEnabled, bool gamepadPresent, bool settingsOpen) -> bool`
   - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, Func<string, string> translateKey) -> string` (F1/F2)
-  - `HotbarLabels.For(int slotIndex, string currentText, bool showGlyphs, KeyMap map) -> string` (F3)
+  - `SlotLabel.For(string mainKey, IReadOnlyList<string> modifiers, bool showGlyphs, Func<string, string> translateKey) -> string` (F3)
+  - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
+  - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
 - See **Testing strategy** for what the tests cover.
 
@@ -157,15 +159,21 @@ EpicLoot.
 - **Risk:** low.
 
 ### F3. Hotbar slot labels
-- **Patch:** postfix on `HotkeyBar.UpdateIcons(Player)` (private, `assembly_valheim`).
-- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowKeyPrompts` and the
-  text is a mapped key (`1`–`8`), replace it. Only rewrite text; never add or remove objects.
-- **Note:** vanilla sets the label once when elements are created: empty in gamepad mode,
-  `1`–`8` otherwise. In gamepad mode we need to write the label ourselves (slot index + 1
-  → mapping), since the text is empty.
+- **Covers:** Valheim's hotbar, AzuExtendedPlayerInventory's quick-slot bar, and the
+  inventory's top row (the hotbar row). Config `General.HotbarLabels`.
+- **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
+  `OnEnable()`, and on `InventoryGrid.UpdateGui(Player, ItemDrop.ItemData)` (all private,
+  `assembly_valheim`). Only rewrite each slot's `binding` text; never add or remove objects.
+- **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
+  written only when the slots were rebuilt (count or first slot object changed), glyphs
+  toggled, or Valheim just reset them; when glyphs turn off, Valheim's labels are restored
+  once (`ToggleBindingHint` for bars; `1`–`8` for the inventory row, copied from vanilla).
 - **Risk:** medium (private but long-stable).
-- **Compat:** AzuExtendedPlayerInventory quick slots draw their own labels. Check whether F4
-  or a small dedicated postfix is needed.
+- **Compat:** AzuEPI's quick-slot bar is a second `HotkeyBar`; AzuEPI rebuilds its slots with
+  the same count after Settings closes, which is why rebuilds are detected by the first slot
+  object, not only the count. AzuEPI's inventory patches don't touch the top row.
+- **Inventory top row:** vanilla `InventoryGrid.UpdateGui` labels row 0 of the player grid
+  `1`–`8` in both input modes, once when the grid is built. Same labels as the hotbar.
 - **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
   labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
   buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
@@ -265,7 +273,9 @@ Red → green → refactor for every Core function. Required cases:
 - `KeyMap`: every row of the fixture mapping (tests supply the mapping; Core has none);
   aliases (`Alpha1`, `KeypadNumber1`, `Left Shift`, `$button_lshift`); case-insensitivity;
   unknown keys pass through; combos; invalid YAML gives a clear error; the template maps
-  nothing, and uncommenting its examples yields a valid map; empty sections are allowed.
+  nothing, and uncommenting its examples yields a valid map; empty sections are allowed;
+  keys written in the file in any spelling (`Numpad1`, `Alpha1`) match every spelling; two
+  entries for the same key (`Q` and `q`, `"1"` and `Alpha1`) are an error naming both lines.
 - `GlyphMode.Decide`: truth table of the four inputs.
 - `BoundKeyResolver.Resolve`:
   - `("Use", "E", showGlyphs: true, joy → A sprite)` → A sprite.
@@ -273,8 +283,12 @@ Red → green → refactor for every Core function. Required cases:
   - `showGlyphs: false` → original result unchanged.
   - `name` starting with `Joy` → never looks up `JoyJoy…` (recursion guard).
   - unmapped key with no Joy binding → original result.
-- `HotbarLabels.For`: gamepad mode (empty current text) writes the label from slot index;
-  keyboard mode rewrites `1`–`8`; unmapped/other text untouched.
+- `SlotLabel.For`: hotbar and quick-slot keys give the mapped combos; modifiers first
+  (unmapped ones keep their name); null modifiers mean none; unmapped main key, no key, or
+  glyphs off → null (leave the label).
+- `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
+  same count (new first-slot ID), count changed, glyphs on/off (restore once, never again).
+- `ValheimButtons`: every button with Valheim art; Steam-only buttons have none.
 - `HintRewriter.Rewrite`: rewrites `[Z]`, `[<color=yellow><b>Z</b></color>]`, `<b>Z</b>`;
   leaves free text and non-key brackets alone (`Zone [Zebra]`); strips sprite brackets
   like vanilla gamepad mode; idempotent (rewriting twice = once).
@@ -284,11 +298,21 @@ Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadCon
 (no game code runs). Paths come from `Environment.props` (`VALHEIM_INSTALL`); tests skip
 when the game isn't installed. Assert each patch target and touched member exists with the
 expected signature:
-- `ZInput.GetBoundKeyString(string, bool) : string` (assembly_utils)
-- `HotkeyBar.UpdateIcons(Player)`, `Hud.UpdateCrosshair(Player, float)`,
-  `Hud.m_hoverName : TMP_Text` (assembly_valheim)
-- `Settings.instance`, `ZInput.IsGamepadEnabled()`
-Run after every Valheim update before launching the game.
+- `ZInput.GetBoundKeyString(string, bool) : string`, `ZInput.instance`, `IsGamepadEnabled()`,
+  `IsGamepadActive()`, `IsMouseActive()`, `CurrentGlyph`, `ConnectedGamepadType`,
+  `s_gamepadSpriteMap`, glyph enum names (assembly_utils)
+- `UIInputHint` members used by the F6 patch
+- `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)`, `OnEnable()`, `m_elements`,
+  `ElementData.m_go` (F3)
+- `InventoryGrid.UpdateGui(Player, ItemDrop.ItemData)`, `m_elements`, `m_width`,
+  `InventoryGui.instance`, `InventoryGui.m_playerGrid` (F3, inventory top row)
+- `Settings.instance`, `Localization.instance.Localize(string)`
+- To do with F4: `Hud.UpdateCrosshair(Player, float)`, `Hud.m_hoverName : TMP_Text`
+
+Other mods' names we copy are checked against their DLLs in the Gale profile
+(`GALE_PROFILE`), by reading the string literals in their code; tests skip when the mod isn't
+installed. AzuExtendedPlayerInventory: plugin ID, `8 - Quick Slot Hotkeys`, `Hotkey N`.
+Run after every Valheim or mod update before launching the game.
 
 ### 3. In-game self-test (Jotunn console command `cgf_selftest`) — real game
 Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` prefix:
@@ -296,7 +320,10 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
 - `ZInput.IsGamepadActive()` still reports the real input mode (behaviour untouched);
 - a gamepad device is present (open question 1);
 - `Localization.instance.Localize("$KEY_Use")` returns a controller sprite while in
-  keyboard mode; `"$KEY_Hotbar1"` returns the mapped string.
+  keyboard mode; `"$KEY_Hotbar1"` returns the mapped string;
+- F3: the raw `Hotbar1` key can be read (reverse patch); AzuEPI's quick slot 1 shortcut can
+  be read (if installed); slot 1 of the hotbar, the quick-slot bar and the inventory's top
+  row shows the expected label (in a world, with the inventory opened once).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and
@@ -313,7 +340,8 @@ types without the native engine is fragile and tests less than the in-game self-
 ### Solution layout
 - `ControllerGlyphFixer.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
 - `ControllerGlyphFixer.Core.Tests/` (net10.0, xUnit, references Core)
-- `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext)
+- `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext; references
+  Core for the mod names it checks)
 - `ControllerGlyphFixer/` (plugin; compiles Core sources in; YamlDotNet NuGet with
   `ExcludeAssets="runtime"` so YamlDotNet.dll is not deployed)
 - `dotnet test ControllerGlyphFixer.sln` runs layers 1 and 2. Build through the solution:

@@ -50,13 +50,13 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Whether this writer labels the bar (Valheim's hotbar or AzuEPI's quick-slot bar).
+        /// Whether this writer labels a bar (Valheim's hotbar or AzuEPI's quick-slot bar).
         /// </summary>
-        /// <param name="bar">Any HotkeyBar.</param>
+        /// <param name="barName">The HotkeyBar's object name.</param>
         /// <returns>True for the two bars this writer handles.</returns>
-        internal static bool Handles(HotkeyBar bar)
+        internal static bool Handles(string barName)
         {
-            return bar.name == VanillaBarName || bar.name == QuickSlotBarName;
+            return barName == VanillaBarName || barName == QuickSlotBarName;
         }
 
         /// <summary>
@@ -67,7 +67,9 @@ namespace ControllerGlyphFixer
         /// <param name="force">Valheim just rewrote the labels.</param>
         internal void Update(HotkeyBar bar, bool force)
         {
-            if (!Handles(bar))
+            // Read once: Unity allocates a new string on every read of name, and this runs every frame
+            string barName = bar.name;
+            if (!Handles(barName))
             {
                 return;
             }
@@ -75,15 +77,15 @@ namespace ControllerGlyphFixer
             GameObject firstSlot = bar.m_elements.Count > 0 ? bar.m_elements[0].m_go : null;
             var current = new SlotBarState(bar.m_elements.Count, firstSlot ? firstSlot.GetInstanceID() : 0,
                 m_glyphs.ShowHotbarLabels);
-            SlotBarState? last = m_lastStates.TryGetValue(bar.name, out SlotBarState previous) ? previous : null;
+            SlotBarState? last = m_lastStates.TryGetValue(barName, out SlotBarState previous) ? previous : null;
 
             // Recorded first: Restore calls ToggleBindingHint, which re-enters this method
-            m_lastStates[bar.name] = current;
+            m_lastStates[barName] = current;
 
             switch (SlotLabelRefresh.Decide(last, current, force))
             {
                 case SlotLabelAction.Write:
-                    WriteLabels(bar);
+                    WriteLabels(bar, barName);
                     break;
                 case SlotLabelAction.Restore:
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
@@ -94,16 +96,14 @@ namespace ControllerGlyphFixer
         /// <summary>
         /// Builds the label for one slot from its keyboard shortcut.
         /// </summary>
-        /// <param name="bar">Valheim's hotbar or AzuEPI's quick-slot bar.</param>
+        /// <param name="barName">Name of Valheim's hotbar or AzuEPI's quick-slot bar.</param>
         /// <param name="slot">Zero-based slot index.</param>
         /// <returns>The label, or null to leave the slot's text alone.</returns>
-        internal string LabelFor(HotkeyBar bar, int slot)
+        internal string LabelFor(string barName, int slot)
         {
-            if (bar.name == VanillaBarName)
+            if (barName == VanillaBarName)
             {
-                // Raw keyboard key (respects rebinding), not our translated text
-                string key = OriginalBoundKeyString.Call(ZInput.instance, "Hotbar" + (slot + 1), emptyStringOnMissing: true);
-                return SlotLabel.For(key, Array.Empty<string>(), showGlyphs: true, m_glyphs.TranslateKey);
+                return HotbarSlotLabel(slot);
             }
 
             return m_quickSlots.TryGet(slot, out string mainKey, out IReadOnlyList<string> modifiers)
@@ -123,14 +123,27 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
+        /// Builds the label for one of Valheim's hotbar slots (also used for the inventory's top row).
+        /// </summary>
+        /// <param name="slot">Zero-based slot index (0-7).</param>
+        /// <returns>The label, or null if the slot's key isn't mapped.</returns>
+        internal string HotbarSlotLabel(int slot)
+        {
+            // Raw keyboard key (respects rebinding), not our translated text
+            string key = OriginalBoundKeyString.Call(ZInput.instance, "Hotbar" + (slot + 1), emptyStringOnMissing: true);
+            return SlotLabel.For(key, Array.Empty<string>(), showGlyphs: true, m_glyphs.TranslateKey);
+        }
+
+        /// <summary>
         /// Sets every slot's label to its mapped buttons, leaving unmapped slots alone.
         /// </summary>
         /// <param name="bar">The hotbar.</param>
-        private void WriteLabels(HotkeyBar bar)
+        /// <param name="barName">The bar's name, already read.</param>
+        private void WriteLabels(HotkeyBar bar, string barName)
         {
             for (int i = 0; i < bar.m_elements.Count; i++)
             {
-                string label = LabelFor(bar, i);
+                string label = LabelFor(barName, i);
                 TMP_Text text = label == null ? null : BindingText(bar.m_elements[i].m_go);
                 if (text != null && text.text != label)
                 {

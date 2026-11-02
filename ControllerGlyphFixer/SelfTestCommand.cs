@@ -68,6 +68,8 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.UpdateIcons))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.ToggleBindingHint))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.OnEnable))));
+            Check("InventoryGrid.UpdateGui label postfix applied",
+                HasOurPostfix(AccessTools.Method(typeof(InventoryGrid), nameof(InventoryGrid.UpdateGui))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
@@ -144,8 +146,10 @@ namespace ControllerGlyphFixer
                 return;
             }
 
+            CheckInventoryTopRow();
+
             var bars = UnityEngine.Object.FindObjectsByType<HotkeyBar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
-                .Where(HotbarLabelWriter.Handles)
+                .Where(bar => HotbarLabelWriter.Handles(bar.name))
                 .ToList();
             if (bars.Count == 0)
             {
@@ -160,7 +164,7 @@ namespace ControllerGlyphFixer
                     continue;
                 }
 
-                string expected = m_labels.LabelFor(bar, 0);
+                string expected = m_labels.LabelFor(bar.name, 0);
                 string actual = HotbarLabelWriter.BindingText(bar.m_elements[0].m_go)?.text;
                 if (expected == null)
                 {
@@ -171,6 +175,31 @@ namespace ControllerGlyphFixer
                 Check($"{bar.name} slot 1 shows the mapped buttons", actual == expected,
                     $"got \"{actual}\", expected \"{expected}\"");
             }
+        }
+
+        /// <summary>
+        /// Checks the inventory's first top-row label. Labels only update while the inventory is
+        /// open, so this needs the inventory opened once since glyphs last turned on.
+        /// </summary>
+        private void CheckInventoryTopRow()
+        {
+            InventoryGrid grid = InventoryGui.instance ? InventoryGui.instance.m_playerGrid : null;
+            if (!grid || grid.m_elements.Count == 0)
+            {
+                Info("Inventory grid not built yet; open the inventory once to check its top-row labels");
+                return;
+            }
+
+            string expected = m_labels.HotbarSlotLabel(0);
+            string actual = HotbarLabelWriter.BindingText(grid.m_elements[0].gameObject)?.text;
+            if (expected == null)
+            {
+                Info($"Key 1 isn't in the mapping; inventory slot 1 label is \"{actual}\"");
+                return;
+            }
+
+            Check("Inventory top-row slot 1 shows the mapped buttons", actual == expected,
+                $"got \"{actual}\", expected \"{expected}\" (open the inventory once if glyphs just turned on)");
         }
 
         /// <summary>

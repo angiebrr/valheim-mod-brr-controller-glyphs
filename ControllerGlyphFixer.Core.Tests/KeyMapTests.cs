@@ -85,6 +85,37 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>Keys written in the file with any supported spelling match every spelling.</summary>
+    /// <param name="fileKey">How the key is written in the mapping file.</param>
+    /// <param name="lookup">How Valheim or a mod asks for it.</param>
+    [Theory]
+    [InlineData("Numpad1", "Keypad1")]
+    [InlineData("Numpad1", "Numpad1")]
+    [InlineData("Alpha1", "1")]
+    [InlineData("\"$button_lshift\"", "LeftShift")]
+    [InlineData("Left Shift", "$button_lshift")]
+    public void File_keys_in_any_spelling_match(string fileKey, string lookup)
+    {
+        var map = KeyMap.Parse($"keys:\n  {fileKey}: L5\n");
+
+        Assert.Equal("[L5]", map.Translate(lookup, FakeGlyph));
+    }
+
+    /// <summary>Two entries for the same key (in any spelling) are an error naming both.</summary>
+    /// <param name="first">First spelling.</param>
+    /// <param name="second">Second spelling of the same key.</param>
+    [Theory]
+    [InlineData("Q", "q")]
+    [InlineData("\"1\"", "Alpha1")]
+    [InlineData("Keypad1", "Num 1")]
+    public void Same_key_twice_is_an_error(string first, string second)
+    {
+        var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"keys:\n  {first}: L5\n  {second}: L4\n"));
+
+        Assert.Contains("line 2", ex.Message);
+        Assert.Contains("line 3", ex.Message);
+    }
+
     /// <summary>A key's value can be one button or a list of buttons.</summary>
     [Fact]
     public void Scalar_and_list_button_values_are_both_accepted()
