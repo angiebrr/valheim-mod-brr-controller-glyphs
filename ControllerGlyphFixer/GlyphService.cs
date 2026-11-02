@@ -14,8 +14,18 @@ namespace ControllerGlyphFixer
 {
     /// <summary>
     /// Reads game state for the Core decisions. All logic lives in Core; keep this thin.
-    /// Built once by the plugin with everything it depends on; immutable afterwards.
     /// </summary>
+    /// <remarks>
+    /// Two kinds of inputs:
+    /// <list type="bullet">
+    /// <item>Constructor dependencies: things fixed for the service's lifetime (the key map, the
+    /// config entries). Built once by the plugin; the fields never change.</item>
+    /// <item>Live game state: read from Valheim (<c>ZInput</c>, <c>Gamepad.current</c>,
+    /// <c>Settings.instance</c>) every time a prompt is resolved, because it changes while the game
+    /// runs (controller plugged in, Settings opened, config toggled). Reading it is this class's job,
+    /// so it isn't hidden behind an interface; the decisions it feeds are tested in Core.</item>
+    /// </list>
+    /// </remarks>
     internal sealed class GlyphService
     {
         /// <summary>The loaded key mapping.</summary>
