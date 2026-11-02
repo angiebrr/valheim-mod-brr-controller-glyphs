@@ -99,6 +99,24 @@ public class PatchTargetTests
         Assert.Equal("System.Boolean", isActive.PropertyType.FullName);
     }
 
+    /// <summary>The F3 patch targets on HotkeyBar and the slot fields the postfix reads exist.</summary>
+    [GameFact]
+    public void HotkeyBar_members_used_by_the_F3_patch_exist()
+    {
+        Type bar = GameAssemblies.Type("assembly_valheim", "HotkeyBar");
+
+        Assert.NotNull(bar.GetMethod("UpdateIcons", Instance, null,
+            new[] { GameAssemblies.Type("assembly_valheim", "Player") }, null));
+        Assert.NotNull(bar.GetMethod("ToggleBindingHint", Instance, null, new[] { typeof(bool).InGame() }, null));
+        Assert.NotNull(bar.GetMethod("OnEnable", Instance, null, Type.EmptyTypes, null));
+
+        FieldInfo elements = bar.GetField("m_elements", Instance);
+        Assert.NotNull(elements);
+        Assert.StartsWith("System.Collections.Generic.List`1[[HotkeyBar+ElementData", elements.FieldType.FullName);
+
+        AssertField(GameAssemblies.Type("assembly_valheim", "HotkeyBar+ElementData"), "m_go", "GameObject");
+    }
+
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
     [GameFact]
     public void Settings_instance_exists_for_the_rebinding_screen_check()

@@ -49,7 +49,7 @@ namespace ControllerGlyphFixer
         /// Called by Unity when BepInEx loads the plugin: builds every object with its
         /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
-        // TODO(phase 2): bind HotbarLabels (F3) and HoverText (F4) toggles and apply their patches.
+        // TODO(phase 2): bind a HoverText (F4) toggle and apply its patch.
         // TODO: give config entries ConfigurationManagerAttributes (order, sections) for the in-game UI.
         private void Awake()
         {
@@ -58,13 +58,24 @@ namespace ControllerGlyphFixer
             ConfigEntry<bool> keyPrompts = Config.Bind("General", "KeyPrompts", true,
                 "While a gamepad is connected, show controller glyphs in $KEY_ prompts and hint panels even after " +
                 "keyboard input, and show keyboard-only keys as the Steam Input buttons from the mapping file.");
+            ConfigEntry<bool> hotbarLabels = Config.Bind("General", "HotbarLabels", true,
+                "While a gamepad is connected, label hotbar and AzuExtendedPlayerInventory quick slots with the " +
+                "Steam Input buttons from the mapping file instead of keyboard keys or nothing.");
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts);
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
             InputHintPatch.Glyphs = glyphs;
             ApplyPatch(typeof(InputHintPatch));
+
+            // Hotbar labels need the raw key lookup, so only patch them if the reverse patch applied
+            if (ApplyPatch(typeof(OriginalBoundKeyString)))
+            {
+                HotbarLabelsPatch.Writer = new HotbarLabelWriter(glyphs, new QuickSlotKeys());
+                ApplyPatch(typeof(HotbarLabelsPatch));
+            }
+
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
             CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand(this));
 
@@ -114,15 +125,18 @@ namespace ControllerGlyphFixer
         /// that feature, with a warning, instead of the whole mod.
         /// </summary>
         /// <param name="patchClass">A class with [HarmonyPatch] attributes.</param>
-        private void ApplyPatch(Type patchClass)
+        /// <returns>True if the patch applied.</returns>
+        private bool ApplyPatch(Type patchClass)
         {
             try
             {
                 m_harmony.CreateClassProcessor(patchClass).Patch();
+                return true;
             }
             catch (Exception ex)
             {
                 Jotunn.Logger.LogWarning($"{patchClass.Name} not applied, feature disabled: {ex.Message}");
+                return false;
             }
         }
 

@@ -172,6 +172,28 @@ EpicLoot.
 - **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
   Steam; the game only sees the key sent by the second button). Labels can always show the
   combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
+- **Found with `cgf_dumphotbars` (2026-11-02):** labels are written in two places, and both
+  apply to AzuEPI's quick-slot bar too (it's a second `HotkeyBar` named `AzuEPI_QuickAccessBar`):
+  `UpdateIcons` when slots are created (AzuEPI sets its "Display Text" there), and
+  `HotkeyBar.ToggleBindingHint`, which Valheim calls on every keyboard/gamepad switch and which
+  overwrites every label with `1`.. or blank. That's why AzuEPI's names (`R5 Up`) disappear.
+  Mods patching `HotkeyBar.UpdateIcons`: MyLittleUI (prefix 800, 2 postfixes), AzuEPI (prefix
+  and postfix, priority 0), EpicLoot (transpiler); none of their postfixes write labels.
+- **Implemented:** `SlotLabel.For` (Core, tested) builds a slot's label from its keyboard
+  shortcut (modifiers + main key) through the mapping; null leaves the slot alone (glyphs off,
+  no key, unmapped). `HotbarLabelsPatch` postfixes `UpdateIcons`, `ToggleBindingHint` and
+  `OnEnable` and calls `HotbarLabelWriter`, which only rewrites when slots were rebuilt, glyphs
+  toggled, or Valheim just reset the labels, and restores Valheim's labels when glyphs turn off.
+  Keys: Valheim's bar asks the original `GetBoundKeyString("HotbarN")` through a Harmony reverse
+  patch (`OriginalBoundKeyString`, raw key, respects rebinding); AzuEPI's bar reads AzuEPI's
+  `[8 - Quick Slot Hotkeys] Hotkey N` config at runtime (`QuickSlotKeys`, no compile reference).
+  Config `General.HotbarLabels`. AzuEPI's own display names are ignored.
+- **Size / presentation (pending a screenshot):** `[R4] + (glyph)` may be too wide for a slot.
+  Alternatives to consider: a compact form (`R4+` glyph, or short labels via the mapping file's
+  `labels:` section); an outline around each bar with the hold button (R4/R5) drawn once outside
+  it and only the second button per slot; or highlighting the bar's slots while the action-set
+  button is held. Highlighting needs the Steam layout to also send a spare key while R4/R5 is
+  held (e.g. F13 on layer activation), which the mod would watch.
 
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),

@@ -26,17 +26,23 @@ namespace ControllerGlyphFixer
         /// <summary>Config General.KeyPrompts: controller glyphs in $KEY_ prompts (F1 + F2).</summary>
         private readonly ConfigEntry<bool> m_keyPrompts;
 
+        /// <summary>Config General.HotbarLabels: mapped buttons on hotbar and quick slots (F3).</summary>
+        private readonly ConfigEntry<bool> m_hotbarLabels;
+
         /// <summary>
         /// Creates the service.
         /// </summary>
         /// <param name="keyMap">The loaded key mapping (<see cref="KeyMap.Empty"/> if none).</param>
         /// <param name="enabled">Config master switch; read live so changes apply immediately.</param>
         /// <param name="keyPrompts">Config switch for F1 + F2; read live.</param>
-        internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts)
+        /// <param name="hotbarLabels">Config switch for F3; read live.</param>
+        internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts,
+            ConfigEntry<bool> hotbarLabels)
         {
             m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
             m_enabled = enabled ?? throw new ArgumentNullException(nameof(enabled));
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
+            m_hotbarLabels = hotbarLabels ?? throw new ArgumentNullException(nameof(hotbarLabels));
         }
 
         /// <summary>Number of keys in the loaded mapping.</summary>
@@ -49,11 +55,27 @@ namespace ControllerGlyphFixer
         /// </summary>
         // Steam Input exposes a virtual XInput controller ("Xbox Controller"), but it connects after
         // plugins load, so Gamepad.current is null at startup and becomes set later (checked 2026-11-02).
-        internal bool ShowKeyPrompts => GlyphMode.Decide(
-            enabled: m_enabled.Value && m_keyPrompts.Value,
-            gamepadEnabled: ZInput.IsGamepadEnabled(),
-            gamepadPresent: Gamepad.current != null,
-            settingsOpen: Settings.instance != null);
+        internal bool ShowKeyPrompts => ShowGlyphs(m_keyPrompts.Value);
+
+        /// <summary>
+        /// Whether hotbar and quick-slot labels should show mapped controller buttons right now (F3).
+        /// Computed on each read, like <see cref="ShowKeyPrompts"/>.
+        /// </summary>
+        internal bool ShowHotbarLabels => ShowGlyphs(m_hotbarLabels.Value);
+
+        /// <summary>
+        /// Shared live check for every feature: master switch, the feature's switch, and game state.
+        /// </summary>
+        /// <param name="featureEnabled">The feature's own config switch.</param>
+        /// <returns>Result of <see cref="GlyphMode.Decide"/>.</returns>
+        private bool ShowGlyphs(bool featureEnabled)
+        {
+            return GlyphMode.Decide(
+                enabled: m_enabled.Value && featureEnabled,
+                gamepadEnabled: ZInput.IsGamepadEnabled(),
+                gamepadPresent: Gamepad.current != null,
+                settingsOpen: Settings.instance != null);
+        }
 
         /// <summary>
         /// Translates a keyboard key through the mapping, using Valheim's glyphs where it has art.

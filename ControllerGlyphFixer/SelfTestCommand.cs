@@ -51,6 +51,10 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(ZInput), nameof(ZInput.GetBoundKeyString))));
             Check("UIInputHint.UpdateInputHints postfix applied",
                 HasOurPostfix(AccessTools.Method(typeof(UIInputHint), nameof(UIInputHint.UpdateInputHints))));
+            Check("HotkeyBar label postfixes applied (UpdateIcons, ToggleBindingHint, OnEnable)",
+                HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.UpdateIcons))) &&
+                HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.ToggleBindingHint))) &&
+                HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.OnEnable))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
