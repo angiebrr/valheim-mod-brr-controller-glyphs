@@ -177,6 +177,12 @@ namespace ControllerGlyphFixer.Core
                 return mapping;
             }
 
+            // "keys:" with nothing after it (e.g. every example commented out)
+            if (node is YamlScalarNode scalar && string.IsNullOrEmpty(scalar.Value))
+            {
+                return new YamlMappingNode();
+            }
+
             throw new KeyMapException($"Section '{sectionName}' must be a set of 'name: value' entries (line {node.Start.Line})");
         }
 

@@ -7,7 +7,8 @@ public class KeyMapTests
     // Stands in for Valheim's sprite lookup: known Valheim control names render as <control>
     private static string FakeGlyph(string control) => $"<{control}>";
 
-    private static readonly KeyMap Default = KeyMap.Parse(DefaultMapping.Yaml);
+    private static readonly KeyMap SteamController = KeyMap.Parse(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "steam-controller.yaml")));
 
     [Theory]
     [InlineData("1", "[R4] + <dpad_up>")]
@@ -30,9 +31,9 @@ public class KeyMapTests
     [InlineData("Z", "[L4]")]
     [InlineData("B", "[LPad Up]")]
     [InlineData("LeftShift", "[LPad Down]")]
-    public void Default_mapping_translates_every_row(string key, string expected)
+    public void Steam_controller_mapping_translates_every_row(string key, string expected)
     {
-        Assert.Equal(expected, Default.Translate(key, FakeGlyph));
+        Assert.Equal(expected, SteamController.Translate(key, FakeGlyph));
     }
 
     [Theory]
@@ -47,7 +48,7 @@ public class KeyMapTests
     [InlineData("q", "Q")]
     public void Alternative_spellings_match_the_same_key(string spelling, string canonical)
     {
-        Assert.Equal(Default.Translate(canonical, FakeGlyph), Default.Translate(spelling, FakeGlyph));
+        Assert.Equal(SteamController.Translate(canonical, FakeGlyph), SteamController.Translate(spelling, FakeGlyph));
     }
 
     [Theory]
@@ -58,7 +59,7 @@ public class KeyMapTests
     [InlineData("MISSING BUTTON DEF \"Foo\"")]
     public void Unmapped_keys_return_null(string key)
     {
-        Assert.Null(Default.Translate(key, FakeGlyph));
+        Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
     [Fact]
@@ -135,6 +136,38 @@ public class KeyMapTests
     [Fact]
     public void Count_is_the_number_of_mapped_keys()
     {
-        Assert.Equal(20, Default.Count);
+        Assert.Equal(20, SteamController.Count);
+    }
+
+    [Fact]
+    public void Template_parses_and_maps_nothing()
+    {
+        var map = KeyMap.Parse(KeyMapTemplate.Yaml);
+
+        Assert.Equal(0, map.Count);
+    }
+
+    [Fact]
+    public void Uncommenting_the_template_examples_gives_a_working_map()
+    {
+        // Users enable an example by deleting its leading '#', nothing else.
+        // Example lines are "#  entry" (two spaces, then the entry); header text isn't.
+        string uncommented = string.Join("\n", KeyMapTemplate.Yaml.Split('\n')
+            .Select(line => line.Length > 3 && line.StartsWith("#  ") && line[3] != ' ' ? line.Substring(1) : line));
+
+        var map = KeyMap.Parse(uncommented);
+
+        Assert.Equal(4, map.Count);
+        Assert.Equal("[R4] + <dpad_up>", map.Translate("1", FakeGlyph));
+        Assert.Equal("[L5]", map.Translate("Pickup", FakeGlyph));
+        Assert.Equal("[LPad Up]", map.Translate("LeftShift", FakeGlyph));
+    }
+
+    [Fact]
+    public void Sections_with_no_entries_are_allowed()
+    {
+        var map = KeyMap.Parse("labels:\naliases:\nkeys:\n");
+
+        Assert.Equal(0, map.Count);
     }
 }

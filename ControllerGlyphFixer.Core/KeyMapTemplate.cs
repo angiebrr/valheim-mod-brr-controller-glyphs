@@ -1,9 +1,10 @@
 namespace ControllerGlyphFixer.Core
 {
     /// <summary>
-    /// The mapping file written to the config folder on first run.
+    /// Written to the config folder when no mapping file exists. Maps nothing: the examples are
+    /// commented out, so controller glyphs work and keyboard-only keys stay as keys until edited.
     /// </summary>
-    public static class DefaultMapping
+    public static class KeyMapTemplate
     {
         public const string Yaml = @"# ControllerGlyphFixer key mapping
 #
@@ -15,38 +16,21 @@ namespace ControllerGlyphFixer.Core
 # Buttons with Valheim art: A B X Y LB RB LT RT LS RS Back Start DPadUp DPadRight DPadDown DPadLeft
 # Any other button name (R4, L5, LPadUp, ...) is shown as a text badge like [R4].
 # Key names ignore case, spaces, '_' and '-'. Alpha1/Digit1 match ""1""; Num 1/Numpad1 match Keypad1.
+# Quote keys that are numbers (""1"") or YAML words like yes/no/on/off.
+#
+# Remove the '#' in front of a line to use it.
 
 labels:
-  LPadUp: LPad Up
-  LPadDown: LPad Down
+#  LPadUp: LPad Up
 
-aliases: {}
+aliases:
+#  Pickup: Q
 
 keys:
-  # Hotbar: hold R4
-  ""1"": [R4, DPadUp]
-  ""2"": [R4, DPadRight]
-  ""3"": [R4, DPadDown]
-  ""4"": [R4, DPadLeft]
-  ""5"": [R4, Y]
-  ""6"": [R4, B]
-  ""7"": [R4, A]
-  ""8"": [R4, X]
-
-  # Quick slots: hold R5
-  Keypad1: [R5, DPadUp]
-  Keypad2: [R5, DPadRight]
-  Keypad3: [R5, DPadDown]
-  Keypad4: [R5, DPadLeft]
-  Keypad5: [R5, Y]
-  Keypad6: [R5, B]
-
-  I: [R5, A]      # backpack
-  N: [R5, X]      # ImpactfulSkills AOE toggle
-  Q: L5           # pickup
-  Z: L4           # AzuAutoStore favorite
-  B: LPadUp       # AutomaticFuel torch mode (left trackpad click up)
-  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)
+#  ""1"": [R4, DPadUp]       # hotbar slot 1: hold R4 + D-pad up
+#  Keypad1: [R5, DPadUp]   # quick slot 1: hold R5 + D-pad up
+#  Q: L5                   # a single back button
+#  LeftShift: LPadUp       # a trackpad click, shown with the label above
 ";
     }
 }

@@ -50,8 +50,8 @@ namespace ControllerGlyphFixer
             {
                 if (!File.Exists(MappingPath))
                 {
-                    File.WriteAllText(MappingPath, DefaultMapping.Yaml);
-                    Jotunn.Logger.LogInfo($"Wrote default key mapping to {MappingPath}");
+                    File.WriteAllText(MappingPath, KeyMapTemplate.Yaml);
+                    Jotunn.Logger.LogInfo($"Wrote an empty key mapping template to {MappingPath}; edit it to add your buttons");
                 }
 
                 KeyMap map = KeyMap.Parse(File.ReadAllText(MappingPath));

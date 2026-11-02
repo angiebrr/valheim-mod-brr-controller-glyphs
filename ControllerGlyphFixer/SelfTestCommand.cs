@@ -27,7 +27,7 @@ namespace ControllerGlyphFixer
             Check("Gamepad device present", gamepad != null,
                 gamepad != null ? $"{gamepad.displayName} ({gamepad.layout})" : "Gamepad.current is null");
 
-            Check("Key mapping loaded", Glyphs.KeyMap.Count > 0, $"{Glyphs.KeyMap.Count} keys");
+            Info($"Key mapping has {Glyphs.KeyMap.Count} keys");
 
             bool showGlyphs = Glyphs.ShowKeyPrompts;
             Info($"Controller glyphs on: {showGlyphs}; Valheim input mode is gamepad: {ZInput.IsGamepadActive()}; " +
@@ -44,8 +44,14 @@ namespace ControllerGlyphFixer
             Check("$KEY_Use shows a controller glyph", use.Contains("<sprite"), use);
 
             string expectedHotbar1 = Glyphs.TranslateKey("1");
-            Check("$KEY_Hotbar1 shows the mapped buttons", expectedHotbar1 != null && hotbar1 == expectedHotbar1,
-                $"got {hotbar1}, expected {expectedHotbar1 ?? "(key 1 not mapped)"}");
+            if (expectedHotbar1 == null)
+            {
+                Info($"Key 1 isn't in the mapping; $KEY_Hotbar1 = {hotbar1}");
+                return;
+            }
+
+            Check("$KEY_Hotbar1 shows the mapped buttons", hotbar1 == expectedHotbar1,
+                $"got {hotbar1}, expected {expectedHotbar1}");
         }
 
         private static void Check(string name, bool passed, string detail = null)

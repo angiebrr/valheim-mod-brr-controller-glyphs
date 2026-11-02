@@ -58,7 +58,13 @@ exposes a virtual gamepad. **Open question 1** depends on this.
 
 ### Mapping table (YAML)
 - File: `<profile>/BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`
-  (next to the `.cfg`; default copy shipped/created on first run).
+  (next to the `.cfg`).
+- **No mapping is built into the mod.** If the file is missing, the plugin writes
+  `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
+  glyphs (F1) still work; keyboard-only keys stay as keys until the file is edited.
+  Uncommenting an example (deleting its `#`) must be enough to enable it (tested).
+- My layout lives in the test fixture `ControllerGlyphFixer.Core.Tests/Fixtures/steam-controller.yaml`
+  and, as my real config, in the profile's mapping file. Later the VDF generator produces it.
 - Maps a key name to display output: Valheim key names (`Q`, `LeftShift`, `Keypad1`,
   `1`–`8`), plus aliases for spellings mods use (`Alpha1`, `KeypadNumber1`, `Left Shift`).
 - Output is a TMP string: a Valheim sprite tag for buttons Valheim has art for
@@ -67,7 +73,7 @@ exposes a virtual gamepad. **Open question 1** depends on this.
 - Parsed with YamlDotNet from the shared `ValheimModding-YamlDotNet` package (see
   Dependencies). Parsing lives in the pure library.
 
-Initial mapping:
+My mapping (test fixture and profile config):
 
 | Key | My button |
 |---|---|
@@ -202,9 +208,10 @@ runner; keep logic in Core and patches thin. Four layers:
 
 ### 1. Unit tests (`ControllerGlyphFixer.Core.Tests`, xUnit, .NET 10) — TDD, seconds
 Red → green → refactor for every Core function. Required cases:
-- `KeyMap`: every row of the initial mapping; aliases (`Alpha1`, `KeypadNumber1`,
-  `Left Shift`, `$button_lshift`); case-insensitivity; unknown keys pass through; combos;
-  invalid YAML gives a clear error.
+- `KeyMap`: every row of the fixture mapping (tests supply the mapping; Core has none);
+  aliases (`Alpha1`, `KeypadNumber1`, `Left Shift`, `$button_lshift`); case-insensitivity;
+  unknown keys pass through; combos; invalid YAML gives a clear error; the template maps
+  nothing, and uncommenting its examples yields a valid map; empty sections are allowed.
 - `GlyphMode.Decide`: truth table of the four inputs.
 - `BoundKeyResolver.Resolve`:
   - `("Use", "E", showGlyphs: true, joy → A sprite)` → A sprite.

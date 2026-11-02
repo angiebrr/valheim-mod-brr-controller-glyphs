@@ -1,0 +1,31 @@
+# Test fixture: my Steam Controller layout (keyboard keys sent by back buttons and pads)
+
+labels:
+  LPadUp: LPad Up
+  LPadDown: LPad Down
+
+keys:
+  # Hotbar: hold R4
+  "1": [R4, DPadUp]
+  "2": [R4, DPadRight]
+  "3": [R4, DPadDown]
+  "4": [R4, DPadLeft]
+  "5": [R4, Y]
+  "6": [R4, B]
+  "7": [R4, A]
+  "8": [R4, X]
+
+  # Quick slots: hold R5
+  Keypad1: [R5, DPadUp]
+  Keypad2: [R5, DPadRight]
+  Keypad3: [R5, DPadDown]
+  Keypad4: [R5, DPadLeft]
+  Keypad5: [R5, Y]
+  Keypad6: [R5, B]
+
+  I: [R5, A]           # backpack
+  N: [R5, X]           # ImpactfulSkills AOE toggle
+  Q: L5                # pickup
+  Z: L4                # AzuAutoStore favorite
+  B: LPadUp            # AutomaticFuel torch mode (left trackpad click up)
+  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)
