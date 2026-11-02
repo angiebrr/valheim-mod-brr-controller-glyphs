@@ -45,9 +45,9 @@ stays vanilla.
 
 ## Shared pieces
 
-### `GlyphMode.ShowControllerGlyphs`
-True when all of:
-- config `General.Enabled` is true,
+### Controller glyphs on (`GlyphService.ShowKeyPrompts`, decided by `GlyphMode.Decide`)
+Read live on every prompt. True when all of:
+- config `General.Enabled` and `General.KeyPrompts` are true,
 - `ZInput.IsGamepadEnabled()` (gamepad not disabled in Valheim settings),
 - a gamepad device is present (`UnityEngine.InputSystem.Gamepad.current != null`),
 - the Settings screen is not open (`Settings.instance == null`), so the keyboard
@@ -140,7 +140,7 @@ EpicLoot.
 - **Patch:** postfix on `ZInput.GetBoundKeyString(string name, bool emptyStringOnMissing)`
   (public instance method, `assembly_utils`). Every `$KEY_` token resolves through it via
   `Localization.Translate` → `Localization.GetBoundKeyString` → this method.
-- **Behaviour:** if `ShowControllerGlyphs` and `name` does not start with `Joy`, look up
+- **Behaviour:** if `ShowKeyPrompts` and `name` does not start with `Joy`, look up
   `"Joy" + name` (with `emptyStringOnMissing: true`, guarded against recursion). If
   non-empty, return it (Valheim's own glyph for the current `ZInput.CurrentGlyph` style).
   Otherwise fall through to F2.
@@ -158,7 +158,7 @@ EpicLoot.
 
 ### F3. Hotbar slot labels
 - **Patch:** postfix on `HotkeyBar.UpdateIcons(Player)` (private, `assembly_valheim`).
-- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowControllerGlyphs` and the
+- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowKeyPrompts` and the
   text is a mapped key (`1`–`8`), replace it. Only rewrite text; never add or remove objects.
 - **Note:** vanilla sets the label once when elements are created: empty in gamepad mode,
   `1`–`8` otherwise. In gamepad mode we need to write the label ourselves (slot index + 1
@@ -176,7 +176,7 @@ EpicLoot.
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
   the single place all hover text (vanilla and mods) is assigned to `m_hoverName.text`.
-- **Behaviour:** if `ShowControllerGlyphs`, run `HintRewriter.Rewrite` on `m_hoverName.text`:
+- **Behaviour:** if `ShowKeyPrompts`, run `HintRewriter.Rewrite` on `m_hoverName.text`:
   - Replace a key name only inside a key-hint wrapper: `[...]`,
     `[<color=yellow><b>...</b></color>]`, or `<b>...</b>`, and only if the whole inner
     text is a mapped key name or alias. Never touch free text.
