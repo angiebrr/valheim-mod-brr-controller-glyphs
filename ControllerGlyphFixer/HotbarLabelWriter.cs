@@ -15,7 +15,8 @@ namespace ControllerGlyphFixer
 {
     /// <summary>
     /// Writes slot labels on Valheim's hotbar and AzuEPI's quick-slot bar while controller glyphs
-    /// are on. Labels come from <see cref="SlotLabel.For"/>; this class only reads keys and sets text.
+    /// are on. When and what to write is decided in Core (<see cref="SlotLabelRefresh"/>,
+    /// <see cref="SlotLabel"/>); this class only reads game state and sets text.
     /// </summary>
     internal sealed class HotbarLabelWriter
     {
@@ -31,8 +32,11 @@ namespace ControllerGlyphFixer
         /// <summary>AzuEPI's quick-slot shortcuts.</summary>
         private readonly QuickSlotKeys m_quickSlots;
 
-        /// <summary>Per bar (Unity instance ID): slot count and glyph state when labels were last written.</summary>
-        private readonly Dictionary<int, (int SlotCount, bool ShowGlyphs)> m_lastWritten = new ();
+        /// <summary>
+        /// Per bar name: state when its labels were last handled. Keyed by name, not instance, so it
+        /// holds at most two entries even though bars are recreated on every world load.
+        /// </summary>
+        private readonly Dictionary<string, SlotBarState> m_lastStates = new ();
 
         /// <summary>
         /// Creates the writer.
@@ -46,47 +50,44 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Writes a bar's labels if anything relevant changed since the last write (or if forced).
-        /// Cheap when nothing changed, since UpdateIcons calls this every frame.
+        /// Whether this writer labels the bar (Valheim's hotbar or AzuEPI's quick-slot bar).
+        /// </summary>
+        /// <param name="bar">Any HotkeyBar.</param>
+        /// <returns>True for the two bars this writer handles.</returns>
+        internal static bool Handles(HotkeyBar bar)
+        {
+            return bar.name == VanillaBarName || bar.name == QuickSlotBarName;
+        }
+
+        /// <summary>
+        /// Writes or restores a bar's labels if anything relevant changed since last time (or if
+        /// forced). Cheap when nothing changed, since UpdateIcons calls this every frame.
         /// </summary>
         /// <param name="bar">The hotbar.</param>
-        /// <param name="force">Write even if nothing changed (Valheim just rewrote the labels).</param>
+        /// <param name="force">Valheim just rewrote the labels.</param>
         internal void Update(HotkeyBar bar, bool force)
         {
-            if (bar.name != VanillaBarName && bar.name != QuickSlotBarName)
+            if (!Handles(bar))
             {
                 return;
             }
 
-            bool showGlyphs = m_glyphs.ShowHotbarLabels;
-            int key = bar.GetInstanceID();
-            bool known = m_lastWritten.TryGetValue(key, out var last);
-            if (!force && known && last.SlotCount == bar.m_elements.Count && last.ShowGlyphs == showGlyphs)
-            {
-                return;
-            }
+            GameObject firstSlot = bar.m_elements.Count > 0 ? bar.m_elements[0].m_go : null;
+            var current = new SlotBarState(bar.m_elements.Count, firstSlot ? firstSlot.GetInstanceID() : 0,
+                m_glyphs.ShowHotbarLabels);
+            SlotBarState? last = m_lastStates.TryGetValue(bar.name, out SlotBarState previous) ? previous : null;
 
-            m_lastWritten[key] = (bar.m_elements.Count, showGlyphs);
+            // Recorded first: Restore calls ToggleBindingHint, which re-enters this method
+            m_lastStates[bar.name] = current;
 
-            if (!showGlyphs)
+            switch (SlotLabelRefresh.Decide(last, current, force))
             {
-                // Glyphs just turned off: let Valheim restore its own labels
-                if (known && last.ShowGlyphs)
-                {
+                case SlotLabelAction.Write:
+                    WriteLabels(bar);
+                    break;
+                case SlotLabelAction.Restore:
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
-                }
-
-                return;
-            }
-
-            for (int i = 0; i < bar.m_elements.Count; i++)
-            {
-                string label = LabelFor(bar, i);
-                TMP_Text text = label == null ? null : BindingText(bar.m_elements[i].m_go);
-                if (text != null && text.text != label)
-                {
-                    text.text = label;
-                }
+                    break;
             }
         }
 
@@ -96,7 +97,7 @@ namespace ControllerGlyphFixer
         /// <param name="bar">Valheim's hotbar or AzuEPI's quick-slot bar.</param>
         /// <param name="slot">Zero-based slot index.</param>
         /// <returns>The label, or null to leave the slot's text alone.</returns>
-        private string LabelFor(HotkeyBar bar, int slot)
+        internal string LabelFor(HotkeyBar bar, int slot)
         {
             if (bar.name == VanillaBarName)
             {
@@ -115,10 +116,27 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="slot">The slot's GameObject.</param>
         /// <returns>The "binding" label, or null if the slot has none.</returns>
-        private static TMP_Text BindingText(GameObject slot)
+        internal static TMP_Text BindingText(GameObject slot)
         {
             Transform binding = slot ? slot.transform.Find("binding") : null;
             return binding ? binding.GetComponent<TMP_Text>() : null;
+        }
+
+        /// <summary>
+        /// Sets every slot's label to its mapped buttons, leaving unmapped slots alone.
+        /// </summary>
+        /// <param name="bar">The hotbar.</param>
+        private void WriteLabels(HotkeyBar bar)
+        {
+            for (int i = 0; i < bar.m_elements.Count; i++)
+            {
+                string label = LabelFor(bar, i);
+                TMP_Text text = label == null ? null : BindingText(bar.m_elements[i].m_go);
+                if (text != null && text.text != label)
+                {
+                    text.text = label;
+                }
+            }
         }
     }
 }

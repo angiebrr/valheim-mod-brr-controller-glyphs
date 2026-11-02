@@ -4,8 +4,11 @@
 
 using System;
 using System.Linq;
+using ControllerGlyphFixer.Core;
+using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Entities;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -26,13 +29,23 @@ namespace ControllerGlyphFixer
         /// <summary>The service whose decisions are checked.</summary>
         private readonly GlyphService m_glyphs;
 
+        /// <summary>The slot label writer; null if its reverse patch didn't apply.</summary>
+        private readonly HotbarLabelWriter m_labels;
+
+        /// <summary>AzuEPI's quick-slot shortcuts.</summary>
+        private readonly QuickSlotKeys m_quickSlots;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
         /// <param name="glyphs">The service the patches use.</param>
-        internal SelfTestCommand(GlyphService glyphs)
+        /// <param name="labels">The slot label writer, or null if hotbar labels couldn't be set up.</param>
+        /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
+        internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, QuickSlotKeys quickSlots)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
+            m_labels = labels;
+            m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
         }
 
         /// <summary>Command name typed in the console.</summary>
@@ -62,6 +75,8 @@ namespace ControllerGlyphFixer
 
             Info($"Key mapping has {m_glyphs.MappedKeyCount} keys");
 
+            CheckSlotLabels();
+
             bool showGlyphs = m_glyphs.ShowKeyPrompts;
             Info($"Controller glyphs on: {showGlyphs}; Valheim input mode is gamepad: {ZInput.IsGamepadActive()}; " +
                  $"glyph setting {ZInput.CurrentGlyph}, gamepad type {ZInput.ConnectedGamepadType}");
@@ -85,6 +100,77 @@ namespace ControllerGlyphFixer
 
             Check("$KEY_Hotbar1 shows the mapped buttons", hotbar1 == expectedHotbar1,
                 $"got {hotbar1}, expected {expectedHotbar1}");
+        }
+
+        /// <summary>
+        /// F3 checks: the raw key lookup works, AzuEPI's shortcuts can be read, and slot 1 of each
+        /// labelled bar on screen shows the expected label.
+        /// </summary>
+        private void CheckSlotLabels()
+        {
+            if (m_labels == null)
+            {
+                Check("Hotbar labels set up", false, "OriginalBoundKeyString reverse patch not applied; see the log");
+                return;
+            }
+
+            string rawKey;
+            try
+            {
+                rawKey = OriginalBoundKeyString.Call(ZInput.instance, "Hotbar1", emptyStringOnMissing: true);
+            }
+            catch (Exception ex)
+            {
+                rawKey = null;
+                Info($"Raw key lookup threw: {ex.Message}");
+            }
+
+            Check("Raw key for Hotbar1 readable (reverse patch)", !string.IsNullOrEmpty(rawKey), rawKey);
+
+            if (QuickSlotKeys.IsInstalled)
+            {
+                bool found = m_quickSlots.TryGet(0, out string mainKey, out var modifiers);
+                Check("AzuEPI quick slot 1 shortcut readable", found,
+                    found ? string.Join(" + ", modifiers.Append(mainKey)) : $"[{AzuEpiQuickSlots.Section}] not found");
+            }
+            else
+            {
+                Info("AzuExtendedPlayerInventory not installed; skipping quick-slot check");
+            }
+
+            if (!m_glyphs.ShowHotbarLabels)
+            {
+                Info("Skipping slot label checks (hotbar labels off)");
+                return;
+            }
+
+            var bars = UnityEngine.Object.FindObjectsByType<HotkeyBar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .Where(HotbarLabelWriter.Handles)
+                .ToList();
+            if (bars.Count == 0)
+            {
+                Info("No hotbar on screen; load into a world to check slot labels");
+            }
+
+            foreach (HotkeyBar bar in bars)
+            {
+                if (bar.m_elements.Count == 0)
+                {
+                    Info($"{bar.name} has no slots; bind an item to slot 1 to check its label");
+                    continue;
+                }
+
+                string expected = m_labels.LabelFor(bar, 0);
+                string actual = HotbarLabelWriter.BindingText(bar.m_elements[0].m_go)?.text;
+                if (expected == null)
+                {
+                    Info($"{bar.name} slot 1's key isn't in the mapping; label is \"{actual}\"");
+                    continue;
+                }
+
+                Check($"{bar.name} slot 1 shows the mapped buttons", actual == expected,
+                    $"got \"{actual}\", expected \"{expected}\"");
+            }
         }
 
         /// <summary>

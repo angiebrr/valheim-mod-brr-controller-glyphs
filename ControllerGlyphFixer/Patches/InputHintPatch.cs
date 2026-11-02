@@ -26,8 +26,8 @@ namespace ControllerGlyphFixer.Patches
         /// </summary>
         internal static GlyphService Glyphs;
 
-        /// <summary>Set after the first error so a broken patch doesn't flood the log.</summary>
-        private static bool s_loggedError;
+        /// <summary>Logs the first error only.</summary>
+        private static readonly PatchErrorLog s_errors = new ($"{nameof(InputHintPatch)} failed, leaving hints as Valheim set them");
 
         /// <summary>
         /// Shows the gamepad version of the hint while controller glyphs are on. Does nothing when
@@ -59,11 +59,7 @@ namespace ControllerGlyphFixer.Patches
             }
             catch (Exception ex)
             {
-                if (!s_loggedError)
-                {
-                    s_loggedError = true;
-                    Jotunn.Logger.LogError($"{nameof(InputHintPatch)} failed, leaving hints as Valheim set them: {ex}");
-                }
+                s_errors.LogOnce(ex);
             }
         }
 

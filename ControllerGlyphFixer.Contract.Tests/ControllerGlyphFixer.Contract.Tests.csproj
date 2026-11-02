@@ -15,6 +15,15 @@
       <_Parameter1>ValheimInstall</_Parameter1>
       <_Parameter2>$(VALHEIM_INSTALL)</_Parameter2>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GaleProfile</_Parameter1>
+      <_Parameter2>$(GALE_PROFILE)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Names copied from other mods (AzuEpiQuickSlots) are checked against their DLLs -->
+    <ProjectReference Include="..\ControllerGlyphFixer.Core\ControllerGlyphFixer.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,11 +24,12 @@ namespace ControllerGlyphFixer.Patches
         /// </summary>
         internal static HotbarLabelWriter Writer;
 
-        /// <summary>Set after the first error so a broken patch doesn't flood the log.</summary>
-        private static bool s_loggedError;
+        /// <summary>Logs the first error only.</summary>
+        private static readonly PatchErrorLog s_errors = new ($"{nameof(HotbarLabelsPatch)} failed, leaving slot labels unchanged");
 
         /// <summary>
-        /// After UpdateIcons (every frame): writes labels only if slots were rebuilt or glyphs toggled.
+        /// After UpdateIcons (every frame): writes labels only if slots were rebuilt or glyphs toggled
+        /// (see <see cref="Core.SlotLabelRefresh"/>).
         /// </summary>
         /// <param name="__instance">The hotbar.</param>
         [HarmonyPostfix]
@@ -82,11 +83,7 @@ namespace ControllerGlyphFixer.Patches
             }
             catch (Exception ex)
             {
-                if (!s_loggedError)
-                {
-                    s_loggedError = true;
-                    Jotunn.Logger.LogError($"{nameof(HotbarLabelsPatch)} failed, leaving slot labels unchanged: {ex}");
-                }
+                s_errors.LogOnce(ex);
             }
         }
     }

@@ -23,7 +23,7 @@ namespace ControllerGlyphFixer.Core
         /// Returns the label for a slot, or null to leave the label Valheim or AzuEPI set.
         /// </summary>
         /// <param name="mainKey">The slot's key name (e.g. "1", "Keypad1"); null or empty if none.</param>
-        /// <param name="modifiers">Modifier keys held with it (e.g. "LeftAlt"); may be empty.</param>
+        /// <param name="modifiers">Modifier keys held with it (e.g. "LeftAlt"); may be empty or null.</param>
         /// <param name="showGlyphs">Whether controller glyphs are on for slot labels.</param>
         /// <param name="translateKey">Returns the mapped display string for a key, or null if unmapped.</param>
         /// <returns>The label, or null when glyphs are off, there's no key, or the main key isn't mapped.</returns>
@@ -45,7 +45,7 @@ namespace ControllerGlyphFixer.Core
             }
 
             // Unmapped modifiers keep their key name so the label still says what to press
-            IEnumerable<string> parts = modifiers.Select(modifier => translateKey(modifier) ?? modifier).Append(main);
+            IEnumerable<string> parts = (modifiers ?? Array.Empty<string>()).Select(modifier => translateKey(modifier) ?? modifier).Append(main);
             return string.Join(KeySeparator, parts);
         }
     }

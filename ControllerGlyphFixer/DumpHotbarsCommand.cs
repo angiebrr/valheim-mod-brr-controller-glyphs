@@ -103,9 +103,7 @@ namespace ControllerGlyphFixer
                 Report($"HotkeyBar '{bar.name}' (active: {bar.isActiveAndEnabled}), {bar.m_elements.Count} slots, path {PathOf(bar.transform)}");
                 for (int i = 0; i < bar.m_elements.Count; i++)
                 {
-                    GameObject slot = bar.m_elements[i].m_go;
-                    Transform binding = slot ? slot.transform.Find("binding") : null;
-                    TMP_Text text = binding ? binding.GetComponent<TMP_Text>() : null;
+                    TMP_Text text = HotbarLabelWriter.BindingText(bar.m_elements[i].m_go);
                     Report(text == null
                         ? $"  slot {i}: no binding label"
                         : $"  slot {i}: \"{text.text}\" (shown: {text.isActiveAndEnabled})");

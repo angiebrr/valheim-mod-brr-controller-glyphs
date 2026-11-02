@@ -59,6 +59,20 @@ public class SlotLabelTests
         Assert.Equal("[LPad Down] + LeftAlt + [R5] + <dpad_up>", label);
     }
 
+    /// <summary>A null modifier list is treated as no modifiers.</summary>
+    [Fact]
+    public void Null_modifiers_mean_none()
+    {
+        Assert.Equal("[R5] + <dpad_up>", SlotLabel.For("Keypad1", null, showGlyphs: true, Translate));
+    }
+
+    /// <summary>A mapped modifier doesn't make up for an unmapped main key.</summary>
+    [Fact]
+    public void Unmapped_main_key_with_mapped_modifier_leaves_the_label_alone()
+    {
+        Assert.Null(SlotLabel.For("9", new[] { "LeftShift" }, showGlyphs: true, Translate));
+    }
+
     /// <summary>An unmapped main key leaves the label as Valheim/AzuEPI set it.</summary>
     [Fact]
     public void Unmapped_main_key_leaves_the_label_alone()

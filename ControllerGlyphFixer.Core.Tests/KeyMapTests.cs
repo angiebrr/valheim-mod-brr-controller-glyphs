@@ -148,6 +148,8 @@ public class KeyMapTests
     [InlineData("keys:\n  Q: { a: b }\n")]
     [InlineData("keys:\n  Q: []\n")]
     [InlineData("- just\n- a list\n")]
+    [InlineData("keys:\n  Q: L5\n  Q: L4\n")] // duplicate key
+    [InlineData("buttons:\n  Q: L5\n")]      // unknown section
     public void Invalid_yaml_throws_with_a_clear_message(string yaml)
     {
         var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse(yaml));

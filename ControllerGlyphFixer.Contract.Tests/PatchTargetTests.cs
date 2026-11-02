@@ -37,13 +37,14 @@ public class PatchTargetTests
         Assert.Equal("System.String", method.ReturnType.FullName);
     }
 
-    /// <summary>Members read by Glyphs.ShowKeyPrompts and the self-test exist.</summary>
+    /// <summary>Members read by GlyphService, the patches and the self-test exist.</summary>
     [GameFact]
     public void ZInput_members_used_for_glyph_mode_exist()
     {
         AssertStaticProperty(ZInput, "instance", "ZInput");
         AssertStaticMethod(ZInput, "IsGamepadEnabled", "System.Boolean");
         AssertStaticMethod(ZInput, "IsGamepadActive", "System.Boolean");
+        AssertStaticMethod(ZInput, "IsMouseActive", "System.Boolean");
     }
 
     /// <summary>Members read by Glyphs.ValheimGlyph exist with the expected types.</summary>

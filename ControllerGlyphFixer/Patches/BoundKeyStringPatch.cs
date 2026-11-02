@@ -25,8 +25,8 @@ namespace ControllerGlyphFixer.Patches
         /// </summary>
         internal static GlyphService Glyphs;
 
-        /// <summary>Set after the first error so a broken patch doesn't flood the log.</summary>
-        private static bool s_loggedError;
+        /// <summary>Logs the first error only.</summary>
+        private static readonly PatchErrorLog s_errors = new ($"{nameof(BoundKeyStringPatch)} failed, leaving key text unchanged");
 
         /// <summary>
         /// Replaces the key text Valheim returned with a controller glyph or mapped button.
@@ -55,11 +55,7 @@ namespace ControllerGlyphFixer.Patches
             }
             catch (Exception ex)
             {
-                if (!s_loggedError)
-                {
-                    s_loggedError = true;
-                    Jotunn.Logger.LogError($"{nameof(BoundKeyStringPatch)} failed, leaving key text unchanged: {ex}");
-                }
+                s_errors.LogOnce(ex);
             }
         }
     }
