@@ -1,7 +1,7 @@
 # Spec: Controller glyphs for a keyboard-emitting Steam Input layout
 
 Status: draft, approved direction, not implemented
-Last updated: 2026-11-01
+Last updated: 2026-11-08
 Mod: ControllerGlyphFixer (`com.angiebrr.controllerglyphfixer`), BepInEx + Jotunn, Valheim 1.0
 
 ## Problem
@@ -114,6 +114,7 @@ My mapping (test fixture and profile config):
   - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, Func<string, string> translateKey, Func<string, bool> isKeyName) -> HintRewrite { Text, UnmappedKeys }` (F4; see rules below)
+  - `ModGlyphs.TryGetSprite(string normalizedButton, out string sprite)` (F5)
 - See **Testing strategy** for what the tests cover.
 
 ## Dependencies (reuse what the profile already has)
@@ -251,7 +252,7 @@ EpicLoot.
 - **Inventory spacing (2026-11-07):** tried 24 units above the slots to clear the panel border:
   far too high, and it showed the HUD hotbar's own prefix peeking out from under the inventory
   panel. Back to the attached 2 units, with the default backing darker (70%) to read over the
-  highlight. Revisit once F5's Steam glyph images replace the `[R4]` text.
+  highlight. Revisit once F5's glyph images replace the `[R4]` text.
 - **Edges flush (2026-11-07):** the backing's left edge sits on the first slot's and, for rows,
   its right edge on the last slot's; padding goes inside, around the text and line. Outside
   padding showed on one side only wherever the measured and drawn edges differed slightly.
@@ -332,8 +333,71 @@ EpicLoot.
   `Hud.m_hoverName : TMP_Text`.
 
 ### F5. Glyph appearance
-- No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
-  otherwise). Later option: Steam's controller glyph PNGs as a custom TMP sprite asset.
+Designed 2026-11-08. Buttons Valheim has no art for (R4/R5, L4/L5, trackpads) show as glyph
+images instead of `[R4]`-style text badges. No patch: it changes what the mapping produces.
+
+- **Art (decided 2026-11-08):** Kenney's *Input Prompts* 1.5A, Steam Deck set (CC0;
+  https://kenney.nl/assets/input-prompts). It has every Deck button, both trackpads in every
+  direction, and a plain and an `_outline` variant per glyph. Rejected:
+  - Steam's own glyphs (`<Steam>\controller_base\images\api\{knockout,dark,light}`, `sd_*` /
+    `sc_*`): no open licence found, so they could only be read from the user's Steam install at
+    runtime, never shipped.
+  - The CC0 OpenGameArt Steam Controller pack (2016): original Steam Controller only, no back
+    buttons.
+- **Set: Steam Deck** (chosen over Steam's `sc_` set: square back buttons, separate left/right
+  trackpad arrows).
+- **Look: dark fill, light rim, light letters, soft shadow** (chosen from mockups 2026-11-08).
+  Valheim's glyphs are dark; dark alone vanished on the HUD, and white looked foreign. Made from
+  Kenney's art: the plain glyph (letters cut out) plus its `_outline` variant (rim + letters) is
+  the solid shape; fill that dark, draw the outline variant over it in light, add a shadow.
+- **Build-time script:** `scripts/make-glyphs.ps1` reads the unpacked Kenney zip (path as a
+  parameter; the zip isn't committed, the script says where to download it), recolours the
+  128 px `Double` PNGs, pads them for the shadow and writes `ControllerGlyphFixer/Glyphs/*.png`.
+  The outputs are committed and embedded in the DLL as resources, with Kenney's `License.txt`
+  beside them and a credit in the README. The whole Deck set is made (A/B/X/Y, D-pad, bumpers,
+  triggers, sticks, R4/R5/L4/L5, both trackpads and their directions; ~40 images), so
+  `ModGlyphsForAll` needs no new art.
+- **Which art wins (decided 2026-11-08):** config `General.ButtonGlyphs`:
+  - `ValheimFirst` (default): Valheim's sprite where it has one (A/B/X/Y, D-pad, bumpers;
+    follows Valheim's Xbox/PlayStation glyph setting), else ours, else the `[badge]`.
+  - `ModGlyphsForAll`: ours for every button in mapped output (hotbar labels, prefixes, hover
+    hints), Valheim's for none, so labels look uniform. Valheim's own `$KEY_` prompts (F1) keep
+    Valheim's art either way. Built in this phase: it's only the lookup order in `KeyMap.Format`.
+  - The `[badge]` (with the `labels:` section's text) stays the last fallback in both.
+- **Core (TDD):** `ModGlyphs.TryGetSprite(normalizedButton, out sprite)`, a table like
+  `ValheimButtons`: `R4` → `r4`, `LPadUp` → `lpad_up`, `LPad` (click) → `lpad`, plus aliases
+  (`L1`/`LB`, `L2`/`LT`, `View`/`Back`, `Options`/`Start`, ...). `KeyMap.Format` takes a second
+  lookup for our sprites and the `ButtonGlyphs` order; tests cover both orders and the fallback.
+  A test checks every sprite name in the table has an embedded PNG (reads the plugin's
+  `Glyphs/` folder).
+- **Sprite set (plugin, `ModSpriteAsset`):** at startup, load the embedded PNGs, pack them into
+  one texture (`Texture2D.PackTextures`) and build a `TMP_SpriteAsset` named `cgf_deck` with
+  TMP's sprite shader (a glyph and a character per image, lookup tables updated). Register it with
+  `MaterialReferenceManager.AddSpriteAsset(hash, asset)` so `<sprite="cgf_deck" name="r4">`
+  finds it: TMP checks that table before `Resources.Load` (decompiled `TMP_Text` 2026-11-08).
+  - Size and baseline copied from Valheim's `xbox` sprite asset (its `button_a` glyph metrics,
+    scaled to our image size), so our glyphs line up with Valheim's in the same label.
+  - Texture, material and asset marked `DontUnloadUnusedAsset` (Valheim's unused-asset sweep;
+    see F3's backing sprite) and destroyed in `OnDestroy`.
+  - TMP has no way to unregister, so after `OnDestroy` the lookup keeps a dead entry. Plugins are
+    destroyed only when the game quits, so this is accepted, not worked around.
+  - If the set can't be built, the plugin logs once and labels fall back to `[badge]` text.
+- **Effects on F3/F4:**
+  - Prefixes show a glyph instead of `[R4]`. `PrefixColors` keeps colouring the prefix's line and
+    text; the glyph itself is not tinted (TMP sprites ignore the text colour unless `tint=1`).
+  - Recheck in game what F3 postponed: inventory prefix spacing over the panel edge, the 70% label
+    size, and the backing width now that the prefix is one glyph.
+  - `HintRewriter` already treats `<sprite…>` as a glyph: `[LPad Up] AutoFuel` becomes the glyph
+    without brackets. Add a test with our sprite tag.
+- **Self-test:** the sprite set is registered and its texture still loaded; formatting `R4` gives
+  our sprite tag, and a TMP text with it has a sprite character in its text info (not the letters
+  `[R4]`); dump Valheim's `xbox` sprite sheet to a PNG next to `LogOutput.log` (INFO) to compare
+  the looks.
+- **Contract tests:** `MaterialReferenceManager.AddSpriteAsset(int, TMP_SpriteAsset)`,
+  `TMP_SpriteAsset.spriteGlyphTable` / `spriteCharacterTable` / `UpdateLookupTables()`, and
+  `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors we use (`Unity.TextMeshPro`).
+- **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
+  for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
 
 ### F6. Hint panels and menu-button badges
 - Bottom-right `KeyHints` panels, build-menu hints (`m_buildMenuHintsGP` / `KB`),
@@ -371,6 +435,7 @@ EpicLoot.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
   - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
   - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
+  - `ButtonGlyphs` (`ValheimFirst` / `ModGlyphsForAll`, default `ValheimFirst`) (F5).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
 
 ### F9. Helping other users set up their mapping
@@ -505,6 +570,8 @@ Red → green → refactor for every Core function. Required cases:
   translated, brackets dropped when fully translated; partly translated hints keep brackets
   and report unmapped keys; non-key brackets (`[Zebra]`, `[1/5]`) and free text untouched;
   nested badges count as glyphs; idempotent.
+- `ModGlyphs` / `KeyMap.Format` (F5): every Deck button and alias; `ValheimFirst` and
+  `ModGlyphsForAll` orders; badge fallback when neither has art; every sprite name has a PNG.
 
 ### 2. Contract tests (`ControllerGlyphFixer.Contract.Tests`) — catch game updates, seconds
 Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadContext`
@@ -519,6 +586,8 @@ expected signature:
   `ElementData.m_go` (F3)
 - `Settings.instance`, `Localization.instance.Localize(string)`
 - To do with F4: `Hud.UpdateCrosshair(Player, float)`, `Hud.m_hoverName : TMP_Text`
+- F5 (`Unity.TextMeshPro`): `MaterialReferenceManager.AddSpriteAsset(int, TMP_SpriteAsset)` and
+  the `TMP_SpriteAsset` / `TMP_SpriteGlyph` / `TMP_SpriteCharacter` members we set
 
 Other mods' names we copy are checked against their DLLs in the Gale profile
 (`GALE_PROFILE`), by reading the string literals in their code; tests skip when the mod isn't
@@ -575,7 +644,7 @@ thin patches → in-game self-test checks → manual checklist.
 2. **v2:** F3 hotbar + AzuExtendedPlayerInventory extra slots, F4 hover rewriter (TDD for
    `HotbarLabels` and `HintRewriter`).
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
-   2026-11-02).
+   2026-11-02). F5 glyph images (branch `phase-f5-glyphs`, started 2026-11-08).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
 6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
