@@ -75,8 +75,8 @@ namespace ControllerGlyphFixer
         /// <summary>The rounded prefix backing, created in Awake and destroyed with the plugin.</summary>
         private Sprite m_backingSprite;
 
-        /// <summary>Config "Glyphs used by mod", kept to unsubscribe in OnDestroy.</summary>
-        private ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
+        /// <summary>Settings whose change redraws every glyph (see <see cref="OnSettingChanged"/>); set in Awake.</summary>
+        private HashSet<ConfigEntryBase> m_glyphSettings;
 
         /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
         private ModSpriteAsset m_modSprites;
@@ -129,8 +129,9 @@ namespace ControllerGlyphFixer
                 "Turns the whole mod on or off.", order: 4));
             ConfigEntry<bool> keyPrompts = Config.Bind(SettingNames.General, SettingNames.OverrideKeyboardPrompts, true,
                 Describe(
-                "With a gamepad connected, prompts keep controller glyphs after keyboard or trackpad input, and " +
-                "keyboard-only keys show your mapped buttons. Input itself isn't changed.", order: 3));
+                "With a gamepad connected, Valheim's hints (crosshair, hint bars, menu badges) keep controller " +
+                "glyphs after keyboard or trackpad input, with keyboard-only keys as your mapped buttons. The " +
+                "hotbar has its own switch. Input isn't changed.", order: 3));
             ConfigEntry<bool> hoverText = Config.Bind(SettingNames.General, SettingNames.GlyphsInModHints, true, Describe(
                 "Shows keys in other mods' hover hints (e.g. [B] AutoFuel) as your mapped buttons. Needs " +
                 $"{SettingNames.OverrideKeyboardPrompts}.", order: 2));
@@ -153,7 +154,6 @@ namespace ControllerGlyphFixer
 
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;
-            m_buttonGlyphs = buttonGlyphs;
 
             // Reads m_mappingFile only when drawn, after BindMappingFile has set it
             m_missingKeysDrawer = new MonoTextDrawer(() => m_mappingFile.MissingKeysTree);
@@ -205,7 +205,9 @@ namespace ControllerGlyphFixer
                 prefixBackground.SettingChanged += RedrawPrefixes;
             }
 
-            buttonGlyphs.SettingChanged += RedrawGlyphs;
+            // Every switch that changes which glyphs show: cached prompt text must be redrawn live
+            m_glyphSettings = new HashSet<ConfigEntryBase> { enabled, keyPrompts, hoverText, buttonGlyphs, hotbarLabels };
+            Config.SettingChanged += OnSettingChanged;
 
             CommandManager.Instance.AddConsoleCommand(
                 new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter, m_modSprites,
@@ -244,10 +246,7 @@ namespace ControllerGlyphFixer
                 m_prefixBackground.SettingChanged -= RedrawPrefixes;
             }
 
-            if (m_buttonGlyphs != null)
-            {
-                m_buttonGlyphs.SettingChanged -= RedrawGlyphs;
-            }
+            Config.SettingChanged -= OnSettingChanged;
 
             m_harmony.UnpatchSelf();
             BoundKeyStringPatch.Glyphs = null;
@@ -262,8 +261,9 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Redraws everything showing button glyphs after "Glyphs used by mod" changes or a reload: bars,
-        /// prefixes and the hover text (its writer caches the last rewrite).
+        /// Redraws everything showing button glyphs after a glyph setting, the gamepad or the mapping
+        /// changes: bars, prefixes, the hover text (its writer caches the last rewrite) and Valheim's
+        /// cached prompt text.
         /// </summary>
         /// <param name="sender">The setting.</param>
         /// <param name="args">Unused.</param>
@@ -484,10 +484,26 @@ namespace ControllerGlyphFixer
             if (change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
             {
                 Jotunn.Logger.LogInfo($"Gamepad connected: {device.displayName} ({device.layout})");
+                RedrawGlyphs(this, EventArgs.Empty);
             }
             else if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected)
             {
                 Jotunn.Logger.LogInfo($"Gamepad disconnected: {device.displayName} ({device.layout})");
+                RedrawGlyphs(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Redraws every glyph when a setting that decides which glyphs show changes, so text Valheim
+        /// cached (chest and fire hints) follows it at once instead of at the next input switch.
+        /// </summary>
+        /// <param name="sender">The config file.</param>
+        /// <param name="args">Which setting changed.</param>
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
+        {
+            if (m_glyphSettings.Contains(args.ChangedSetting))
+            {
+                RedrawGlyphs(sender, args);
             }
         }
     }

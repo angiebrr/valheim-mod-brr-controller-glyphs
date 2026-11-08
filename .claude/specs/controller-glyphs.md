@@ -662,6 +662,7 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 - **Self-test:** mapping loaded, file watched, Localization cache reachable; INFO lines for the
   number of keybinding settings read, the mods patching the hovered object's hover text (look at a
   chest), and the missing keys.
+- **In game 2026-11-08: turning Override keyboard prompts off mid-game** left chest and fire hints  on glyphs while others went to keys: Valheim's `Localize` cache kept text translated while it  was on. Every setting that changes which glyphs show (Enabled, Override keyboard prompts, Glyphs  in mod hints, Glyphs used by mod, Show hotbar controller glyphs), and a gamepad connecting or  disconnecting, now runs `RedrawGlyphs` (one `Config.SettingChanged` handler). Its description  now says what it covers (crosshair hints, hint bars, menu badges) and that the hotbar has its own  switch.
 - **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
   keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
 
