@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// ModShortcuts.cs: reads the keyboard shortcut settings of the other loaded mods (F9).
+// ModShortcuts.cs: reads the keyboard keybinding settings of the other loaded mods (F9).
 // ------------------------------------------------------------------------------------------------
 
 using System;
@@ -16,23 +16,39 @@ using UnityEngine;
 namespace ControllerGlyphFixer
 {
     /// <summary>
-    /// Reads every KeyboardShortcut and KeyCode setting the loaded plugins have bound in their
-    /// BepInEx config, read-only, for <see cref="ShortcutAudit"/>. Settings a mod keeps in its own
-    /// config file, or keys it hard-codes, aren't seen (hover hints still report those).
+    /// Other mods' KeyboardShortcut and KeyCode settings, read once and read-only from each loaded
+    /// plugin's BepInEx config, for <see cref="MissingKeys"/>. Settings a mod keeps in its own config
+    /// file, and keys it hard-codes, aren't seen (hover hints still report those).
     /// </summary>
-    internal static class ModShortcuts
+    internal sealed class ModShortcuts
     {
+        /// <summary>This plugin's GUID, skipped.</summary>
+        private readonly string m_ownGuid;
+
         /// <summary>
-        /// Reads the shortcuts of all loaded plugins except this one.
+        /// Creates the list, empty until <see cref="Read"/>.
         /// </summary>
-        /// <param name="ownGuid">This plugin's GUID, skipped.</param>
-        /// <returns>The shortcuts, by plugin in load order.</returns>
-        internal static List<ModShortcut> Read(string ownGuid)
+        /// <param name="ownGuid">This plugin's GUID, skipped when reading.</param>
+        internal ModShortcuts(string ownGuid)
+        {
+            m_ownGuid = ownGuid ?? throw new ArgumentNullException(nameof(ownGuid));
+        }
+
+        /// <summary>The keybindings read, by plugin in load order; empty until <see cref="Read"/>.</summary>
+        internal IReadOnlyList<ModShortcut> Items { get; private set; } = Array.Empty<ModShortcut>();
+
+        /// <summary>Whether <see cref="Read"/> has run.</summary>
+        internal bool HasRead { get; private set; }
+
+        /// <summary>
+        /// Reads the keybindings of all loaded plugins except this one, replacing <see cref="Items"/>.
+        /// </summary>
+        internal void Read()
         {
             var shortcuts = new List<ModShortcut>();
             foreach (PluginInfo plugin in Chainloader.PluginInfos.Values)
             {
-                if (!plugin.Instance || plugin.Metadata.GUID == ownGuid)
+                if (!plugin.Instance || plugin.Metadata.GUID == m_ownGuid)
                 {
                     continue;
                 }
@@ -50,18 +66,19 @@ namespace ControllerGlyphFixer
                 }
                 catch (Exception ex)
                 {
-                    Jotunn.Logger.LogWarning($"Couldn't read {plugin.Metadata.Name}'s shortcut settings: {ex.Message}");
+                    Jotunn.Logger.LogWarning($"Couldn't read {plugin.Metadata.Name}'s keybinding settings: {ex.Message}");
                 }
             }
 
-            return shortcuts;
+            Items = shortcuts;
+            HasRead = true;
         }
 
         /// <summary>
-        /// The keys of a shortcut setting's value.
+        /// The keys of a keybinding setting's value.
         /// </summary>
         /// <param name="value">A setting's value.</param>
-        /// <returns>KeyCode names (main key first, then modifiers), or null if it isn't a shortcut.</returns>
+        /// <returns>KeyCode names (main key first, then modifiers), or null if it isn't a keybinding.</returns>
         private static IReadOnlyList<string> Keys(object value)
         {
             switch (value)

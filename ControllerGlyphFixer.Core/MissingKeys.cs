@@ -75,8 +75,8 @@ namespace ControllerGlyphFixer.Core
         /// Creates the entry.
         /// </summary>
         /// <param name="key">Key name as first found.</param>
-        /// <param name="uses">One line per place it was found, as the tree shows them.</param>
-        /// <param name="mods">Mods using it, each once ("UI Hint" for a hint no mod patches).</param>
+        /// <param name="uses">One line per place it was found, sorted, as the tree shows them.</param>
+        /// <param name="mods">Mods using it, each once, sorted ("UI Hint" for a hint no mod patches).</param>
         public MissingKey(string key, IReadOnlyList<string> uses, IReadOnlyList<string> mods)
         {
             Key = key;
@@ -87,7 +87,7 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Key name as first found.</summary>
         public string Key { get; }
 
-        /// <summary>One line per place it was found: hints first, then keybindings.</summary>
+        /// <summary>One line per place it was found, sorted alphabetically.</summary>
         public IReadOnlyList<string> Uses { get; }
 
         /// <summary>Mods using it, each once, for the one-line summary.</summary>
@@ -108,7 +108,9 @@ namespace ControllerGlyphFixer.Core
         private const string UiHint = "UI Hint";
 
         /// <summary>
-        /// Finds the keys the mapping lacks, sorted by key.
+        /// Finds the keys the mapping lacks, sorted by key, each with its uses and mods sorted
+        /// alphabetically. Every spelling of a key (KeyCode or Input System name, any case) is one
+        /// entry, shown as first found (hints before keybindings).
         /// </summary>
         /// <param name="hints">Keys seen in hover hints.</param>
         /// <param name="shortcuts">Other mods' keybinding settings.</param>
@@ -124,12 +126,22 @@ namespace ControllerGlyphFixer.Core
 
             return uses
                 .Where(use => IsKeyboardKey(use.Key) && map.Buttons(use.Key) == null)
-                .GroupBy(use => use.Key, StringComparer.OrdinalIgnoreCase)
-                .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(use => map.KeyId(use.Key))
                 .Select(group => new MissingKey(group.First().Key,
-                    group.Select(use => use.Use).Distinct().ToArray(),
-                    group.SelectMany(use => use.Mods).Distinct().ToArray()))
+                    Sorted(group.Select(use => use.Use)),
+                    Sorted(group.SelectMany(use => use.Mods))))
+                .OrderBy(key => key.Key, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Each text once, sorted alphabetically (case-insensitive).
+        /// </summary>
+        /// <param name="texts">Texts in any order.</param>
+        /// <returns>The sorted, distinct texts.</returns>
+        private static string[] Sorted(IEnumerable<string> texts)
+        {
+            return texts.Distinct().OrderBy(text => text, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
         /// <summary>

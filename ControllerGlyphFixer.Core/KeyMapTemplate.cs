@@ -21,13 +21,14 @@ namespace ControllerGlyphFixer.Core
 # keys:    keyboard key -> the controller button(s) your Steam Input layout presses to send it.
 #          One button (Q: L5) or several, pressed together (""1"": [R4, DPadUp]).
 # labels:  text shown for buttons Valheim has no art for (default: the button name).
-# colors:  group prefix colors, used when the PrefixColors setting is Custom
+# colors:  colors of each group's held button, used when ""Hotbar group colors"" is Custom
 #          (""#RRGGBB"" or ""#RRGGBBAA"", in quotes). Unlisted buttons use the slot-label color.
 # aliases: extra spellings of a key name (e.g. what a mod writes in its hover text).
 #
 # Buttons with Valheim art: A B X Y LB RB LT RT LS RS Back Start DPadUp DPadRight DPadDown DPadLeft
 # Any other button name (R4, L5, LPadUp, ...) is shown as a text badge like [R4].
-# Key names ignore case, spaces, '_' and '-'. Alpha1/Digit1 match ""1""; Num 1/Numpad1 match Keypad1.
+# Key names ignore case, spaces, '_' and '-'. Alpha1/Digit1 match ""1""; Num 1/Numpad1 match Keypad1;
+# Unity key names other mods use match too: LeftControl matches LeftCtrl, Return matches Enter.
 # Quote keys that are numbers (""1"") or YAML words like yes/no/on/off.
 #
 # Remove the '#' in front of a line to use it.

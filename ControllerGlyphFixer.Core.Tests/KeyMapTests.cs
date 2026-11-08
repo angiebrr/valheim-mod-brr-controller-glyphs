@@ -72,6 +72,45 @@ public class KeyMapTests
         Assert.Equal(SteamController.Translate(canonical, FakeGlyph), SteamController.Translate(spelling, FakeGlyph));
     }
 
+    /// <summary>
+    /// Unity KeyCode names (what other mods' keybinding settings use) match the Input System names a
+    /// mapping file uses, and the other way round.
+    /// </summary>
+    /// <param name="inFile">Key as written in the mapping file.</param>
+    /// <param name="keyCode">The same key as a KeyCode name.</param>
+    [Theory]
+    [InlineData("LeftCtrl", "LeftControl")]
+    [InlineData("RightCtrl", "RightControl")]
+    [InlineData("Enter", "Return")]
+    [InlineData("NumpadEnter", "KeypadEnter")]
+    [InlineData("NumpadPlus", "KeypadPlus")]
+    [InlineData("NumpadMinus", "KeypadMinus")]
+    [InlineData("NumpadMultiply", "KeypadMultiply")]
+    [InlineData("NumpadDivide", "KeypadDivide")]
+    [InlineData("NumpadPeriod", "KeypadPeriod")]
+    [InlineData("LeftMeta", "LeftWindows")]
+    [InlineData("LeftMeta", "LeftCommand")]
+    [InlineData("RightMeta", "RightWindows")]
+    [InlineData("LeftControl", "LeftCtrl")]
+    public void KeyCode_names_match_input_system_names(string inFile, string keyCode)
+    {
+        KeyMap map = KeyMap.Parse($"keys:\n  {inFile}: L4\n");
+
+        Assert.Equal(new[] { "L4" }, map.Buttons(keyCode));
+        Assert.Equal(map.KeyId(inFile), map.KeyId(keyCode));
+    }
+
+    /// <summary>A key and its file alias have the same identity, so lists can group them.</summary>
+    [Fact]
+    public void Key_id_follows_file_aliases()
+    {
+        KeyMap map = KeyMap.Parse("aliases:\n  Left Shift: LeftShift\nkeys:\n  LeftShift: L4\n");
+
+        Assert.Equal(map.KeyId("LeftShift"), map.KeyId("Left Shift"));
+        Assert.Equal(map.KeyId("1"), map.KeyId("Alpha1"));
+        Assert.NotEqual(map.KeyId("Keypad1"), map.KeyId("1"));
+    }
+
     /// <summary>Keys not in the mapping (and missing-binding messages) translate to null.</summary>
     /// <param name="key">Key name that isn't mapped.</param>
     [Theory]

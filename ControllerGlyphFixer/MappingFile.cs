@@ -56,8 +56,8 @@ namespace ControllerGlyphFixer
                 throw new ArgumentNullException(nameof(file));
             }
 
-            file.Value = path;
-            m_missingKeys.Value = "Checked when the main menu first opens";
+            SetQuietly(file, path);
+            SetQuietly(m_missingKeys, "Checked when the main menu first opens");
             MissingKeysTree = m_missingKeys.Value;
         }
 
@@ -106,14 +106,14 @@ namespace ControllerGlyphFixer
             {
                 map = KeyMap.Parse(File.ReadAllText(m_path));
                 m_lastGoodCount = map.Count;
-                m_status.Value = MappingStatus.Loaded(map.Count);
+                SetQuietly(m_status, MappingStatus.Loaded(map.Count));
                 Jotunn.Logger.LogInfo($"Loaded {map.Count} key mappings from {m_path}");
                 return true;
             }
             catch (Exception ex) when (ex is KeyMapException || ex is IOException || ex is UnauthorizedAccessException)
             {
                 map = null;
-                m_status.Value = MappingStatus.Failed(ex.Message, m_lastGoodCount);
+                SetQuietly(m_status, MappingStatus.Failed(ex.Message, m_lastGoodCount));
                 Jotunn.Logger.LogError($"Couldn't load key mapping {m_path}: {m_status.Value}");
                 return false;
             }
@@ -125,7 +125,7 @@ namespace ControllerGlyphFixer
         /// <param name="missing">From <see cref="MissingKeys.Find"/>.</param>
         internal void ShowMissingKeys(IReadOnlyList<MissingKey> missing)
         {
-            m_missingKeys.Value = MissingKeys.Summary(missing);
+            SetQuietly(m_missingKeys, MissingKeys.Summary(missing));
             MissingKeysTree = MissingKeys.Tree(missing);
         }
 
@@ -166,6 +166,28 @@ namespace ControllerGlyphFixer
 
             m_changed = false;
             return true;
+        }
+
+        /// <summary>
+        /// Sets a read-only value without saving the .cfg: the mod rewrites these every start, and a
+        /// save could otherwise run (and fail on a locked file) from inside a frame. The .cfg picks up
+        /// the latest values whenever something else saves it.
+        /// </summary>
+        /// <param name="entry">A read-only setting.</param>
+        /// <param name="value">Its new value.</param>
+        private static void SetQuietly(ConfigEntry<string> entry, string value)
+        {
+            ConfigFile config = entry.ConfigFile;
+            bool saveOnSet = config.SaveOnConfigSet;
+            config.SaveOnConfigSet = false;
+            try
+            {
+                entry.Value = value;
+            }
+            finally
+            {
+                config.SaveOnConfigSet = saveOnSet;
+            }
         }
 
         /// <summary>Stops watching the file.</summary>

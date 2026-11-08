@@ -52,6 +52,12 @@ namespace ControllerGlyphFixer
         /// <summary>The mapping file handler (F9).</summary>
         private readonly MappingFile m_mappingFile;
 
+        /// <summary>Other mods' keybinding settings, read at the first main menu (F9).</summary>
+        private readonly ModShortcuts m_modShortcuts;
+
+        /// <summary>Names the mods patching the hovered object's hover text (F9).</summary>
+        private readonly HoverTextMods m_hoverTextMods;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
@@ -63,11 +69,15 @@ namespace ControllerGlyphFixer
         /// <param name="hoverText">The hover text writer.</param>
         /// <param name="modSprites">The mod's glyph sprite asset, or null if it couldn't be built.</param>
         /// <param name="mappingFile">The mapping file handler (status and watcher).</param>
+        /// <param name="modShortcuts">Other mods' keybinding settings.</param>
+        /// <param name="hoverTextMods">Names the mods patching the hovered object's hover text.</param>
         internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
             QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText, ModSpriteAsset modSprites,
-            MappingFile mappingFile)
+            MappingFile mappingFile, ModShortcuts modShortcuts, HoverTextMods hoverTextMods)
         {
             m_mappingFile = mappingFile ?? throw new ArgumentNullException(nameof(mappingFile));
+            m_modShortcuts = modShortcuts ?? throw new ArgumentNullException(nameof(modShortcuts));
+            m_hoverTextMods = hoverTextMods ?? throw new ArgumentNullException(nameof(hoverTextMods));
             m_modSprites = modSprites;
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
@@ -151,6 +161,13 @@ namespace ControllerGlyphFixer
             Check("Mapping file loaded", !status.StartsWith("Error", StringComparison.Ordinal), status);
             Check("Mapping file watched for saves", m_mappingFile.IsWatching,
                 m_mappingFile.IsWatching ? null : "use cgf_reloadmapping after editing; see the log");
+            Info(m_modShortcuts.HasRead
+                ? $"Read {m_modShortcuts.Items.Count} keybinding settings from other mods"
+                : "Other mods' keybinding settings not read yet (they're read when the main menu first opens)");
+            IReadOnlyList<string> hoverMods = m_hoverTextMods.ForHoveredObject();
+            Info(hoverMods.Count > 0
+                ? $"Mods patching the hovered object's hover text: {string.Join(", ", hoverMods)}"
+                : "No hovered object, or no mod patches its hover text (look at a chest and run this again)");
             Info($"Keys missing from mapping (hover hints and mod keybindings): {m_mappingFile.MissingKeysSummary}");
 
             try

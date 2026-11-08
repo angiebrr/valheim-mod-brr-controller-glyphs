@@ -42,7 +42,21 @@ namespace ControllerGlyphFixer.Core
             { "$buttonrctrl", "rightctrl" },
             { "$buttonspace", "space" },
             { "$buttonreturn", "enter" },
+
+            // Unity KeyCode names (other mods' keybinding settings) to Input System names (Valheim)
+            { "leftcontrol", "leftctrl" },
+            { "rightcontrol", "rightctrl" },
+            { "return", "enter" },
+            { "leftwindows", "leftmeta" },
+            { "leftcommand", "leftmeta" },
+            { "leftapple", "leftmeta" },
+            { "rightwindows", "rightmeta" },
+            { "rightcommand", "rightmeta" },
+            { "rightapple", "rightmeta" },
         };
+
+        /// <summary>Numpad operator keys in either naming ("KeypadEnter", "NumpadEnter"), as "keypadenter".</summary>
+        private static readonly Regex KeypadOperatorPattern = new (@"^(?:keypad|numpad)(enter|plus|minus|multiply|divide|period|equals)$");
 
         /// <summary>Normalized key name to the buttons pressed for it, in order.</summary>
         private readonly Dictionary<string, IReadOnlyList<string>> m_keys;
@@ -216,6 +230,17 @@ namespace ControllerGlyphFixer.Core
         }
 
         /// <summary>
+        /// Returns a key's identity: equal for every spelling of the same key (file aliases, built-in
+        /// aliases, KeyCode and Input System names), so lists can group them.
+        /// </summary>
+        /// <param name="keyName">Key name in any supported spelling.</param>
+        /// <returns>The standard key name (e.g. "leftctrl" for "LeftControl").</returns>
+        public string KeyId(string keyName)
+        {
+            return Resolve(keyName);
+        }
+
+        /// <summary>
         /// Returns the buttons pressed for a key, as written in the mapping file.
         /// </summary>
         /// <param name="keyName">Key name in any supported spelling.</param>
@@ -336,7 +361,8 @@ namespace ControllerGlyphFixer.Core
                 return "keypad" + keypad.Groups[1].Value;
             }
 
-            return normalized;
+            var keypadOperator = KeypadOperatorPattern.Match(normalized);
+            return keypadOperator.Success ? "keypad" + keypadOperator.Groups[1].Value : normalized;
         }
 
         /// <summary>

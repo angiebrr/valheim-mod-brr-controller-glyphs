@@ -2,7 +2,7 @@
 
 Status: draft, approved direction, not implemented
 Last updated: 2026-11-08
-Mod: ControllerGlyphFixer (`com.angiebrr.controllerglyphfixer`), BepInEx + Jotunn, Valheim 1.0
+Mod: ControllerGlyphFixer (`angiebrr.ControllerGlyphFixer`, renamed from `com.angiebrr.controllerglyphfixer` 2026-11-08), BepInEx + Jotunn, Valheim 1.0
 
 ## Problem
 
@@ -58,7 +58,7 @@ Steam Input's virtual controller connects after plugins load, so the startup lin
 shows none (open question 1, answered).
 
 ### Mapping table (YAML)
-- File: `<profile>/BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`
+- File: `<profile>/BepInEx/config/angiebrr.ControllerGlyphFixer.mapping.yaml`
   (next to the `.cfg`).
 - **No mapping is built into the mod.** If the file is missing, the plugin writes
   `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
@@ -545,7 +545,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 
 ### F9. Helping other users set up their mapping
 Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
-`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`, written from
+`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml` (now `angiebrr.ControllerGlyphFixer.mapping.yaml`), written from
 `KeyMapTemplate` on first run with every example commented out, read once at startup. A new
 user has to find the file, learn the format, edit it in a text editor and restart the game.
 
@@ -610,11 +610,16 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   `ModGlyphsForAll everywhere` item under F5). **No migration of old names:** this is a local
   mod, so renamed settings reset to defaults once and the old entries stay in the `.cfg` until
   it's deleted (decided 2026-11-08; a carry-over through BepInEx's orphaned entries was built and
-  removed).
+  removed). Short PascalCase `.cfg` keys with the long names as `DispName` were considered and
+  dropped: most mods in my profile (Azumatt's, shudnal's) use readable keys with spaces, and one
+  name everywhere is simpler. Tooltips shortened to one or two sentences (asked 2026-11-08).
 - **Status:** Core `MappingStatus` ("Loaded 20 keys", or the error plus "Still using the last good
   mapping"). A failed reload keeps the last good mapping; a failed first load maps nothing, as
   before. In shudnal's ConfigurationManager `Mapping status` has a *Reload mapping* button
-  (`CustomDrawer`); Jotunn's Mod Settings shows the plain text.
+  (`CustomDrawer`; the reload runs in the next `Update`, not mid-draw); Jotunn's Mod Settings
+  shows the plain text. Read-only values are set without saving the `.cfg` (`SaveOnConfigSet`
+  off around the write), so no disk write runs inside a frame; the `.cfg` catches up on the next
+  save.
 - **Reload:** `MappingFile` watches the file (`FileSystemWatcher` raises a flag; the plugin's
   `Update` reloads 0.5 s later on the main thread, since editors save in several writes), plus
   `cgf_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
@@ -623,28 +628,40 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 - **Keys missing from mapping** (one read-only setting, merged 2026-11-08 from "missing hint keys"
   and "unmapped shortcuts", which read alike): Core `MissingKeys.Find` merges two sources by key,
   skipping keys the mapping has, `None`, mouse and joystick buttons, and only listing the unmapped
-  keys of a combo:
+  keys of a combo. Every spelling of a key is one entry (`KeyMap.KeyId`); `KeyMap` now also
+  accepts Unity KeyCode names, which other mods' settings use, for keys the Input System names
+  differently (`LeftControl`/`LeftCtrl`, `Return`/`Enter`, `KeypadEnter`/`NumpadEnter`,
+  `LeftWindows`/`LeftMeta`, …), found in review 2026-11-08: a key mapped as `LeftCtrl` was
+  listed as missing under `LeftControl`. Each key's uses (and the summary's mods) are sorted
+  alphabetically (asked 2026-11-08):
   - **Mod keybindings**, read once when the main menu first opens (Jotunn's
     `GUIManager.OnCustomGUIAvailable`, then unsubscribed; every plugin has bound its config by
     then): `ModShortcuts` reads each loaded plugin's `KeyboardShortcut` and `KeyCode` settings
     through `Chainloader.PluginInfos`, read-only, and the log lists each missing key with every
     setting using it. Not seen: settings a mod keeps in its own file, and hard-coded keys.
-  - **Hover hints** this session: `HoverTextWriter` records each unmapped key's first line. Hover
+  - **Hover hints** this session: `HoverTextWriter` records each unmapped key's first line, and
+    tells listeners after the hover text is set, catching their errors (review 2026-11-08: a failed
+    `.cfg` save mid-rewrite could leave the previous object's hint on screen). Hover
     text doesn't say which mod wrote a line, so `HoverTextMods` names the mods with Harmony patches
     on the hovered object's `GetHoverText` (Harmony IDs shown as plugin names; cached per type;
     only looked up on a key's first sighting): one mod, "A or B", or none ("UI Hint" alone) when none patch
     it. A best guess, said in the setting's description. Mods that add hint lines from other
     methods (e.g. MyLittleUI's smelter patches) aren't named.
   - **Shown as** a tree by key, chosen 2026-11-08 over a paste-ready YAML stub or a tree by mod
-    after the one-line list was hard to read in game (~20 keys wrapping): the key, then
-    `├─ AzuCraftyBoxes > UI Hint > Fill all` for hints (`A or B > UI Hint > …` when several mods patch it, `UI Hint > …` when none do; asked 2026-11-08), then `├─ Mod > Setting` for keybindings (the
-    whole shortcut only for combos). `MonoTextDrawer` draws it in ConfigurationManager in an OS
+    after the one-line list was hard to read in game (~20 keys wrapping): the key, then its uses
+    sorted: `├─ AzuCraftyBoxes > UI Hint > Fill all` for hints (`A or B > UI Hint > …` when
+    several mods patch it, `UI Hint > …` when none do; asked 2026-11-08) and `├─ Mod > Setting`
+    for keybindings (the whole shortcut only for combos). Long lines wrap; checked in game, fine. `MonoTextDrawer` draws it in ConfigurationManager in an OS
     monospace font (Consolas, else Courier New; destroyed with the plugin) with a *Copy* button;
     the `.cfg` and Jotunn's Mod Settings show the one-line summary ("E (AzuCraftyBoxes, Epic
     Loot), T (UI Hint)"). A reload re-checks both sources against the new mapping without reading
     the mods again. My profile has ~60 keybinding settings, most of them keyboard-only
     conveniences; the description says to add only keys the Steam layout sends.
-- **Self-test:** mapping loaded, file watched, Localization cache reachable; the missing keys (INFO).
+- **Self-test:** mapping loaded, file watched, Localization cache reachable; INFO lines for the
+  number of keybinding settings read, the mods patching the hovered object's hover text (look at a
+  chest), and the missing keys.
+- **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
+  keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
 
 **READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
 documents for two readers:
@@ -858,14 +875,12 @@ thin patches → in-game self-test checks → manual checklist.
 4. **v4 (branch `phase-4-mapping-setup`, started 2026-11-08):** F9 pieces 1–3 (mapping status,
    reload, mod shortcut audit) and the settings reorganisation below. F7 has no target (see F7).
 5. **v5 (next):** F9 piece 6, the Steam layout VDF audit, then the VDF → YAML generator.
-   **Also before sharing (asked 2026-11-08): rename the plugin ID.** ConfigurationManager's file
-   view lists configs by file name, and ours (`com.angiebrr.controllerglyphfixer.cfg`,
-   `….mapping.yaml`) reads oddly next to the others' `Author.ModName` style (`Azumatt.AzuAutoStore.yml`,
-   `aedenthorn.AmmoCount.cfg`); it also shows uncolored where most mods' files are highlighted
-   (check why). Proposed: `angiebrr.ControllerGlyphFixer`. The GUID names both files, so on the
-   first run after the rename move the old `.cfg` and mapping file to the new names (keeping their
-   contents), and update the contract and self-test references to the GUID. Do it before anyone
-   else installs the mod.
+   **Plugin ID renamed (done 2026-11-08, in v4):** ConfigurationManager's file view lists configs
+   by file name, and ours (`com.angiebrr.controllerglyphfixer.cfg`, `….mapping.yaml`) read oddly
+   next to the others' `Author.ModName` style (`Azumatt.AzuAutoStore.yml`,
+   `aedenthorn.AmmoCount.cfg`). Now `angiebrr.ControllerGlyphFixer` (also the Harmony ID). No
+   migration (local mod): the old files are left behind, so the mapping file had to be renamed by
+   hand once. Still to check: why our file showed uncolored where most mods' files are highlighted.
 6. **Before sharing the mod:** F9 piece 4 and both READMEs.
 7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for

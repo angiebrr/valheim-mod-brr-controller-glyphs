@@ -75,11 +75,11 @@ public class MissingKeysTests
     }
 
     /// <summary>
-    /// The tree has a branch per key: hints first (with the mods that patch that hover text), then
-    /// keybindings (the whole shortcut only for combos).
+    /// The tree has a branch per key, its leaves sorted alphabetically: hints (with the mods that
+    /// patch that hover text) and keybindings (the whole shortcut only for combos).
     /// </summary>
     [Fact]
-    public void Tree_lists_hints_then_keybindings_under_each_key()
+    public void Tree_lists_each_keys_uses_alphabetically()
     {
         var hints = new[] { Hint("E", "[E] Fill all", "AzuCraftyBoxes") };
         var shortcuts = new[]
@@ -93,10 +93,28 @@ public class MissingKeysTests
             "DownArrow\n" +
             "└─ PlantEasily > DecreaseYKey\n" +
             "E\n" +
+            "├─ AzuCraftyBoxes > Container Toggle Key (E + LeftShift)\n" +
             "├─ AzuCraftyBoxes > UI Hint > Fill all\n" +
-            "├─ Epic Loot > Socket Overlay Shortcut\n" +
-            "└─ AzuCraftyBoxes > Container Toggle Key (E + LeftShift)",
+            "└─ Epic Loot > Socket Overlay Shortcut",
             MissingKeys.Tree(MissingKeys.Find(hints, shortcuts, SteamController)));
+    }
+
+    /// <summary>
+    /// The same key spelled the KeyCode way (other mods' settings) and the mapping's way is one
+    /// entry, and a key mapped under its Input System name isn't listed by its KeyCode name.
+    /// </summary>
+    [Fact]
+    public void Keycode_and_mapping_spellings_are_one_key()
+    {
+        KeyMap map = KeyMap.Parse("keys:\n  LeftCtrl: L4\n");
+        var hints = new[] { Hint("Numpad7", "[Numpad7] Open map") };
+        var shortcuts = new[]
+        {
+            Shortcut("Valheim Configuration Manager", "Reset position and size", "F1", "LeftControl"),
+            Shortcut("PlantEasily", "SomeKey", "Keypad7"),
+        };
+
+        Assert.Equal(new[] { "F1", "Numpad7" }, MissingKeys.Find(hints, shortcuts, map).Select(key => key.Key));
     }
 
     /// <summary>A hint names every mod that may have written it, or none when no mod patches that hover text.</summary>
@@ -145,7 +163,7 @@ public class MissingKeysTests
             MissingKeys.Summary(MissingKeys.Find(hints, shortcuts, SteamController)));
     }
 
-    /// <summary>The log line names every use of the key, as in the tree.</summary>
+    /// <summary>The log line names every use of the key, sorted as in the tree.</summary>
     [Fact]
     public void Log_line_names_each_use()
     {
@@ -157,8 +175,8 @@ public class MissingKeysTests
 
         MissingKey key = Assert.Single(MissingKeys.Find(NoHints, shortcuts, SteamController));
         Assert.Equal(
-            "Key E isn't in your mapping; used by Epic Loot > Socket Overlay Shortcut, " +
-            "AzuCraftyBoxes > Container Toggle Key (E + LeftShift)",
+            "Key E isn't in your mapping; used by AzuCraftyBoxes > Container Toggle Key (E + LeftShift), " +
+            "Epic Loot > Socket Overlay Shortcut",
             MissingKeys.LogLine(key));
     }
 
