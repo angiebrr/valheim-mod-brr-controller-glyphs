@@ -205,10 +205,14 @@ namespace ControllerGlyphFixer.Core
         /// <param name="keyName">Key name in any supported spelling (e.g. "Q", "Alpha1", "$button_lshift").</param>
         /// <param name="valheimGlyph">Returns Valheim's sprite tag for a Valheim control name
         /// (e.g. "buttonSouth"), or null if there is no art for it.</param>
+        /// <param name="modGlyph">Returns the mod's sprite tag for a normalized button name
+        /// (<see cref="ModGlyphs.Tag"/>), or null if there is none; null when the mod's glyphs aren't available.</param>
+        /// <param name="order">Which art is tried first.</param>
         /// <returns>The buttons joined with " + ", each as a sprite tag or a [badge]; null if unmapped.</returns>
-        public string Translate(string keyName, Func<string, string> valheimGlyph)
+        public string Translate(string keyName, Func<string, string> valheimGlyph, Func<string, string> modGlyph = null,
+            ButtonGlyphOrder order = ButtonGlyphOrder.ValheimFirst)
         {
-            return Format(Buttons(keyName), valheimGlyph);
+            return Format(Buttons(keyName), valheimGlyph, modGlyph, order);
         }
 
         /// <summary>
@@ -224,44 +228,72 @@ namespace ControllerGlyphFixer.Core
         }
 
         /// <summary>
-        /// Renders a list of buttons, each as Valheim's glyph or a [badge], joined with " + ".
+        /// Renders a list of buttons, each as a glyph or a [badge], joined with " + ".
         /// </summary>
         /// <param name="buttons">Button names as written in the mapping file.</param>
         /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <param name="modGlyph">See <see cref="Translate"/>.</param>
+        /// <param name="order">See <see cref="Translate"/>.</param>
         /// <returns>The display string, or null for a null or empty list.</returns>
-        public string Format(IReadOnlyList<string> buttons, Func<string, string> valheimGlyph)
+        public string Format(IReadOnlyList<string> buttons, Func<string, string> valheimGlyph,
+            Func<string, string> modGlyph = null, ButtonGlyphOrder order = ButtonGlyphOrder.ValheimFirst)
         {
             if (buttons == null || buttons.Count == 0)
             {
                 return null;
             }
 
-            return string.Join(ButtonSeparator, buttons.Select(button => FormatButton(button, valheimGlyph)));
+            return string.Join(ButtonSeparator, buttons.Select(button => FormatButton(button, valheimGlyph, modGlyph, order)));
         }
 
         /// <summary>
-        /// Renders one button: Valheim's glyph when it has art, otherwise a [badge].
+        /// Renders one button: the first art found in <paramref name="order"/>, otherwise a [badge].
         /// </summary>
         /// <param name="button">Button name as written in the mapping file.</param>
         /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <param name="modGlyph">See <see cref="Translate"/>.</param>
+        /// <param name="order">See <see cref="Translate"/>.</param>
         /// <returns>A sprite tag or a badge such as "[R4]" (using the label when one is set).</returns>
-        // TODO(F5): show Steam's controller glyph images for buttons Valheim has no art for
-        // (R4/R5, L4/L5, trackpads) instead of text badges: load the PNGs into a custom TMP sprite
-        // asset in the plugin and pass a second glyph lookup here, keeping the badge as fallback.
-        private string FormatButton(string button, Func<string, string> valheimGlyph)
+        private string FormatButton(string button, Func<string, string> valheimGlyph, Func<string, string> modGlyph,
+            ButtonGlyphOrder order)
         {
             string normalized = Normalize(button);
-            if (ValheimButtons.TryGetControl(normalized, out string control))
+            bool modFirst = order == ButtonGlyphOrder.ModGlyphsForAll;
+
+            // The second source is asked only when the first has nothing: this runs on the $KEY_ path
+            string glyph = modFirst ? ModGlyph(normalized, modGlyph) : ValheimGlyph(normalized, valheimGlyph);
+            if (string.IsNullOrEmpty(glyph))
             {
-                string glyph = valheimGlyph(control);
-                if (!string.IsNullOrEmpty(glyph))
-                {
-                    return glyph;
-                }
+                glyph = modFirst ? ValheimGlyph(normalized, valheimGlyph) : ModGlyph(normalized, modGlyph);
             }
 
-            return "[" + (m_labels.TryGetValue(normalized, out string label) ? label : button) + "]";
+            return !string.IsNullOrEmpty(glyph)
+                ? glyph
+                : "[" + (m_labels.TryGetValue(normalized, out string label) ? label : button) + "]";
         }
+
+        /// <summary>
+        /// Returns Valheim's glyph for a button it has art for.
+        /// </summary>
+        /// <param name="normalized">Normalized button name.</param>
+        /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <returns>The sprite tag, or null/empty when Valheim has none.</returns>
+        private static string ValheimGlyph(string normalized, Func<string, string> valheimGlyph)
+        {
+            return ValheimButtons.TryGetControl(normalized, out string control) ? valheimGlyph(control) : null;
+        }
+
+        /// <summary>
+        /// Returns the mod's glyph for a button, if the mod's glyphs are available.
+        /// </summary>
+        /// <param name="normalized">Normalized button name.</param>
+        /// <param name="modGlyph">See <see cref="Translate"/>.</param>
+        /// <returns>The sprite tag, or null.</returns>
+        private static string ModGlyph(string normalized, Func<string, string> modGlyph)
+        {
+            return modGlyph?.Invoke(normalized);
+        }
+
 
         /// <summary>
         /// Turns any supported spelling of a key into the normalized name used in <see cref="m_keys"/>.

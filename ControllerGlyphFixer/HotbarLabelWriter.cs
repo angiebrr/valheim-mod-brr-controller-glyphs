@@ -41,6 +41,9 @@ namespace ControllerGlyphFixer
         /// <summary>Draws the group prefixes beside the bars.</summary>
         private readonly PrefixLabels m_prefixLabels;
 
+        /// <summary>Moves Valheim's top-left messages below prefixes under AzuEPI's bar.</summary>
+        private readonly MessageRoom m_messageRoom;
+
         /// <summary>
         /// Per bar name: state when its labels were last handled. Keyed by name, not instance, so it
         /// holds at most two entries even though bars are recreated on every world load.
@@ -53,12 +56,18 @@ namespace ControllerGlyphFixer
         /// <param name="glyphs">Glyph mode, mapping lookups and glyph formatting.</param>
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
         /// <param name="prefixLabels">Draws the group prefixes beside the bars.</param>
-        internal HotbarLabelWriter(GlyphService glyphs, QuickSlotKeys quickSlots, PrefixLabels prefixLabels)
+        /// <param name="messageRoom">Moves Valheim's top-left messages below prefixes under AzuEPI's bar.</param>
+        internal HotbarLabelWriter(GlyphService glyphs, QuickSlotKeys quickSlots, PrefixLabels prefixLabels,
+            MessageRoom messageRoom)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
             m_prefixLabels = prefixLabels ?? throw new ArgumentNullException(nameof(prefixLabels));
+            m_messageRoom = messageRoom ?? throw new ArgumentNullException(nameof(messageRoom));
         }
+
+        /// <summary>How far Valheim's top-left messages are moved down now (for the self-test).</summary>
+        internal float MessageShift => m_messageRoom.Applied;
 
         /// <summary>
         /// Whether this writer labels a bar (Valheim's hotbar or AzuEPI's quick-slot bar).
@@ -99,6 +108,11 @@ namespace ControllerGlyphFixer
                     break;
                 case SlotLabelAction.Restore:
                     m_prefixLabels.Clear(bar.transform);
+                    if (barName == QuickSlotBarName)
+                    {
+                        m_messageRoom.Restore();
+                    }
+
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
                     break;
             }
@@ -210,8 +224,14 @@ namespace ControllerGlyphFixer
             }
 
             // Below for AzuEPI's bar: it sits right under the hotbar
-            PrefixSide side = barName == QuickSlotBarName ? PrefixSide.Below : PrefixSide.Above;
-            m_prefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
+            bool isQuickSlotBar = barName == QuickSlotBarName;
+            PrefixSide side = isQuickSlotBar ? PrefixSide.Below : PrefixSide.Above;
+            float depthBelow = m_prefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
+            if (isQuickSlotBar)
+            {
+                // Valheim's top-left messages sit right under this bar; 0 (no prefixes) moves them back
+                m_messageRoom.MakeRoom(bar.transform, depthBelow);
+            }
         }
 
         /// <summary>

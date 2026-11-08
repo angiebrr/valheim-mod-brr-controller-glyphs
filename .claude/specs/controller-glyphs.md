@@ -1,7 +1,7 @@
 # Spec: Controller glyphs for a keyboard-emitting Steam Input layout
 
 Status: draft, approved direction, not implemented
-Last updated: 2026-11-01
+Last updated: 2026-11-08
 Mod: ControllerGlyphFixer (`com.angiebrr.controllerglyphfixer`), BepInEx + Jotunn, Valheim 1.0
 
 ## Problem
@@ -114,6 +114,7 @@ My mapping (test fixture and profile config):
   - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, Func<string, string> translateKey, Func<string, bool> isKeyName) -> HintRewrite { Text, UnmappedKeys }` (F4; see rules below)
+  - `ModGlyphs.TryGetSprite(string normalizedButton, out string sprite)` (F5)
 - See **Testing strategy** for what the tests cover.
 
 ## Dependencies (reuse what the profile already has)
@@ -251,12 +252,33 @@ EpicLoot.
 - **Inventory spacing (2026-11-07):** tried 24 units above the slots to clear the panel border:
   far too high, and it showed the HUD hotbar's own prefix peeking out from under the inventory
   panel. Back to the attached 2 units, with the default backing darker (70%) to read over the
-  highlight. Revisit once F5's Steam glyph images replace the `[R4]` text.
+  highlight. Revisit once F5's glyph images replace the `[R4]` text.
 - **Edges flush (2026-11-07):** the backing's left edge sits on the first slot's and, for rows,
   its right edge on the last slot's; padding goes inside, around the text and line. Outside
   padding showed on one side only wherever the measured and drawn edges differed slightly.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
-  whether the grid clips anything drawn above its first row.
+  whether the grid clips anything drawn above its first row. **Checked with F5's glyphs
+  (2026-11-08):** the inventory looked good; nothing clipped.
+- **Bug (found 2026-11-08, for later): AzuEPI's other inventory layouts.** Everything above was
+  built and checked in AzuEPI's *legacy* layout. In its "equipment slots and quick slots" layout,
+  AzuEPI moves the quick-slot cells into their own panel under the equipment: those cells keep
+  AzuEPI's own names (`R5 Up`, `R5 Right`, ...) instead of our glyphs, and our R5 outline is drawn
+  around an empty column at the right of the equipment panel, where the cells were in legacy mode.
+  To check: which layout setting AzuEPI uses and its values; how `QuickSlotCells.Find` and the
+  group bounds pick the cells' parent and positions when the cells live in a separate panel; and
+  each layout's look (outline vs a row prefix). Add the setting's name to `AzuEpiQuickSlots` with
+  a contract test.
+  - The setting: `[5 - UI Features] Inventory Layout` (type `InventoryLayout`, default `Default`;
+    mine is `Legacy`). Values, from its config description:
+    - `Default`: player preview and slots in their own panel beside the crafting panel.
+    - `Tabbed`: preview and slots on top of the crafting panel, like the vanity, loadout and stats
+      panels (needs `Display Equipment in Separate Panel` on).
+    - `Legacy`: the original slot panel next to the inventory, no preview (what F3 was built for).
+    - `LegacyDetached`: as Legacy, in its own panel set apart from the inventory.
+    - `ExtraSlots`: slots next to the inventory in a 3-row grid with quick slots underneath.
+    - `EquipmentAndQuickSlots`: staggered equipment block with quick slots underneath (the
+      screenshot above).
+  - Screenshots of each layout: ask the user when fixing this.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
 
@@ -332,8 +354,129 @@ EpicLoot.
   `Hud.m_hoverName : TMP_Text`.
 
 ### F5. Glyph appearance
-- No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
-  otherwise). Later option: Steam's controller glyph PNGs as a custom TMP sprite asset.
+Designed 2026-11-08. Buttons Valheim has no art for (R4/R5, L4/L5, trackpads) show as glyph
+images instead of `[R4]`-style text badges. No patch: it changes what the mapping produces.
+
+- **Art (decided 2026-11-08):** Kenney's *Input Prompts* 1.5A, Steam Deck set (CC0;
+  https://kenney.nl/assets/input-prompts). It has every Deck button, both trackpads in every
+  direction, and a plain and an `_outline` variant per glyph. Rejected:
+  - Steam's own glyphs (`<Steam>\controller_base\images\api\{knockout,dark,light}`, `sd_*` /
+    `sc_*`): no open licence found, so they could only be read from the user's Steam install at
+    runtime, never shipped.
+  - The CC0 OpenGameArt Steam Controller pack (2016): original Steam Controller only, no back
+    buttons.
+- **Set: Steam Deck** (chosen over Steam's `sc_` set: square back buttons, separate left/right
+  trackpad arrows).
+- **Look: dark fill, light rim, light letters, soft shadow** (chosen from mockups 2026-11-08).
+  Valheim's glyphs are dark; dark alone vanished on the HUD, and white looked foreign. Made from
+  Kenney's art: the plain glyph (letters cut out) plus its `_outline` variant (rim + letters) is
+  the solid shape; fill that dark, draw the outline variant over it in light, add a shadow.
+- **Build-time script:** `scripts/make-glyphs.ps1` reads the unpacked Kenney zip (path as a
+  parameter; the zip isn't committed, the script says where to download it), recolours the
+  128 px `Double` PNGs, pads them for the shadow and writes `ControllerGlyphFixer/Glyphs/*.png`.
+  The outputs are committed and embedded in the DLL as resources, with Kenney's `License.txt`
+  beside them and a credit in the README. 28 images: A/B/X/Y, D-pad, bumpers, triggers,
+  View/Options, R4/R5/L4/L5, both trackpads and their directions. Sticks are left out (Kenney has
+  no outline variant to recolour them from), so under `ModGlyphsForAll` they keep Valheim's art.
+- **Which art wins (decided 2026-11-08):** config `General.ButtonGlyphs`:
+  - `ValheimFirst` (default): Valheim's sprite where it has one (A/B/X/Y, D-pad, bumpers;
+    follows Valheim's Xbox/PlayStation glyph setting), else ours, else the `[badge]`.
+  - `ModGlyphsForAll`: ours for every button in mapped output (hotbar labels, prefixes, hover
+    hints), Valheim's for none, so labels look uniform. Valheim's own `$KEY_` prompts (F1) keep
+    Valheim's art either way. Built in this phase: it's only the lookup order in `KeyMap.Format`.
+  - The `[badge]` (with the `labels:` section's text) stays the last fallback in both.
+- **Core (TDD):** `ModGlyphs.TryGetSprite(normalizedButton, out sprite)`, a table like
+  `ValheimButtons`: `R4` → `r4`, `LPadUp` → `lpad_up`, `LPad` (click) → `lpad`, plus aliases
+  (`L1`/`LB`, `L2`/`LT`, `View`/`Back`, `Options`/`Start`, ...). `KeyMap.Format` takes a second
+  lookup for our sprites and the `ButtonGlyphs` order; tests cover both orders and the fallback.
+  A test checks every sprite name in the table has an embedded PNG (reads the plugin's
+  `Glyphs/` folder).
+- **Sprite set (plugin, `ModSpriteAsset`):** at startup, load the embedded PNGs, pack them into
+  one texture (`Texture2D.PackTextures`) and build a `TMP_SpriteAsset` named `cgf_deck` with
+  TMP's sprite shader (a glyph and a character per image, lookup tables updated). Register it with
+  `MaterialReferenceManager.AddSpriteAsset(asset)` (keyed by the hash of its name) so `<sprite="cgf_deck" name="r4">`
+  finds it: TMP checks that table before `Resources.Load` (decompiled `TMP_Text` 2026-11-08).
+  - Size and baseline copied from Valheim's `xbox` sprite asset (its `button_a` glyph metrics,
+    scaled to our image size), so our glyphs line up with Valheim's in the same label.
+  - Texture, material and asset marked `DontUnloadUnusedAsset` (Valheim's unused-asset sweep;
+    see F3's backing sprite) and destroyed in `OnDestroy`.
+  - TMP has no way to unregister, so after `OnDestroy` the lookup keeps a dead entry. Plugins are
+    destroyed only when the game quits, so this is accepted, not worked around.
+  - If the set can't be built, the plugin logs once and labels fall back to `[badge]` text.
+- **Effects on F3/F4:**
+  - Prefixes show a glyph instead of `[R4]`. `PrefixColors` keeps colouring the prefix's line and
+    text; the glyph itself is not tinted (TMP sprites ignore the text colour unless `tint=1`).
+  - Recheck in game what F3 postponed: inventory prefix spacing over the panel edge, the 70% label
+    size, and the backing width now that the prefix is one glyph.
+  - `HintRewriter` already treats `<sprite…>` as a glyph: `[LPad Up] AutoFuel` becomes the glyph
+    without brackets. Add a test with our sprite tag.
+- **Self-test:** the sprite set is registered and its texture still loaded; formatting `R4` gives
+  our sprite tag, and a TMP text with it has a sprite character in its text info (not the letters
+  `[R4]`); dump Valheim's `xbox` sprite sheet to a PNG next to `LogOutput.log` (INFO) to compare
+  the looks.
+- **Contract tests:** `MaterialReferenceManager.AddSpriteAsset(TMP_SpriteAsset)` /
+  `TryGetSpriteAsset`, `TMP_Asset.m_Version` / `faceInfo` / `hashCode`, `TMP_SpriteAsset` tables and
+  `UpdateLookupTables()`, the `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors, the
+  `TMP_CharacterInfo` fields prefixes are measured with, `ImageConversion.LoadImage` /
+  `EncodeToPNG` (called by reflection), and `MessageHud.m_messageText`.
+- **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
+  for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
+- **In game (2026-11-08), tuned over five rounds of screenshots:**
+  - Valheim's `xbox` sprite asset has no point size (`button_a`: height 32, bearing 20, scale 2.5,
+    point size 0). TMP then fits every sprite's own height to the font ascent, so scaling by
+    Valheim's pixel height made ours tiny. `SpriteFit` (Core, tested) handles both TMP paths.
+  - Valheim's sprites carry transparent padding, so our 128 px glyph at its full size looked about
+    1.4 times Valheim's round glyphs. Glyphs are drawn at 0.7 of Valheim's sprite, centred on it.
+  - Hover-hint lines are packed tightly (Valheim's own glyphs nearly touch), and the trackpad-up
+    arrow was squeezed under the glyph on the line above: hover hints use their own translator
+    with the glyph in `<size=75%>` (85% was still crowded). `$KEY_` prompts keep the full size.
+  - Prefix glyphs hang below the text line and ran into the slots: prefixes are now placed by
+    TMP's drawn bounds (`PrefixLabels.PlaceByDrawnBounds`), not the line box.
+  - Kenney's 6 px rim looked thick next to Valheim's thin one: the script keeps the outer 3 px.
+    The thin rim made the trackpad arrows dark and invisible at hint size: small separate shapes
+    are drawn fully light.
+  - Valheim's own glyphs are dark with a light rim and a soft shadow (its sheet, dumped by the
+    self-test), so the chosen look matches.
+  - Group alignment looked slightly off from a distance in full screen; up close it's the selected
+    slot's white frame, which is larger than the slot. Left as is.
+  - Prefix layering: prefixes and lines draw on top of the slots, so the selected slot's frame
+    never cuts them (the user wanted the hotbar's R4 to overlap the frame like AzuEPI's row); the
+    backings of prefixes above the slots go in a second container behind the slots, because
+    Valheim's labels overhang the slots' top edge (the arrow on the D-pad-up glyph). A 6-unit lift
+    for the hotbar was tried and dropped: the backing looked too tall and the raised prefix showed
+    above the inventory panel.
+  - Prefix bounds come from each character's mesh corners (`vertex_BL`/`vertex_TR`):
+    `bottomLeft`/`topRight` reach the font's ascent and descent lines for sprites.
+  - **Messages moved (decided 2026-11-08):** Valheim's top-left messages sat right under AzuEPI's
+    bar and touched its R5 prefix. Chosen over moving R5 to the row's right end: `MessageRoom`
+    moves the message text's parent down by how far the prefixes reach below the bar, only while
+    the quick-slot row has prefixes, and moves it back otherwise (glyphs off, no groups, plugin
+    destroyed). AzuEPI already lowers the same object by 75 units in its `MessageHud.Awake`
+    postfix, so we only add and undo our own shift. First time the mod moves Valheim UI.
+  - The self-test's text-layout check threw (a bare `TextMeshProUGUI` has no font or canvas); it now
+    checks TMP's two lookups for the tag instead.
+  - Build notes: `UnityEngine.ImageConversionModule` targets netstandard 2.1, which the net48
+    plugin can't reference (CS1705), so `PngFiles` calls `LoadImage`/`EncodeToPNG` by reflection
+    (contract-tested); `UnityEngine.TextCoreFontEngineModule` is referenced directly for glyph metrics.
+- **Known limits (review, 2026-11-08):**
+  - Hover-hint glyphs use `<size=75%>`, which TMP takes from the text's base size, not the size
+    around it. Inside a hint a mod wraps in its own `<size=…>`, our glyph keeps the base-relative
+    size (the `<space=0.12em>` padding does follow the current size). None of my hints do this. If
+    one does: a second sprite asset (`cgf_deck_hint`) built at 0.75 scale shrinks with its context.
+  - Switching `ButtonGlyphs` live redraws bars, prefixes and hover hints at once, but `$KEY_` text
+    Valheim's Localization cached updates after the next input-mode switch (said in the setting's
+    description). Clearing that cache is planned with F9's mapping reload.
+  - `MessageRoom` moves the messages back when AzuEPI's quick-slot row loses its prefixes through our
+    labels (glyphs off, no groups) or a world load; if AzuEPI's bar is turned off mid-session they
+    stay lowered until then. It also doesn't check where the user placed AzuEPI's bar.
+- **Later (asked 2026-11-08): `ModGlyphsForAll` everywhere.** Today it only changes text the mod
+  writes (slot labels, prefixes, mapped keys in hover hints), as designed above; Valheim's own
+  prompts keep Valheim's art, so a hint can mix both styles ("Use Wood" with Valheim's X next to
+  our trackpad glyph). The user expects the setting to switch every glyph. Needs: F1's `$KEY_`
+  results mapped from Valheim's sprite names (`button_x`, `dpad_up`, ...) to ours; hint panels
+  and `UIInputHint` text the same way; image badges (`UIGamePad`) can't take a sprite tag, so
+  those need our sprites as `Image` sprites. Design it before building (look per place, what
+  happens for buttons we have no glyph for, e.g. sticks).
 
 ### F6. Hint panels and menu-button badges
 - Bottom-right `KeyHints` panels, build-menu hints (`m_buildMenuHintsGP` / `KB`),
@@ -371,6 +514,7 @@ EpicLoot.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
   - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
   - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
+  - `ButtonGlyphs` (`ValheimFirst` / `ModGlyphsForAll`, default `ValheimFirst`) (F5).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
 
 ### F9. Helping other users set up their mapping
@@ -461,6 +605,23 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
     free). Its rename hint reads "hold". First check that "Hold to stack" doesn't also fire
     while the alternate key is held.
   - **Current workaround (2026-11-08):** custom names turned off in MyLittleUI.
+- **Fix 3, one gamepad selection square at start** (needs `Azumatt.AzuExtendedPlayerInventory`;
+  found 2026-11-08):
+  - **Bug:** after loading in, both Valheim's hotbar and AzuEPI's quick-slot bar show the gamepad
+    selection square on slot 1. AzuEPI replaces `HotkeyBar.Update` (prefix returning false) with
+    its own controller (`HotkeyBarController.Hud_Update_Patch`, a `Hud.Update` postfix), which keeps
+    one selected bar and sets `m_selected = -1` on the others, but only in `SelectHotkeyBar`, on the
+    first D-pad left/right press. Until then `SelectedHotkeyBarIndex` is -1 and every bar keeps
+    Valheim's default `m_selected = 0`, and `HotkeyBar.UpdateIcons` draws a square at `m_selected`
+    whenever the gamepad is active. With the group prefixes it also makes the R4/R5 groups look
+    misaligned (the frame is larger than the slot).
+  - **Fix:** once AzuEPI has found its bars (`ExtendedPlayerInventory.HotkeyBars` set) while
+    `SelectedHotkeyBarIndex` is still -1, call its `SelectHotkeyBar(0, fromRight: false)`: the
+    hotbar keeps slot 1, the other bars get -1, exactly as the first D-pad press would. Postfix on
+    `Hud.Update` after AzuEPI's (`[HarmonyAfter]`).
+  - **Upstream:** worth reporting to AzuEPI's author (same fix inside its controller, e.g. select
+    bar 0 where it first fills `HotkeyBars`). Confirmed in game (2026-11-08): one D-pad left/right
+    press clears the second square.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
@@ -505,6 +666,8 @@ Red → green → refactor for every Core function. Required cases:
   translated, brackets dropped when fully translated; partly translated hints keep brackets
   and report unmapped keys; non-key brackets (`[Zebra]`, `[1/5]`) and free text untouched;
   nested badges count as glyphs; idempotent.
+- `ModGlyphs` / `KeyMap.Format` (F5): every Deck button and alias; `ValheimFirst` and
+  `ModGlyphsForAll` orders; badge fallback when neither has art; every sprite name has a PNG.
 
 ### 2. Contract tests (`ControllerGlyphFixer.Contract.Tests`) — catch game updates, seconds
 Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadContext`
@@ -519,6 +682,8 @@ expected signature:
   `ElementData.m_go` (F3)
 - `Settings.instance`, `Localization.instance.Localize(string)`
 - To do with F4: `Hud.UpdateCrosshair(Player, float)`, `Hud.m_hoverName : TMP_Text`
+- F5 (`Unity.TextMeshPro`): `MaterialReferenceManager.AddSpriteAsset(int, TMP_SpriteAsset)` and
+  the `TMP_SpriteAsset` / `TMP_SpriteGlyph` / `TMP_SpriteCharacter` members we set
 
 Other mods' names we copy are checked against their DLLs in the Gale profile
 (`GALE_PROFILE`), by reading the string literals in their code; tests skip when the mod isn't
@@ -575,7 +740,7 @@ thin patches → in-game self-test checks → manual checklist.
 2. **v2:** F3 hotbar + AzuExtendedPlayerInventory extra slots, F4 hover rewriter (TDD for
    `HotbarLabels` and `HintRewriter`).
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
-   2026-11-02).
+   2026-11-02). F5 glyph images (branch `phase-f5-glyphs`, started 2026-11-08).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
 6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.

@@ -12,3 +12,8 @@ Upon building for release, this README.md is copied into the `Package` folder fo
 
 ## Known issues
 You can find the github at:
+
+
+## Credits
+Controller glyphs made from [Input Prompts](https://kenney.nl/assets/input-prompts) by Kenney
+(CC0), recoloured for this mod by `scripts/make-glyphs.ps1`.

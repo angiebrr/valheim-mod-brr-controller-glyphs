@@ -41,6 +41,12 @@
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="Glyphs\License.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Controller glyphs (F5), made by scripts/make-glyphs.ps1; loaded by ModSpriteAsset -->
+    <EmbeddedResource Include="Glyphs\*.png" LogicalName="ControllerGlyphFixer.Glyphs.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -52,6 +58,14 @@
   <ItemGroup>
     <!-- Core logic is compiled into this assembly so only ControllerGlyphFixer.dll is deployed -->
     <Compile Include="..\ControllerGlyphFixer.Core\**\*.cs" Exclude="..\ControllerGlyphFixer.Core\bin\**;..\ControllerGlyphFixer.Core\obj\**" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Glyph metrics and rects for the F5 sprite asset; Jotunn's props don't reference this module -->
+    <Reference Include="UnityEngine.TextCoreFontEngineModule">
+      <HintPath>$(VALHEIM_INSTALL)/valheim_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup>

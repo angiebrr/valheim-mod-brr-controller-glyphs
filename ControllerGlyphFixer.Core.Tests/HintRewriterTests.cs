@@ -45,6 +45,40 @@ public class HintRewriterTests
         Assert.Empty(result.UnmappedKeys);
     }
 
+    /// <summary>
+    /// With the mod's glyphs (F5), AutomaticFuel's hint becomes the trackpad glyph without brackets,
+    /// and rewriting that output again changes nothing.
+    /// </summary>
+    [Fact]
+    public void Mapped_key_hint_becomes_the_mod_glyph()
+    {
+        const string glyph = "<sprite=\"cgf_deck\" name=\"lpad_up\">";
+        Func<string, string> translate = key => SteamController.Translate(key, control => $"<{control}>", ModGlyphs.Tag);
+
+        HintRewrite result = HintRewriter.Rewrite("[B] AutoFuel: On", translate, KeyNames.Contains);
+
+        Assert.Equal(glyph + " AutoFuel: On", result.Text);
+        Assert.Empty(result.UnmappedKeys);
+        Assert.Equal(result.Text, HintRewriter.Rewrite(result.Text, translate, KeyNames.Contains).Text);
+    }
+
+    /// <summary>
+    /// Hover hints get the smaller, padded glyph (space and size tags around the sprite): still a
+    /// glyph, so the brackets go, and rewriting the output again changes nothing.
+    /// </summary>
+    [Fact]
+    public void Mapped_key_hint_becomes_the_smaller_mod_glyph()
+    {
+        const string glyph = "<space=0.12em><size=75%><sprite=\"cgf_deck\" name=\"lpad_up\"></size><space=0.12em>";
+        Func<string, string> translate = key =>
+            SteamController.Translate(key, control => $"<{control}>", button => ModGlyphs.Tag(button, 75, 0.12f));
+
+        HintRewrite result = HintRewriter.Rewrite("[B] AutoFuel: On", translate, KeyNames.Contains);
+
+        Assert.Equal(glyph + " AutoFuel: On", result.Text);
+        Assert.Equal(result.Text, HintRewriter.Rewrite(result.Text, translate, KeyNames.Contains).Text);
+    }
+
     /// <summary>A plain bracketed key (no tags) works too, in any case.</summary>
     /// <param name="key">The key as written.</param>
     [Theory]

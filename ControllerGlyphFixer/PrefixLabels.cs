@@ -79,6 +79,11 @@ namespace ControllerGlyphFixer
         /// </summary>
         private const float AboveGap = Gap;
 
+        /// <summary>
+        /// Suffix of the container holding the backings of prefixes above the slots, drawn behind them.
+        /// </summary>
+        private const string BackingsSuffix = "_Backings";
+
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
 
@@ -119,18 +124,31 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
-        internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
+        /// <returns>How far the prefixes reach below their slots, in the parent's units; 0 when none do
+        /// (above the slots, or no prefixes).</returns>
+        internal float Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
             string containerName = ContainerName)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
             {
-                return;
+                return 0f;
             }
 
-            var container = new GameObject(containerName, typeof(RectTransform)).GetComponent<RectTransform>();
-            container.SetParent(parent, worldPositionStays: false);
-            container.localPosition = Vector3.zero;
+            float depthBelow = 0f;
+
+            // Prefixes and lines draw on top of everything, so the selected slot's frame never cuts
+            // them. Above the slots, the backings go in a second container behind the slots: Valheim's
+            // labels overhang the slots' top edge (the arrow on the D-pad-up glyph), and a backing drawn
+            // last covered them (in game 2026-11-08)
+            RectTransform container = CreateContainer(parent, containerName);
+            Transform backings = container;
+            if (side == PrefixSide.Above)
+            {
+                RectTransform behind = CreateContainer(parent, containerName + BackingsSuffix);
+                DrawBehindSlots(behind, parent, prefixes);
+                backings = behind;
+            }
 
             foreach (PrefixLabel prefix in prefixes)
             {
@@ -140,18 +158,16 @@ namespace ControllerGlyphFixer
                     : style.color;
 
                 // Backing first, so it's drawn behind; sized once the text is measured
-                Image backing = CreateImage(container, "Backing", m_backingColor.Value);
+                Image backing = CreateImage(backings, "Backing", m_backingColor.Value);
                 backing.sprite = m_backingSprite;
                 backing.type = Image.Type.Sliced;
 
                 // The backing's left edge is flush with the first slot; padding goes inside, around the
                 // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
-                Vector2 size = text.GetPreferredValues(prefix.Text);
                 float textLeft = bounds.xMin + BackingPadding;
                 float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
-                Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
-                    new Vector2(textLeft, y));
+                Vector2 size = PlaceByDrawnBounds(text, prefix.Text, side, new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
                 float backingRight = textLeft + size.x + BackingPadding;
 
@@ -181,10 +197,17 @@ namespace ControllerGlyphFixer
                         break;
                 }
 
+                float backingBottom = textBottom - BackingPadding;
                 Place(backing.rectTransform, Vector2.zero,
                     new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f),
-                    new Vector2(bounds.xMin, textBottom - BackingPadding));
+                    new Vector2(bounds.xMin, backingBottom));
+                if (side == PrefixSide.Below)
+                {
+                    depthBelow = Mathf.Max(depthBelow, bounds.yMin - backingBottom);
+                }
             }
+
+            return depthBelow;
         }
 
         /// <summary>
@@ -194,13 +217,32 @@ namespace ControllerGlyphFixer
         /// <param name="containerName">The name given to <see cref="Show"/>.</param>
         internal void Clear(Transform parent, string containerName = ContainerName)
         {
-            Transform container = parent.Find(containerName);
-            if (container)
+            foreach (string name in new[] { containerName, containerName + BackingsSuffix })
             {
-                // Detached first: Destroy only takes effect at the end of the frame
-                container.SetParent(null, worldPositionStays: false);
-                Object.Destroy(container.gameObject);
+                Transform container = parent.Find(name);
+                if (container)
+                {
+                    // Detached first: Destroy only takes effect at the end of the frame
+                    container.SetParent(null, worldPositionStays: false);
+                    Object.Destroy(container.gameObject);
+                }
             }
+        }
+
+        /// <summary>
+        /// Adds an empty container for prefix parts as the parent's last child.
+        /// </summary>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="name">The container's name (found again by <see cref="Clear"/>).</param>
+        /// <returns>The container, at the parent's origin.</returns>
+        private RectTransform CreateContainer(Transform parent, string name)
+        {
+            var container = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            container.SetParent(parent, worldPositionStays: false);
+            container.localPosition = Vector3.zero;
+            // Never a cell if the parent ever gets a layout group (the backings move among the slots)
+            container.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            return container;
         }
 
         /// <summary>
@@ -375,6 +417,120 @@ namespace ControllerGlyphFixer
             image.color = color;
             image.raycastTarget = false;
             return image;
+        }
+
+        /// <summary>
+        /// Moves a container just before the first slot among the parent's children, so the slots
+        /// (and labels that overhang them) draw over what it holds.
+        /// </summary>
+        /// <param name="container">The backings' container, a child of <paramref name="parent"/>.</param>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="prefixes">The prefixes, with their slots.</param>
+        // Before the first slot rather than first overall, so anything drawn under the slots (a bar
+        // background) stays under the backings too
+        private void DrawBehindSlots(Transform container, Transform parent, IReadOnlyList<PrefixLabel> prefixes)
+        {
+            int first = int.MaxValue;
+            foreach (PrefixLabel prefix in prefixes)
+            {
+                foreach (RectTransform slot in prefix.Slots)
+                {
+                    Transform child = slot;
+                    while (child && child.parent != parent)
+                    {
+                        child = child.parent;
+                    }
+
+                    if (child && child != container)
+                    {
+                        first = Mathf.Min(first, child.GetSiblingIndex());
+                    }
+                }
+            }
+
+            if (first != int.MaxValue)
+            {
+                container.SetSiblingIndex(first);
+            }
+        }
+
+        /// <summary>
+        /// Places a prefix so what TMP draws (not its line box) starts at the corner: its left edge at
+        /// the corner's x, and its bottom (above the slots) or top (below them) at the corner's y.
+        /// </summary>
+        /// <param name="text">The prefix text, already created.</param>
+        /// <param name="value">Its text, for measuring.</param>
+        /// <param name="side">Above or below the slots.</param>
+        /// <param name="corner">Bottom-left (above) or top-left (below) of the drawn prefix, in the parent's space.</param>
+        /// <returns>The drawn size; the line-box size when nothing is drawn.</returns>
+        // Sprites hang below the text line (Valheim's glyphs do too); placed by the line box, the
+        // controller glyph prefixes ran into the slots (in game 2026-11-08)
+        private Vector2 PlaceByDrawnBounds(TextMeshProUGUI text, string value, PrefixSide side, Vector2 corner)
+        {
+            Vector2 size = text.GetPreferredValues(value);
+            Vector2 pivot = new (0f, side == PrefixSide.Above ? 0f : 1f);
+            Place(text.rectTransform, pivot, size, corner);
+
+            // Ignoring the active state: TMP skips the update for a hidden text (a bar or panel shown
+            // later), which would place the prefix by its line box again
+            text.ForceMeshUpdate(ignoreActiveState: true);
+            if (!TryVisibleBounds(text, out Rect drawn))
+            {
+                return size;
+            }
+
+            // Character bounds are relative to the pivot, which sits at the corner
+            float edgeY = side == PrefixSide.Above ? drawn.yMin : drawn.yMax;
+            text.rectTransform.localPosition = new Vector3(corner.x - drawn.xMin, corner.y - edgeY, 0f);
+            return drawn.size;
+        }
+
+        /// <summary>
+        /// Measures what a text draws (each visible character's mesh quad), with the mod's glyphs
+        /// trimmed to the glyph itself: their images
+        /// have transparent room for the shadow on every side (<see cref="ModGlyphs.ImageSize"/>).
+        /// </summary>
+        /// <param name="text">The text, with its mesh up to date.</param>
+        /// <param name="bounds">The drawn bounds, relative to the text's pivot.</param>
+        /// <returns>False when nothing is drawn.</returns>
+        // Untrimmed, the padding pushed AzuEPI's prefix towards Valheim's messages (in game 2026-11-08)
+        private bool TryVisibleBounds(TMP_Text text, out Rect bounds)
+        {
+            const float padFraction = (float)ModGlyphs.ShadowPad / ModGlyphs.ImageSize;
+            int ourAsset = TMP_TextUtilities.GetHashCode(ModGlyphs.AssetName);
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            TMP_TextInfo info = text.textInfo;
+            for (int i = 0; i < info.characterCount; i++)
+            {
+                TMP_CharacterInfo character = info.characterInfo[i];
+                if (!character.isVisible)
+                {
+                    continue;
+                }
+
+                // The mesh corners: bottomLeft/topRight reach the font's ascent and descent lines for
+                // sprites, which lifted the hotbar prefix and lowered AzuEPI's (in game 2026-11-08)
+                Vector3 min = character.vertex_BL.position, max = character.vertex_TR.position;
+                bool isOurGlyph = character.elementType == TMP_TextElementType.Sprite &&
+                    character.textElement != null && character.textElement.textAsset &&
+                    character.textElement.textAsset.hashCode == ourAsset;
+                if (isOurGlyph)
+                {
+                    Vector3 pad = (max - min) * padFraction;
+                    min += pad;
+                    max -= pad;
+                }
+
+                xMin = Mathf.Min(xMin, min.x);
+                yMin = Mathf.Min(yMin, min.y);
+                xMax = Mathf.Max(xMax, max.x);
+                yMax = Mathf.Max(yMax, max.y);
+                any = true;
+            }
+
+            bounds = any ? Rect.MinMaxRect(xMin, yMin, xMax, yMax) : default;
+            return any && bounds.width > 0f && bounds.height > 0f;
         }
 
         /// <summary>

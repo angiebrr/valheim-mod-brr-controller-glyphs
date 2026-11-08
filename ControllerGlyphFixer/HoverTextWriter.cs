@@ -47,6 +47,16 @@ namespace ControllerGlyphFixer
         internal IReadOnlyDictionary<string, string> MissingKeys => m_missingKeys;
 
         /// <summary>
+        /// Forgets the cached rewrite, so the next frame rewrites the hover text again (after a
+        /// setting that changes glyphs).
+        /// </summary>
+        internal void Invalidate()
+        {
+            m_lastInput = null;
+            m_lastOutput = null;
+        }
+
+        /// <summary>
         /// Rewrites the hover text Valheim just set, if glyphs are on and it has key hints.
         /// </summary>
         /// <param name="hoverName">Hud.m_hoverName.</param>
@@ -82,7 +92,7 @@ namespace ControllerGlyphFixer
         /// <returns>The rewritten text.</returns>
         internal string Rewrite(string text)
         {
-            HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.KeyTranslator, m_glyphs.KeyNameCheck);
+            HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.HintKeyTranslator, m_glyphs.KeyNameCheck);
             foreach (UnmappedKey unmapped in result.UnmappedKeys.Where(unmapped => !m_missingKeys.ContainsKey(unmapped.Key)))
             {
                 m_missingKeys[unmapped.Key] = unmapped.Line;
