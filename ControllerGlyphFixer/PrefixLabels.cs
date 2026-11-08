@@ -119,8 +119,10 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
+        /// <param name="aboveGap">Space between the slots and a prefix above them; defaults to
+        /// <see cref="AboveGap"/>. Larger to clear a panel border (the inventory).</param>
         internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
-            string containerName = ContainerName)
+            string containerName = ContainerName, float aboveGap = AboveGap)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
@@ -134,7 +136,7 @@ namespace ControllerGlyphFixer
 
             foreach (PrefixLabel prefix in prefixes)
             {
-                Rect bounds = Bounds(prefix.Slots);
+                Rect bounds = Bounds(parent, prefix.Slots);
                 Color color = prefix.Color != null && ColorUtility.TryParseHtmlString(prefix.Color, out Color parsed)
                     ? parsed
                     : style.color;
@@ -146,7 +148,7 @@ namespace ControllerGlyphFixer
 
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 Vector2 size = text.GetPreferredValues(prefix.Text);
-                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
+                float y = side == PrefixSide.Above ? bounds.yMax + aboveGap : bounds.yMin - Gap;
                 Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
                     new Vector2(bounds.xMin, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
@@ -214,25 +216,87 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// The area the slots cover, in their parent's local space.
+        /// The area the slots' visible backgrounds cover, in their parent's local space.
         /// </summary>
-        /// <param name="slots">Slots with the same parent.</param>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="slots">Slots with that parent.</param>
         /// <returns>The bounding rectangle.</returns>
-        private Rect Bounds(IReadOnlyList<RectTransform> slots)
+        private Rect Bounds(Transform parent, IReadOnlyList<RectTransform> slots)
         {
+            var corners = new Vector3[4];
             float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
             foreach (RectTransform slot in slots)
             {
-                Vector3 origin = slot.localPosition;
-                Vector3 scale = slot.localScale;
-                Rect rect = slot.rect;
-                xMin = Mathf.Min(xMin, origin.x + rect.xMin * scale.x);
-                xMax = Mathf.Max(xMax, origin.x + rect.xMax * scale.x);
-                yMin = Mathf.Min(yMin, origin.y + rect.yMin * scale.y);
-                yMax = Mathf.Max(yMax, origin.y + rect.yMax * scale.y);
+                VisibleBackground(slot).GetWorldCorners(corners);
+                foreach (Vector3 corner in corners)
+                {
+                    Vector3 local = parent.InverseTransformPoint(corner);
+                    xMin = Mathf.Min(xMin, local.x);
+                    xMax = Mathf.Max(xMax, local.x);
+                    yMin = Mathf.Min(yMin, local.y);
+                    yMax = Mathf.Max(yMax, local.y);
+                }
             }
 
             return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        }
+
+        /// <summary>
+        /// The rect of a slot's visible square: the largest active image on the slot or its direct
+        /// children, ignoring state overlays. The slot's own layout box can differ from what's drawn
+        /// (the backings started a few units right of the first slot in game, 2026-11-07).
+        /// </summary>
+        /// <param name="slot">A hotbar slot or inventory cell.</param>
+        /// <returns>The background's rect, or the slot's own if it has no image.</returns>
+        private RectTransform VisibleBackground(RectTransform slot)
+        {
+            RectTransform best = slot;
+            float bestArea = Area(slot, slot.GetComponent<Image>());
+            foreach (Transform child in slot)
+            {
+                if (!child.gameObject.activeSelf || IsOverlay(child.name))
+                {
+                    continue;
+                }
+
+                var rect = (RectTransform)child;
+                float area = Area(rect, child.GetComponent<Image>());
+                if (area > bestArea)
+                {
+                    best = rect;
+                    bestArea = area;
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// Whether a slot child is a state overlay (selection, equipped, queued frames) rather than
+        /// the slot's background; those come and go and may stick out.
+        /// </summary>
+        /// <param name="name">The child's name.</param>
+        /// <returns>True for Valheim's overlay children.</returns>
+        private bool IsOverlay(string name)
+        {
+            return name == "selected" || name == "equiped" || name == "queued";
+        }
+
+        /// <summary>
+        /// On-screen area of an image, for picking the largest.
+        /// </summary>
+        /// <param name="rect">The image's rect.</param>
+        /// <param name="image">The image; may be null or disabled.</param>
+        /// <returns>Its area in world units, or -1 when there's no enabled image.</returns>
+        private float Area(RectTransform rect, Image image)
+        {
+            if (!image || !image.enabled)
+            {
+                return -1f;
+            }
+
+            Vector3 scale = rect.lossyScale;
+            return Mathf.Abs(rect.rect.width * scale.x * rect.rect.height * scale.y);
         }
 
         /// <summary>

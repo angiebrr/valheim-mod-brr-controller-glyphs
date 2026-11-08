@@ -42,7 +42,7 @@ namespace ControllerGlyphFixer
         public const string PluginVersion = "0.0.1";
 
         /// <summary>Corner radius of the group prefix backings, in UI units (pixels of the sprite).</summary>
-        private const int BackingCornerRadius = 5;
+        private const int BackingCornerRadius = 7;
 
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);

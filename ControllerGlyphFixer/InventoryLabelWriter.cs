@@ -30,6 +30,13 @@ namespace ControllerGlyphFixer
         // TODO(F3): make it a setting if people disagree on the size (70% looked right, 2026-11-07).
         private const string LabelSize = "70%";
 
+        /// <summary>
+        /// Space between the inventory's slots and their prefixes, enough to clear the panel's
+        /// border and gamepad highlight (at the HUD's 2 units they sat on it; 2026-11-07).
+        /// </summary>
+        // TODO(F3): check in game; the border's height depends on the panel layout.
+        private const float PanelGap = 24f;
+
         /// <summary>Glyph mode, mapping lookups and glyph formatting.</summary>
         private readonly GlyphService m_glyphs;
 
@@ -190,7 +197,7 @@ namespace ControllerGlyphFixer
             List<PrefixLabel> prefixes = m_hotbar.PrefixLabelsFor(labels,
                 slot => slot < topRow.Count && topRow[slot] ? (RectTransform)topRow[slot].transform : null);
             m_prefixLabels.Show(first.transform.parent, prefixes, BindingLabels.Find(first.gameObject), PrefixSide.Above,
-                TopRowContainer);
+                TopRowContainer, PanelGap);
         }
 
         /// <summary>
@@ -216,7 +223,8 @@ namespace ControllerGlyphFixer
                 InventoryElement cell = QuickSlotCell(slot);
                 return cell && cell.transform.parent == parent ? (RectTransform)cell.transform : null;
             });
-            m_prefixLabels.Show(parent, prefixes, BindingLabels.Find(first.gameObject), PrefixSide.Above, QuickSlotContainer);
+            m_prefixLabels.Show(parent, prefixes, BindingLabels.Find(first.gameObject), PrefixSide.Above, QuickSlotContainer,
+                PanelGap);
         }
 
         /// <summary>

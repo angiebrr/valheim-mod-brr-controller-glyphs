@@ -236,7 +236,7 @@ EpicLoot.
 - **Backings (2026-11-07):** the inventory panel's gamepad highlight ran through `[R4]`. Each
   prefix now sits on a rounded, translucent backing (`General.PrefixBackground`, default black
   at 55%, alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
-  for a column or outlined group, the prefix only. Corners: a 5-unit radius from a small sprite
+  for a column or outlined group, the prefix only. Corners: a 7-unit radius from a small sprite
   built once at startup (`RoundedSprite`, pixels from `RoundedCorners.Coverage` in Core) and
   stretched with fixed corners; Unity has no rounded shape mods can use at runtime. The
   texture and sprite are marked `DontUnloadUnusedAsset`: in game the corners first showed
@@ -244,6 +244,13 @@ EpicLoot.
   at the main menu. The self-test checks the sprite is still loaded.
 - **Attached look (2026-11-07):** with backings, the hotbar's prefix sits 2 units above the
   slots (like the quick-slot bar's below), so the backing meets the bar.
+- **Alignment (2026-11-07):** backings started a few units right of the first slot: the slot's
+  layout box differs from what's drawn. Bounds now come from each slot's visible background
+  (the largest active image on the slot or its direct children, ignoring the selected,
+  equipped and queued overlays), measured in world space.
+- **Inventory spacing:** prefixes there sit 24 units above the slots
+  (`InventoryLabelWriter.PanelGap`) to clear the panel's border and gamepad highlight; the HUD
+  keeps the attached 2 units.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
   whether the grid clips anything drawn above its first row.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
