@@ -211,8 +211,7 @@ namespace ControllerGlyphFixer
 
             // Below for AzuEPI's bar: it sits right under the hotbar
             PrefixSide side = barName == QuickSlotBarName ? PrefixSide.Below : PrefixSide.Above;
-            m_prefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side,
-                aboveClearance: PrefixLabels.SelectionClearance);
+            m_prefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
         }
 
         /// <summary>

@@ -80,12 +80,9 @@ namespace ControllerGlyphFixer
         private const float AboveGap = Gap;
 
         /// <summary>
-        /// Extra space under the HUD hotbar's prefix, inside its backing (which still meets the slots).
-        /// Glyph prefixes sat on the slots' top edge, where the selected slot's frame (larger than the
-        /// slot) and labels overhanging the slot drew over them (in game 2026-11-08). The inventory
-        /// keeps none: there its line lines up with the gamepad-active panel border.
+        /// Suffix of the container holding the backings of prefixes above the slots, drawn behind them.
         /// </summary>
-        internal const float SelectionClearance = 6f;
+        private const string BackingsSuffix = "_Backings";
 
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
@@ -127,10 +124,8 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
-        /// <param name="aboveClearance">Extra space under a prefix above the slots, inside its backing
-        /// (<see cref="SelectionClearance"/> for the HUD hotbar).</param>
         internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
-            string containerName = ContainerName, float aboveClearance = 0f)
+            string containerName = ContainerName)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
@@ -138,16 +133,17 @@ namespace ControllerGlyphFixer
                 return;
             }
 
-            var container = new GameObject(containerName, typeof(RectTransform)).GetComponent<RectTransform>();
-            container.SetParent(parent, worldPositionStays: false);
-            container.localPosition = Vector3.zero;
-            // Moved among the slots below; never a cell if the parent ever gets a layout group
-            container.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-            // Only above: labels overhang the slots' top edge. Below, drawn on top, the prefix stays
-            // whole when the selected slot's frame reaches it (AzuEPI's bar, in game 2026-11-08)
+            // Prefixes and lines draw on top of everything, so the selected slot's frame never cuts
+            // them. Above the slots, the backings go in a second container behind the slots: Valheim's
+            // labels overhang the slots' top edge (the arrow on the D-pad-up glyph), and a backing drawn
+            // last covered them (in game 2026-11-08)
+            RectTransform container = CreateContainer(parent, containerName);
+            Transform backings = container;
             if (side == PrefixSide.Above)
             {
-                DrawBehindSlots(container, parent, prefixes);
+                RectTransform behind = CreateContainer(parent, containerName + BackingsSuffix);
+                DrawBehindSlots(behind, parent, prefixes);
+                backings = behind;
             }
 
             foreach (PrefixLabel prefix in prefixes)
@@ -158,7 +154,7 @@ namespace ControllerGlyphFixer
                     : style.color;
 
                 // Backing first, so it's drawn behind; sized once the text is measured
-                Image backing = CreateImage(container, "Backing", m_backingColor.Value);
+                Image backing = CreateImage(backings, "Backing", m_backingColor.Value);
                 backing.sprite = m_backingSprite;
                 backing.type = Image.Type.Sliced;
 
@@ -166,8 +162,7 @@ namespace ControllerGlyphFixer
                 // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 float textLeft = bounds.xMin + BackingPadding;
-                float clearance = side == PrefixSide.Above ? aboveClearance : 0f;
-                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap + clearance : bounds.yMin - Gap;
+                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
                 Vector2 size = PlaceByDrawnBounds(text, prefix.Text, side, new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
                 float backingRight = textLeft + size.x + BackingPadding;
@@ -198,10 +193,9 @@ namespace ControllerGlyphFixer
                         break;
                 }
 
-                // The clearance is inside the backing, so it still meets the slots
                 Place(backing.rectTransform, Vector2.zero,
-                    new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f + clearance),
-                    new Vector2(bounds.xMin, textBottom - BackingPadding - clearance));
+                    new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f),
+                    new Vector2(bounds.xMin, textBottom - BackingPadding));
             }
         }
 
@@ -212,13 +206,32 @@ namespace ControllerGlyphFixer
         /// <param name="containerName">The name given to <see cref="Show"/>.</param>
         internal void Clear(Transform parent, string containerName = ContainerName)
         {
-            Transform container = parent.Find(containerName);
-            if (container)
+            foreach (string name in new[] { containerName, containerName + BackingsSuffix })
             {
-                // Detached first: Destroy only takes effect at the end of the frame
-                container.SetParent(null, worldPositionStays: false);
-                Object.Destroy(container.gameObject);
+                Transform container = parent.Find(name);
+                if (container)
+                {
+                    // Detached first: Destroy only takes effect at the end of the frame
+                    container.SetParent(null, worldPositionStays: false);
+                    Object.Destroy(container.gameObject);
+                }
             }
+        }
+
+        /// <summary>
+        /// Adds an empty container for prefix parts as the parent's last child.
+        /// </summary>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="name">The container's name (found again by <see cref="Clear"/>).</param>
+        /// <returns>The container, at the parent's origin.</returns>
+        private RectTransform CreateContainer(Transform parent, string name)
+        {
+            var container = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            container.SetParent(parent, worldPositionStays: false);
+            container.localPosition = Vector3.zero;
+            // Never a cell if the parent ever gets a layout group (the backings move among the slots)
+            container.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            return container;
         }
 
         /// <summary>
@@ -396,11 +409,10 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Moves the container just before the first slot among the parent's children, so the slots
-        /// (and labels that overhang them, like the arrow on Valheim's D-pad-up glyph) draw over the
-        /// backings. Drawn last, the R4 backing covered that arrow on slot 1 (in game 2026-11-08).
+        /// Moves a container just before the first slot among the parent's children, so the slots
+        /// (and labels that overhang them) draw over what it holds.
         /// </summary>
-        /// <param name="container">The prefixes' container, a child of <paramref name="parent"/>.</param>
+        /// <param name="container">The backings' container, a child of <paramref name="parent"/>.</param>
         /// <param name="parent">The slots' parent.</param>
         /// <param name="prefixes">The prefixes, with their slots.</param>
         // Before the first slot rather than first overall, so anything drawn under the slots (a bar
