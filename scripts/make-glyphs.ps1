@@ -9,7 +9,7 @@
 #
 # Each Steam Deck glyph is recoloured to match Valheim's dark glyphs: Kenney's plain glyph (letters
 # cut out) plus its _outline variant (rim + letters) is the solid shape; it's filled dark, the
-# outline variant is drawn over it in light, and a soft shadow goes underneath. Output: one
+# letters and a thin rim along the shape's edge are light, and a soft shadow goes underneath. Output: one
 # 144 x 144 PNG per sprite in ControllerGlyphFixer/Glyphs (the 128 px glyph with 8 px for the
 # shadow), named as ModGlyphs.SpriteNames, plus Kenney's License.txt. Commit the outputs.
 
@@ -42,24 +42,41 @@ using System.Drawing.Imaging;
 /// <summary>Recolours a Kenney glyph pair and adds a shadow (see make-glyphs.ps1).</summary>
 public static class GlyphComposer
 {
-    /// <summary>Composes one glyph onto a padded canvas.</summary>
+    /// <summary>Width of the rim in Kenney's 128 px outline variants (measured: 6 px), plus a pixel of anti-aliasing.</summary>
+    private const float KenneyRim = 7f;
+
+    /// <summary>Composes one glyph onto a padded canvas, with a light rim rimWidth px thick.</summary>
     public static Bitmap Compose(string plainPath, string outlinePath, int pad, Color fill, Color ink,
-        int shadowX, int shadowY, int blur, float shadowOpacity)
+        int shadowX, int shadowY, int blur, float shadowOpacity, float rimWidth)
     {
         using (var plain = new Bitmap(plainPath))
         using (var outline = new Bitmap(outlinePath))
         {
             int w = plain.Width + 2 * pad, h = plain.Height + 2 * pad;
             var solid = new float[w * h];
-            var rim = new float[w * h];
+            var light = new float[w * h];
             for (int y = 0; y < plain.Height; y++)
             {
                 for (int x = 0; x < plain.Width; x++)
                 {
                     float o = outline.GetPixel(x, y).A / 255f;
-                    solid[(y + pad) * w + x + pad] = Math.Max(plain.GetPixel(x, y).A / 255f, o);
-                    rim[(y + pad) * w + x + pad] = o;
+                    int i = (y + pad) * w + x + pad;
+                    // Summed, not max: at the letters' anti-aliased edges the cut-out and the letters are
+                    // each half there, and max would leave a seam the erosion below spreads
+                    solid[i] = Math.Min(1f, plain.GetPixel(x, y).A / 255f + o);
+                    light[i] = o;
                 }
+            }
+
+            // Kenney's rim is ~6 px; darken the part of it more than rimWidth px in from the edge, and
+            // keep everything deeper (letters, a pressed D-pad arm) as Kenney drew it
+            float[] pastThinRim = Erode(solid, w, h, rimWidth);
+            float[] pastKenneyRim = Erode(solid, w, h, KenneyRim);
+            var rim = new float[w * h];
+            for (int i = 0; i < rim.Length; i++)
+            {
+                float keep = Math.Max(solid[i] - pastThinRim[i], pastKenneyRim[i]);
+                rim[i] = light[i] * Math.Min(1f, keep);
             }
 
             float[] shadow = Blur(Shift(solid, w, h, shadowX, shadowY), w, h, blur);
@@ -88,6 +105,41 @@ public static class GlyphComposer
 
             return result;
         }
+    }
+
+    /// <summary>Shrinks a mask by a radius: each pixel takes the lowest value within the disc around it.</summary>
+    private static float[] Erode(float[] mask, int w, int h, float radius)
+    {
+        var eroded = new float[w * h];
+        int r = (int)Math.Ceiling(radius);
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float min = mask[y * w + x];
+                for (int dy = -r; dy <= r && min > 0f; dy++)
+                {
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        if (dx * dx + dy * dy > radius * radius)
+                        {
+                            continue;
+                        }
+
+                        int sx = x + dx, sy = y + dy;
+                        float v = sx >= 0 && sy >= 0 && sx < w && sy < h ? mask[sy * w + sx] : 0f;
+                        if (v < min)
+                        {
+                            min = v;
+                        }
+                    }
+                }
+
+                eroded[y * w + x] = min;
+            }
+        }
+
+        return eroded;
     }
 
     /// <summary>Moves an alpha mask by (dx, dy), clearing what moves in from outside.</summary>
@@ -171,7 +223,8 @@ foreach ($sprite in $Sprites.Keys) {
         if (-not (Test-Path $file)) { throw "Missing Kenney file: $file" }
     }
 
-    $glyph = [GlyphComposer]::Compose($plain, $outline, 8, $fill, $ink, 3, 4, 4, 0.8)
+    # Rim 3 px (Kenney's is ~6; in game 2026-11-08 it looked too thick next to Valheim's)
+    $glyph = [GlyphComposer]::Compose($plain, $outline, 8, $fill, $ink, 3, 4, 4, 0.8, 3.0)
     $glyph.Save((Join-Path $out "$sprite.png"), [System.Drawing.Imaging.ImageFormat]::Png)
     $glyph.Dispose()
 }

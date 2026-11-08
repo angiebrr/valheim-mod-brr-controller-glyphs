@@ -147,11 +147,9 @@ namespace ControllerGlyphFixer
                 // The backing's left edge is flush with the first slot; padding goes inside, around the
                 // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
-                Vector2 size = text.GetPreferredValues(prefix.Text);
                 float textLeft = bounds.xMin + BackingPadding;
                 float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
-                Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
-                    new Vector2(textLeft, y));
+                Vector2 size = PlaceByDrawnBounds(text, prefix.Text, side, new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
                 float backingRight = textLeft + size.x + BackingPadding;
 
@@ -375,6 +373,36 @@ namespace ControllerGlyphFixer
             image.color = color;
             image.raycastTarget = false;
             return image;
+        }
+
+        /// <summary>
+        /// Places a prefix so what TMP draws (not its line box) starts at the corner: its left edge at
+        /// the corner's x, and its bottom (above the slots) or top (below them) at the corner's y.
+        /// </summary>
+        /// <param name="text">The prefix text, already created.</param>
+        /// <param name="value">Its text, for measuring.</param>
+        /// <param name="side">Above or below the slots.</param>
+        /// <param name="corner">Bottom-left (above) or top-left (below) of the drawn prefix, in the parent's space.</param>
+        /// <returns>The drawn size; the line-box size when nothing is drawn.</returns>
+        // Sprites hang below the text line (Valheim's glyphs do too); placed by the line box, the
+        // controller glyph prefixes ran into the slots (in game 2026-11-08)
+        private Vector2 PlaceByDrawnBounds(TextMeshProUGUI text, string value, PrefixSide side, Vector2 corner)
+        {
+            Vector2 size = text.GetPreferredValues(value);
+            Vector2 pivot = new (0f, side == PrefixSide.Above ? 0f : 1f);
+            Place(text.rectTransform, pivot, size, corner);
+
+            text.ForceMeshUpdate();
+            Bounds drawn = text.textBounds;
+            if (drawn.size.x <= 0f || drawn.size.y <= 0f)
+            {
+                return size;
+            }
+
+            // textBounds is relative to the pivot, which sits at the corner
+            float edgeY = side == PrefixSide.Above ? drawn.min.y : drawn.max.y;
+            text.rectTransform.localPosition = new Vector3(corner.x - drawn.min.x, corner.y - edgeY, 0f);
+            return drawn.size;
         }
 
         /// <summary>

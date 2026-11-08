@@ -35,9 +35,9 @@ namespace ControllerGlyphFixer
         /// <summary>
         /// Our glyph's height relative to Valheim's whole reference sprite (which has transparent
         /// padding of its own). At 1 our square glyphs looked about 1.4 times Valheim's round ones in
-        /// the hotbar and hover hints (in game 2026-11-08).
+        /// the hotbar and hover hints, and at 0.8 still a little big in hover hints (in game 2026-11-08).
         /// </summary>
-        private const float SizeFactor = 0.8f;
+        private const float SizeFactor = 0.7f;
 
         /// <summary>Valheim sprite whose size and baseline ours copy.</summary>
         private const string ReferenceSprite = "button_a";
