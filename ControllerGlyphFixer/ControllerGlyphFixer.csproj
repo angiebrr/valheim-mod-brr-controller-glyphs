@@ -60,6 +60,14 @@
     <Compile Include="..\ControllerGlyphFixer.Core\**\*.cs" Exclude="..\ControllerGlyphFixer.Core\bin\**;..\ControllerGlyphFixer.Core\obj\**" Link="Core\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Glyph metrics and rects for the F5 sprite asset; Jotunn's props don't reference this module -->
+    <Reference Include="UnityEngine.TextCoreFontEngineModule">
+      <HintPath>$(VALHEIM_INSTALL)/valheim_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <PropertyGroup>
     <VALHEIM_MANAGED>$(VALHEIM_INSTALL)/valheim_Data/Managed</VALHEIM_MANAGED>
     <UNITY_FOLDER>$(SolutionDir)ControllerGlyphFixerUnity</UNITY_FOLDER>

@@ -56,6 +56,12 @@ namespace ControllerGlyphFixer
         /// <summary>The rounded prefix backing, created in Awake and destroyed with the plugin.</summary>
         private Sprite m_backingSprite;
 
+        /// <summary>Config General.ButtonGlyphs, kept to unsubscribe in OnDestroy.</summary>
+        private ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
+
+        /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
+        private ModSpriteAsset m_modSprites;
+
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
         private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
@@ -86,10 +92,21 @@ namespace ControllerGlyphFixer
                 "the Steam Input buttons from the mapping file. Needs KeyPrompts on. Keys missing from the mapping are " +
                 "listed in the log.");
 
+            ConfigEntry<ButtonGlyphOrder> buttonGlyphs = Config.Bind("General", "ButtonGlyphs", ButtonGlyphOrder.ValheimFirst,
+                "Which art shows for controller buttons in hotbar labels, prefixes and hover hints. ValheimFirst: " +
+                "Valheim's glyphs where it has them, this mod's Steam Deck glyphs for the rest (R4/R5, L4/L5, " +
+                "trackpads). ModGlyphsForAll: this mod's glyphs for every button. Buttons with no art show as [text].");
+
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;
+            m_buttonGlyphs = buttonGlyphs;
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText);
+            // Built before the services that format buttons; without it, buttons fall back to [badges]
+            m_modSprites = ModSpriteAsset.TryCreate();
+            Func<string, string> modGlyph = m_modSprites != null ? ModGlyphs.Tag : null;
+
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText,
+                buttonGlyphs, modGlyph);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
@@ -122,6 +139,8 @@ namespace ControllerGlyphFixer
                 prefixBackground.SettingChanged += RedrawPrefixes;
             }
 
+            buttonGlyphs.SettingChanged += RedrawGlyphs;
+
             CommandManager.Instance.AddConsoleCommand(
                 new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter));
 
@@ -147,6 +166,11 @@ namespace ControllerGlyphFixer
                 m_prefixBackground.SettingChanged -= RedrawPrefixes;
             }
 
+            if (m_buttonGlyphs != null)
+            {
+                m_buttonGlyphs.SettingChanged -= RedrawGlyphs;
+            }
+
             m_harmony.UnpatchSelf();
             BoundKeyStringPatch.Glyphs = null;
             InputHintPatch.Glyphs = null;
@@ -154,6 +178,20 @@ namespace ControllerGlyphFixer
             InventoryLabelsPatch.Writer = null;
             HoverTextPatch.Writer = null;
             RoundedSprite.Destroy(m_backingSprite);
+            m_modSprites?.Destroy();
+        }
+
+        /// <summary>
+        /// Redraws everything showing button glyphs after ButtonGlyphs changes: bars and prefixes, and
+        /// the hover text (its writer caches the last rewrite).
+        /// </summary>
+        /// <param name="sender">The setting.</param>
+        /// <param name="args">Unused.</param>
+        // Known limit: $KEY_ text Valheim's Localization cached updates on the next input-mode switch
+        private void RedrawGlyphs(object sender, EventArgs args)
+        {
+            RedrawPrefixes(sender, args);
+            HoverTextPatch.Writer?.Invalidate();
         }
 
         /// <summary>

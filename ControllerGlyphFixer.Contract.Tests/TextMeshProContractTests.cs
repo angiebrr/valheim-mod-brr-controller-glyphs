@@ -72,6 +72,21 @@ public class TextMeshProContractTests
         Assert.Equal("System.Int32", byName?.ReturnType.FullName);
     }
 
+    /// <summary>
+    /// The PNG decoder, called through reflection: its module is built against netstandard 2.1,
+    /// which the net48 plugin can't reference at compile time.
+    /// </summary>
+    [GameFact]
+    public void ImageConversion_LoadImage_decodes_pngs()
+    {
+        Type imageConversion = GameAssemblies.Type("UnityEngine.ImageConversionModule", "UnityEngine.ImageConversion");
+        Type texture = GameAssemblies.Type("UnityEngine.CoreModule", "UnityEngine.Texture2D");
+
+        MethodInfo loadImage = imageConversion.GetMethod("LoadImage", Static, null, new[] { texture, typeof(byte[]).InGame() }, null);
+
+        Assert.Equal("System.Boolean", loadImage?.ReturnType.FullName);
+    }
+
     /// <summary>The constructors and properties used to add each glyph, and the default asset path.</summary>
     [GameFact]
     public void Sprite_glyph_and_character_constructors_exist()

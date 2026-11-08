@@ -36,6 +36,12 @@ namespace ControllerGlyphFixer
         /// <summary>Config General.HoverText: mapped buttons for key names in hover hints (F4).</summary>
         private readonly ConfigEntry<bool> m_hoverText;
 
+        /// <summary>Config General.ButtonGlyphs: Valheim's art or the mod's tried first (F5).</summary>
+        private readonly ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
+
+        /// <summary>The mod's glyph tag for a normalized button (<see cref="ModGlyphs.Tag"/>); null without the sprite asset.</summary>
+        private readonly Func<string, string> m_modGlyph;
+
         /// <summary>Most answers <see cref="m_keyNames"/> keeps before starting over.</summary>
         private const int MaxCachedKeyNames = 256;
 
@@ -51,9 +57,14 @@ namespace ControllerGlyphFixer
         /// <param name="hotbarLabels">Config switch for F3; read live.</param>
         /// <param name="prefixColors">Config colour mode for group prefixes; read live.</param>
         /// <param name="hoverText">Config switch for F4; read live.</param>
+        /// <param name="buttonGlyphs">Config art order for mapped buttons (F5); read live.</param>
+        /// <param name="modGlyph">The mod's glyph lookup, or null if the sprite asset couldn't be built.</param>
         internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts,
-            ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors, ConfigEntry<bool> hoverText)
+            ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors, ConfigEntry<bool> hoverText,
+            ConfigEntry<ButtonGlyphOrder> buttonGlyphs, Func<string, string> modGlyph)
         {
+            m_buttonGlyphs = buttonGlyphs ?? throw new ArgumentNullException(nameof(buttonGlyphs));
+            m_modGlyph = modGlyph;
             m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
             m_enabled = enabled ?? throw new ArgumentNullException(nameof(enabled));
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
@@ -155,14 +166,17 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Translates a keyboard key through the mapping, using Valheim's glyphs where it has art.
+        /// Translates a keyboard key through the mapping, with Valheim's or the mod's glyphs per ButtonGlyphs.
         /// </summary>
         /// <param name="key">Key name as Valheim returned it (e.g. "Q", "$button_lshift").</param>
         /// <returns>The mapped display string, or null if the key isn't mapped.</returns>
         internal string TranslateKey(string key)
         {
-            return m_keyMap.Translate(key, ValheimGlyph);
+            return m_keyMap.Translate(key, ValheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
         }
+
+        /// <summary>The current ButtonGlyphs setting, for the self-test.</summary>
+        internal ButtonGlyphOrder ButtonGlyphs => m_buttonGlyphs.Value;
 
         /// <summary>
         /// Returns the buttons pressed for a keyboard key, as written in the mapping file.
@@ -175,13 +189,13 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Renders buttons with Valheim's glyphs where it has art, like <see cref="TranslateKey"/>.
+        /// Renders buttons with glyphs like <see cref="TranslateKey"/>.
         /// </summary>
         /// <param name="buttons">Button names as written in the mapping file.</param>
         /// <returns>The display string, or null for a null or empty list.</returns>
         internal string FormatButtons(IReadOnlyList<string> buttons)
         {
-            return m_keyMap.Format(buttons, ValheimGlyph);
+            return m_keyMap.Format(buttons, ValheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
         }
 
         /// <summary>
