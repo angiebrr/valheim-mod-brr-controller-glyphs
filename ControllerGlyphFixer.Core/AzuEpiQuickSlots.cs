@@ -39,5 +39,30 @@ namespace ControllerGlyphFixer.Core
         {
             return KeyPrefix + (slot + 1);
         }
+
+        /// <summary>Suffix of the config key for a quick slot's display text ("Hotkey 1 Display Text").</summary>
+        public const string DisplayTextSuffix = " Display Text";
+
+        /// <summary>
+        /// Returns the config key of a quick slot's display text.
+        /// </summary>
+        /// <param name="slot">Zero-based quick-slot index.</param>
+        /// <returns>The key name, e.g. "Hotkey 1 Display Text" for slot 0.</returns>
+        public static string DisplayTextKeyName(int slot)
+        {
+            return KeyName(slot) + DisplayTextSuffix;
+        }
+
+        /// <summary>
+        /// Returns the text AzuEPI shows on a quick slot's inventory cell.
+        /// </summary>
+        /// <param name="displayText">The slot's "Display Text" setting.</param>
+        /// <param name="shortcut">The slot's shortcut as text (KeyboardShortcut.ToString()).</param>
+        /// <returns>The display text, or the shortcut when the display text is blank.</returns>
+        // FIXME: copied from AzuEPI's quick-slot setup (RebuildQuickslots); update if AzuEPI changes it.
+        public static string CellName(string displayText, string shortcut)
+        {
+            return string.IsNullOrWhiteSpace(displayText) ? shortcut : displayText;
+        }
     }
 }

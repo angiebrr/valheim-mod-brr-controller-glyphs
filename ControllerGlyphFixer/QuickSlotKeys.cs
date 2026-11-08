@@ -73,6 +73,28 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
+        /// Gets the text AzuEPI shows on a quick slot's inventory cell.
+        /// </summary>
+        /// <param name="slot">Zero-based quick-slot index.</param>
+        /// <param name="name">Its display text, or its shortcut when that's blank.</param>
+        /// <returns>True if AzuEPI is installed and has the slot's settings.</returns>
+        internal static bool TryGetCellName(int slot, out string name)
+        {
+            name = null;
+            ConfigFile config = Config();
+            if (config == null ||
+                !config.TryGetEntry(AzuEpiQuickSlots.Section, AzuEpiQuickSlots.KeyName(slot), out ConfigEntry<KeyboardShortcut> shortcut) ||
+                !config.TryGetEntry(AzuEpiQuickSlots.Section, AzuEpiQuickSlots.DisplayTextKeyName(slot), out ConfigEntry<string> displayText))
+            {
+                return false;
+            }
+
+            // Same ToString AzuEPI uses for the cell name
+            name = AzuEpiQuickSlots.CellName(displayText.Value, shortcut.Value.ToString());
+            return true;
+        }
+
+        /// <summary>
         /// AzuEPI's config file, through BepInEx's plugin registry.
         /// </summary>
         /// <returns>The config, or null if AzuEPI isn't loaded.</returns>

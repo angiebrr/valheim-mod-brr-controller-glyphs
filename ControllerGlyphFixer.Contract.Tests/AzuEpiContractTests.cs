@@ -28,6 +28,20 @@ public class AzuEpiContractTests
         Assert.Contains(AzuEpiQuickSlots.Section, ModAssemblies.StringLiterals(ModAssemblies.AzuEpiPath));
     }
 
+    /// <summary>
+    /// The "Hotkey N Display Text" key format is still in its DLL (AzuEPI builds it with
+    /// $"Hotkey {i + 1} Display Text"), so the inventory can find the quick-slot cells by name.
+    /// </summary>
+    [AzuEpiFact]
+    public void Quick_slot_display_text_key_matches()
+    {
+        List<string> literals = ModAssemblies.StringLiterals(ModAssemblies.AzuEpiPath);
+        string format = AzuEpiQuickSlots.KeyPrefix + "{0}" + AzuEpiQuickSlots.DisplayTextSuffix;
+
+        Assert.True(literals.Contains(format) || literals.Contains(AzuEpiQuickSlots.DisplayTextSuffix),
+            $"Neither \"{format}\" nor \"{AzuEpiQuickSlots.DisplayTextSuffix}\" found in AzuEPI");
+    }
+
     /// <summary>The quick-slot count setting is still in its DLL.</summary>
     [AzuEpiFact]
     public void Quick_slot_count_setting_matches()

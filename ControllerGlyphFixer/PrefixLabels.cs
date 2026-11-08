@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using ControllerGlyphFixer.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,11 +15,11 @@ using Object = UnityEngine.Object;
 namespace ControllerGlyphFixer
 {
     /// <summary>
-    /// Which side of a group of slots its prefix and line go on.
+    /// Which side of a group of slots its prefix goes on.
     /// </summary>
     internal enum PrefixSide
     {
-        /// <summary>Above the slots (Valheim's hotbar, with free space at the top of the screen).</summary>
+        /// <summary>Above the slots (the hotbar, with free space at the top of the screen; the inventory).</summary>
         Above,
 
         /// <summary>Below the slots (AzuEPI's quick-slot bar, which sits right under the hotbar).</summary>
@@ -54,14 +55,15 @@ namespace ControllerGlyphFixer
     }
 
     /// <summary>
-    /// Draws each group's prefix at the group's left end, above or below its slots, and a line from
-    /// the prefix to the group's last slot. Everything lives under one container object, which is
-    /// rebuilt on every write and removed when glyphs turn off.
+    /// Draws each group's prefix at the group's top-left (or bottom-left, below the slots) and a line
+    /// that shows which slots it covers: across a row, down a column's left side, or an outline
+    /// around anything else (<see cref="GroupShapes"/>). Everything lives under one container object
+    /// per set of slots, rebuilt on every write and removed when glyphs turn off.
     /// </summary>
-    // TODO(F3): check sizes and spacing in game; make the side configurable if it collides with other HUD mods.
+    // TODO(F3): make the side configurable if it collides with other HUD mods.
     internal static class PrefixLabels
     {
-        /// <summary>Name of the container object added next to the slots.</summary>
+        /// <summary>Default name of the container object added next to the slots.</summary>
         internal const string ContainerName = "cgf_PrefixLabels";
 
         /// <summary>Space between the prefix and the line, and below the slots, in UI units.</summary>
@@ -82,19 +84,21 @@ namespace ControllerGlyphFixer
         /// <summary>
         /// Replaces the prefixes beside a set of slots.
         /// </summary>
-        /// <param name="parent">The slots' parent (the bar); the container is added here.</param>
+        /// <param name="parent">The slots' parent; the container is added here.</param>
         /// <param name="prefixes">One prefix per group; empty removes them all.</param>
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
-        internal static void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side)
+        /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
+        internal static void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
+            string containerName = ContainerName)
         {
-            Clear(parent);
+            Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
             {
                 return;
             }
 
-            var container = new GameObject(ContainerName, typeof(RectTransform)).GetComponent<RectTransform>();
+            var container = new GameObject(containerName, typeof(RectTransform)).GetComponent<RectTransform>();
             container.SetParent(parent, worldPositionStays: false);
             container.localPosition = Vector3.zero;
 
@@ -111,11 +115,28 @@ namespace ControllerGlyphFixer
                 Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
                     new Vector2(bounds.xMin, y));
 
-                float lineStart = bounds.xMin + size.x + Gap * 2f;
-                if (bounds.xMax - lineStart >= MinLineLength)
+                GroupShape shape = GroupShapes.Of(prefix.Slots.Select(slot => (slot.localPosition.x, slot.localPosition.y)).ToList());
+                switch (shape)
                 {
-                    float lineY = side == PrefixSide.Above ? y + size.y / 2f : y - size.y / 2f;
-                    CreateLine(container, color, lineStart, bounds.xMax, lineY);
+                    case GroupShape.Column:
+                        // Down the column's left side, from its top slot to its bottom one
+                        float x = bounds.xMin - Gap - LineThickness;
+                        CreateRect(container, color, Rect.MinMaxRect(x, bounds.yMin, x + LineThickness, bounds.yMax));
+                        break;
+                    case GroupShape.Area:
+                        CreateOutline(container, color, bounds);
+                        break;
+                    default:
+                        // Across, from the prefix to the last slot
+                        float lineStart = bounds.xMin + size.x + Gap * 2f;
+                        if (bounds.xMax - lineStart >= MinLineLength)
+                        {
+                            float lineY = side == PrefixSide.Above ? y + size.y / 2f : y - size.y / 2f;
+                            CreateRect(container, color, Rect.MinMaxRect(lineStart, lineY - LineThickness / 2f,
+                                bounds.xMax, lineY + LineThickness / 2f));
+                        }
+
+                        break;
                 }
             }
         }
@@ -124,9 +145,10 @@ namespace ControllerGlyphFixer
         /// Removes the prefixes beside a set of slots, if any.
         /// </summary>
         /// <param name="parent">The slots' parent.</param>
-        internal static void Clear(Transform parent)
+        /// <param name="containerName">The name given to <see cref="Show"/>.</param>
+        internal static void Clear(Transform parent, string containerName = ContainerName)
         {
-            Transform container = parent.Find(ContainerName);
+            Transform container = parent.Find(containerName);
             if (container)
             {
                 // Detached first: Destroy only takes effect at the end of the frame
@@ -139,10 +161,11 @@ namespace ControllerGlyphFixer
         /// Returns the texts of the prefixes beside a set of slots, in order.
         /// </summary>
         /// <param name="parent">The slots' parent.</param>
+        /// <param name="containerName">The name given to <see cref="Show"/>.</param>
         /// <returns>The prefix texts; empty if there are none.</returns>
-        internal static IReadOnlyList<string> Texts(Transform parent)
+        internal static IReadOnlyList<string> Texts(Transform parent, string containerName = ContainerName)
         {
-            Transform container = parent.Find(ContainerName);
+            Transform container = parent.Find(containerName);
             return container
                 ? container.GetComponentsInChildren<TMP_Text>().Select(text => text.text).ToArray()
                 : new string[0];
@@ -196,14 +219,28 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Adds a horizontal line.
+        /// Draws a thin outline just outside an area.
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The line colour.</param>
-        /// <param name="xStart">Left end, in the parent's local space.</param>
-        /// <param name="xEnd">Right end.</param>
-        /// <param name="y">Vertical centre.</param>
-        private static void CreateLine(Transform container, Color color, float xStart, float xEnd, float y)
+        /// <param name="area">The area to outline, in the parent's local space.</param>
+        private static void CreateOutline(Transform container, Color color, Rect area)
+        {
+            float xMin = area.xMin - Gap - LineThickness, xMax = area.xMax + Gap + LineThickness;
+            float yMin = area.yMin - Gap - LineThickness, yMax = area.yMax + Gap + LineThickness;
+            CreateRect(container, color, Rect.MinMaxRect(xMin, yMax - LineThickness, xMax, yMax));
+            CreateRect(container, color, Rect.MinMaxRect(xMin, yMin, xMax, yMin + LineThickness));
+            CreateRect(container, color, Rect.MinMaxRect(xMin, yMin, xMin + LineThickness, yMax));
+            CreateRect(container, color, Rect.MinMaxRect(xMax - LineThickness, yMin, xMax, yMax));
+        }
+
+        /// <summary>
+        /// Adds a solid rectangle (a line segment).
+        /// </summary>
+        /// <param name="container">The prefixes' container.</param>
+        /// <param name="color">The colour.</param>
+        /// <param name="area">Where it goes, in the parent's local space.</param>
+        private static void CreateRect(Transform container, Color color, Rect area)
         {
             var lineObject = new GameObject("Line", typeof(RectTransform));
             lineObject.transform.SetParent(container, worldPositionStays: false);
@@ -211,7 +248,7 @@ namespace ControllerGlyphFixer
             Image line = lineObject.AddComponent<Image>();
             line.color = color;
             line.raycastTarget = false;
-            Place(line.rectTransform, new Vector2(0f, 0.5f), new Vector2(xEnd - xStart, LineThickness), new Vector2(xStart, y));
+            Place(line.rectTransform, Vector2.zero, area.size, area.min);
         }
 
         /// <summary>

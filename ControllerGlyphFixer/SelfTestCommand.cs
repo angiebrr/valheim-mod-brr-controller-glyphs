@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using ControllerGlyphFixer.Core;
 using ControllerGlyphFixer.Patches;
@@ -32,6 +33,9 @@ namespace ControllerGlyphFixer
         /// <summary>The slot label writer; null if its reverse patch didn't apply.</summary>
         private readonly HotbarLabelWriter m_labels;
 
+        /// <summary>The inventory label writer; null if the reverse patch didn't apply.</summary>
+        private readonly InventoryLabelWriter m_inventoryLabels;
+
         /// <summary>AzuEPI's quick-slot shortcuts.</summary>
         private readonly QuickSlotKeys m_quickSlots;
 
@@ -40,11 +44,14 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="glyphs">The service the patches use.</param>
         /// <param name="labels">The slot label writer, or null if hotbar labels couldn't be set up.</param>
+        /// <param name="inventoryLabels">The inventory label writer, or null if it couldn't be set up.</param>
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
-        internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, QuickSlotKeys quickSlots)
+        internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
+            QuickSlotKeys quickSlots)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
+            m_inventoryLabels = inventoryLabels;
             m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
         }
 
@@ -68,6 +75,8 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.UpdateIcons))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.ToggleBindingHint))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.OnEnable))));
+            Check("InventoryGui.UpdateInventory label postfix applied",
+                HasOurPostfix(AccessTools.Method(typeof(InventoryGui), nameof(InventoryGui.UpdateInventory))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
@@ -76,6 +85,7 @@ namespace ControllerGlyphFixer
             Info($"Key mapping has {m_glyphs.MappedKeyCount} keys");
 
             CheckSlotLabels();
+            CheckInventoryLabels();
 
             bool showGlyphs = m_glyphs.ShowKeyPrompts;
             Info($"Controller glyphs on: {showGlyphs}; Valheim input mode is gamepad: {ZInput.IsGamepadActive()}; " +
@@ -177,6 +187,80 @@ namespace ControllerGlyphFixer
                 Check($"{bar.name} shows a prefix per group", actualPrefixes == expectedPrefixes,
                     $"got [{actualPrefixes}], expected [{expectedPrefixes}]");
             }
+        }
+
+        /// <summary>
+        /// Inventory checks: the top row's slot 1 and quick slot 1's cell show their own button, and
+        /// each shows one prefix per group. Labels only update while the inventory is open, so this
+        /// needs it opened once since glyphs last turned on.
+        /// </summary>
+        private void CheckInventoryLabels()
+        {
+            InventoryGrid grid = InventoryGui.instance ? InventoryGui.instance.m_playerGrid : null;
+            if (m_inventoryLabels == null || m_labels == null || !m_glyphs.ShowHotbarLabels)
+            {
+                Info("Skipping inventory label checks (not set up or hotbar labels off)");
+                return;
+            }
+
+            if (!grid || grid.m_elements.Count == 0)
+            {
+                Info("Inventory not built yet; open the inventory once to check its labels");
+                return;
+            }
+
+            InventoryElement topSlot = grid.m_elements[0];
+            CheckCell("Inventory top-row slot 1", topSlot, m_inventoryLabels.TopRowLabel(0));
+            CheckPrefixes("Inventory top row", topSlot.transform.parent, InventoryLabelWriter.TopRowContainer,
+                m_labels.PrefixTexts(m_labels.HotbarLabels(), Math.Min(grid.m_width, grid.m_elements.Count)));
+
+            if (!QuickSlotKeys.IsInstalled)
+            {
+                return;
+            }
+
+            InventoryElement quickSlot = m_inventoryLabels.QuickSlotCell(0);
+            if (!quickSlot)
+            {
+                Check("Inventory quick slot 1 cell found", false, "no cell showed AzuEPI's name for it");
+                return;
+            }
+
+            CheckCell("Inventory quick slot 1", quickSlot, m_inventoryLabels.QuickSlotLabel(0));
+            CheckPrefixes("Inventory quick slots", quickSlot.transform.parent, InventoryLabelWriter.QuickSlotContainer,
+                m_labels.PrefixTexts(m_labels.QuickSlotLabels(), int.MaxValue));
+        }
+
+        /// <summary>
+        /// Checks that an inventory cell shows the expected label.
+        /// </summary>
+        /// <param name="what">The cell, for the report.</param>
+        /// <param name="cell">The cell.</param>
+        /// <param name="expected">Expected label; null if the slot's key isn't mapped.</param>
+        private static void CheckCell(string what, InventoryElement cell, string expected)
+        {
+            string actual = HotbarLabelWriter.BindingText(cell.gameObject)?.text;
+            if (expected == null)
+            {
+                Info($"{what}'s key isn't in the mapping; label is \"{actual}\"");
+                return;
+            }
+
+            Check($"{what} shows its own button", actual == expected, $"got \"{actual}\", expected \"{expected}\"");
+        }
+
+        /// <summary>
+        /// Checks that a set of slots shows one prefix per group.
+        /// </summary>
+        /// <param name="what">The slots, for the report.</param>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="containerName">The prefixes' container name.</param>
+        /// <param name="expected">Expected prefix texts, in order.</param>
+        private static void CheckPrefixes(string what, Transform parent, string containerName, IReadOnlyList<string> expected)
+        {
+            string expectedText = string.Join(", ", expected);
+            string actualText = string.Join(", ", PrefixLabels.Texts(parent, containerName));
+            Check($"{what} show a prefix per group", actualText == expectedText, $"got [{actualText}], expected [{expectedText}]");
         }
 
         /// <summary>

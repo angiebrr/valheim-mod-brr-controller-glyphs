@@ -101,11 +101,23 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
+        /// Builds the labels of Valheim's hotbar slots (also used for the inventory's top row).
+        /// </summary>
+        /// <returns>The groups and each slot's own buttons.</returns>
+        internal BarLabels HotbarLabels() => LabelsFor(VanillaBarName);
+
+        /// <summary>
+        /// Builds the labels of AzuEPI's quick slots (as on its quick-slot bar).
+        /// </summary>
+        /// <returns>The groups and each quick slot's own buttons.</returns>
+        internal BarLabels QuickSlotLabels() => LabelsFor(QuickSlotBarName);
+
+        /// <summary>
         /// Builds a bar's labels from the shortcuts of every slot the bar can show (not only the
-        /// ones on screen now, so the shared button doesn't change as items are bound).
+        /// ones on screen now, so the groups don't change as items are bound).
         /// </summary>
         /// <param name="barName">Name of Valheim's hotbar or AzuEPI's quick-slot bar.</param>
-        /// <returns>The shared buttons and each slot's own buttons.</returns>
+        /// <returns>The groups and each slot's own buttons.</returns>
         internal BarLabels LabelsFor(string barName)
         {
             // AzuEPI keeps shortcuts for 8 quick slots; unused ones (default Alt + 7, ...) would stop sharing
@@ -217,22 +229,34 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Builds the prefixes for the groups that have slots on screen.
+        /// Builds the prefixes for a bar's groups that have slots on screen.
         /// </summary>
         /// <param name="bar">The hotbar.</param>
         /// <param name="labels">The bar's labels.</param>
         /// <returns>One prefix per group with at least one slot on screen.</returns>
         private List<PrefixLabel> PrefixLabelsFor(HotkeyBar bar, BarLabels labels)
         {
+            // Skips slots another mod destroyed without removing them from the list yet
+            return PrefixLabelsFor(labels, slot => slot < bar.m_elements.Count && bar.m_elements[slot].m_go
+                ? (RectTransform)bar.m_elements[slot].m_go.transform
+                : null);
+        }
+
+        /// <summary>
+        /// Builds the prefixes for the groups that have slots on screen, wherever those slots are
+        /// (a HUD bar, the inventory's top row, AzuEPI's inventory quick slots).
+        /// </summary>
+        /// <param name="labels">The labels from <see cref="LabelsFor"/>.</param>
+        /// <param name="slotRect">Returns a slot's rect on screen, or null if it isn't shown.</param>
+        /// <returns>One prefix per group with at least one slot on screen.</returns>
+        internal List<PrefixLabel> PrefixLabelsFor(BarLabels labels, Func<int, RectTransform> slotRect)
+        {
             var prefixes = new List<PrefixLabel>();
             foreach (PrefixGroup group in labels.Groups)
             {
-                // Skip slots another mod destroyed without removing them from the list yet
-                var slots = bar.m_elements
-                    .Skip(group.FirstSlot)
-                    .Take(group.SlotCount)
-                    .Where(element => element.m_go)
-                    .Select(element => (RectTransform)element.m_go.transform)
+                var slots = Enumerable.Range(group.FirstSlot, group.SlotCount)
+                    .Select(slotRect)
+                    .Where(rect => rect)
                     .ToList();
                 if (slots.Count > 0)
                 {

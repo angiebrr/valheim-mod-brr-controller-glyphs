@@ -163,8 +163,9 @@ EpicLoot.
 - **Risk:** low.
 
 ### F3. Hotbar slot labels
-- **Covers:** Valheim's hotbar and AzuExtendedPlayerInventory's quick-slot bar. Config
-  `General.HotbarLabels`; prefix colours `General.PrefixColors`.
+- **Covers:** Valheim's hotbar, AzuExtendedPlayerInventory's quick-slot bar, and in the
+  inventory the top row and AzuEPI's quick-slot cells. Config `General.HotbarLabels`; prefix
+  colours `General.PrefixColors`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
   `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
   objects added are the group prefixes and lines under one container per bar (`cgf_PrefixLabels`,
@@ -179,9 +180,16 @@ EpicLoot.
   object, not only the count. AzuEPI keeps shortcuts for 8 quick slots whatever its
   `[3 - Quick Slots] Number of Quick Slots` is; unused ones keep defaults (`Alt + 7`, ...), so
   only the first "Number of Quick Slots" count when finding the shared prefix.
-- **Not covered: inventory top row.** Vanilla `InventoryGrid.UpdateGui` labels the player
-  grid's first row `1`–`8`. Tried mapped glyphs there (2026-11-07) and dropped them: preferred
-  vanilla numbers in the inventory.
+- **Inventory (2026-11-07):** first tried full-size glyphs on the top row and dropped them;
+  now smaller glyphs (`<size=70%>`) with the same prefix groups. `InventoryLabelsPatch` postfixes
+  `InventoryGui.UpdateInventory(Player)` at low priority, after AzuEPI's postfix there.
+  `InventoryLabelWriter` labels the player grid's first row (vanilla writes `1`–`8` once when
+  the grid is built, both input modes) and AzuEPI's quick-slot cells, found by the name AzuEPI
+  writes on them (`QuickSlotCells.Find`; `AzuEpiQuickSlots.CellName`: its "Hotkey N Display
+  Text", or the shortcut when blank) and remembered until the grid is rebuilt (AzuEPI only
+  rewrites a cell's text when its name or cell changes). Prefixes sit above each group: a line
+  across a row, down a column's left side, or an outline when a group spans rows and columns
+  (`GroupShapes`). Glyphs off: top row back to `1`–`8`, quick-slot cells back to AzuEPI's text.
 - **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
   labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
   buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
@@ -225,10 +233,8 @@ EpicLoot.
   file `colors:` section, `"#RRGGBB"`/`"#RRGGBBAA"`; unlisted buttons stay neutral). Keyed by
   the group's first prefix button, so R4 looks the same everywhere. Changing the setting
   rewrites the bars (`HotbarLabelWriter.Invalidate`).
-- **Next (step 2):** the inventory: smaller glyphs on the top row (hotbar) and on AzuEPI's
-  quick-slot cells (replacing its display text, restored when glyphs turn off), with the same
-  group prefixes above each group (quick slots: above each column, line down its side; an
-  outline if a group ends mid-column).
+- **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
+  whether the grid clips anything drawn above its first row.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
 

@@ -75,14 +75,25 @@ namespace ControllerGlyphFixer
             // Hotbar labels need the raw key lookup, so only patch them if the reverse patch applied
             var quickSlots = new QuickSlotKeys();
             HotbarLabelWriter labels = null;
+            InventoryLabelWriter inventoryLabels = null;
             if (ApplyPatch(typeof(OriginalBoundKeyString)))
             {
                 labels = new HotbarLabelWriter(glyphs, quickSlots);
-                prefixColors.SettingChanged += (_, _) => HotbarLabelsPatch.Writer?.Invalidate();
                 HotbarLabelsPatch.Writer = labels;
-                ApplyPatch(typeof(HotbarLabelsPatch));            }
+                ApplyPatch(typeof(HotbarLabelsPatch));
 
-            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs, labels, quickSlots));
+                inventoryLabels = new InventoryLabelWriter(glyphs, labels);
+                InventoryLabelsPatch.Writer = inventoryLabels;
+                ApplyPatch(typeof(InventoryLabelsPatch));
+
+                prefixColors.SettingChanged += (_, _) =>
+                {
+                    HotbarLabelsPatch.Writer?.Invalidate();
+                    InventoryLabelsPatch.Writer?.Invalidate();
+                };
+            }
+
+            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots));
             CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand(this));
 
             LogGamepads();
