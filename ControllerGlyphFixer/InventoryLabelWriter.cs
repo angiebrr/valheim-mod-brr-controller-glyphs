@@ -58,13 +58,18 @@ namespace ControllerGlyphFixer
             SlotLabelAction action = SlotLabelRefresh.Decide(m_lastState, current, force: false);
             m_lastState = current;
 
+            if (action == SlotLabelAction.Skip)
+            {
+                return;
+            }
+
+            // Same per-slot buttons as the hotbar; no hold badge here yet (no free space found beside the grid)
+            BarLabels labels = action == SlotLabelAction.Write ? m_hotbar.LabelsFor(HotbarLabelWriter.VanillaBarName) : null;
             int topRow = Math.Min(grid.m_width, elements.Count);
-            for (int slot = 0; slot < topRow && action != SlotLabelAction.Skip; slot++)
+            for (int slot = 0; slot < topRow; slot++)
             {
                 TMP_Text text = HotbarLabelWriter.BindingText(elements[slot].gameObject);
-                string label = action == SlotLabelAction.Write
-                    ? m_hotbar.HotbarSlotLabel(slot)
-                    : VanillaLabel(slot);
+                string label = labels != null ? m_hotbar.SlotText(labels, slot) : VanillaLabel(slot);
                 if (text != null && label != null && text.text != label)
                 {
                     text.text = label;

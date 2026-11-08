@@ -85,6 +85,25 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>Buttons returns a key's buttons as written in the file; null if unmapped.</summary>
+    [Fact]
+    public void Buttons_returns_the_raw_button_names()
+    {
+        Assert.Equal(new[] { "R4", "DPadUp" }, SteamController.Buttons("Alpha1"));
+        Assert.Equal(new[] { "L5" }, SteamController.Buttons("Q"));
+        Assert.Null(SteamController.Buttons("E"));
+    }
+
+    /// <summary>Format renders any button list the way Translate does; empty or null gives null.</summary>
+    [Fact]
+    public void Format_renders_buttons_like_translate()
+    {
+        Assert.Equal("<dpad_up>", SteamController.Format(new[] { "DPadUp" }, FakeGlyph));
+        Assert.Equal("[LPad Up] + <buttonSouth>", SteamController.Format(new[] { "LPadUp", "A" }, FakeGlyph));
+        Assert.Null(SteamController.Format(Array.Empty<string>(), FakeGlyph));
+        Assert.Null(SteamController.Format(null, FakeGlyph));
+    }
+
     /// <summary>Keys written in the file with any supported spelling match every spelling.</summary>
     /// <param name="fileKey">How the key is written in the mapping file.</param>
     /// <param name="lookup">How Valheim or a mod asks for it.</param>

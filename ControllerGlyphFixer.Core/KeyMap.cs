@@ -161,7 +161,30 @@ namespace ControllerGlyphFixer.Core
         /// <returns>The buttons joined with " + ", each as a sprite tag or a [badge]; null if unmapped.</returns>
         public string Translate(string keyName, Func<string, string> valheimGlyph)
         {
-            if (string.IsNullOrEmpty(keyName) || !m_keys.TryGetValue(Resolve(keyName), out var buttons))
+            return Format(Buttons(keyName), valheimGlyph);
+        }
+
+        /// <summary>
+        /// Returns the buttons pressed for a key, as written in the mapping file.
+        /// </summary>
+        /// <param name="keyName">Key name in any supported spelling.</param>
+        /// <returns>The button names in order, or null if the key isn't mapped.</returns>
+        public IReadOnlyList<string> Buttons(string keyName)
+        {
+            return !string.IsNullOrEmpty(keyName) && m_keys.TryGetValue(Resolve(keyName), out var buttons)
+                ? buttons
+                : null;
+        }
+
+        /// <summary>
+        /// Renders a list of buttons, each as Valheim's glyph or a [badge], joined with " + ".
+        /// </summary>
+        /// <param name="buttons">Button names as written in the mapping file.</param>
+        /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <returns>The display string, or null for a null or empty list.</returns>
+        public string Format(IReadOnlyList<string> buttons, Func<string, string> valheimGlyph)
+        {
+            if (buttons == null || buttons.Count == 0)
             {
                 return null;
             }

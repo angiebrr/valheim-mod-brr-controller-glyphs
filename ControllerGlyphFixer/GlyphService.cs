@@ -88,6 +88,26 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
+        /// Returns the buttons pressed for a keyboard key, as written in the mapping file.
+        /// </summary>
+        /// <param name="key">Key name in any supported spelling.</param>
+        /// <returns>The button names, or null if the key isn't mapped.</returns>
+        internal IReadOnlyList<string> ButtonsFor(string key)
+        {
+            return m_keyMap.Buttons(key);
+        }
+
+        /// <summary>
+        /// Renders buttons with Valheim's glyphs where it has art, like <see cref="TranslateKey"/>.
+        /// </summary>
+        /// <param name="buttons">Button names as written in the mapping file.</param>
+        /// <returns>The display string, or null for a null or empty list.</returns>
+        internal string FormatButtons(IReadOnlyList<string> buttons)
+        {
+            return m_keyMap.Format(buttons, ValheimGlyph);
+        }
+
+        /// <summary>
         /// Returns Valheim's sprite tag for a control name, in the same style the game uses.
         /// </summary>
         /// <param name="control">Valheim control name (e.g. "buttonSouth").</param>

@@ -106,7 +106,9 @@ My mapping (test fixture and profile config):
     (mirrors ZInput's xbox/ps5/switch2 choice)
   - `GlyphMode.Decide(bool enabled, bool gamepadEnabled, bool gamepadPresent, bool settingsOpen) -> bool`
   - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, Func<string, string> translateKey) -> string` (F1/F2)
-  - `SlotLabel.For(string mainKey, IReadOnlyList<string> modifiers, bool showGlyphs, Func<string, string> translateKey) -> string` (F3)
+  - `KeyMap.Buttons(string keyName) -> IReadOnlyList<string>`, `KeyMap.Format(buttons, valheimGlyph) -> string`
+  - `SlotLabel.Buttons(string mainKey, IReadOnlyList<string> modifiers, Func<string, IReadOnlyList<string>> buttonsFor) -> IReadOnlyList<string>` (F3)
+  - `BarLabels.Split(IReadOnlyList<IReadOnlyList<string>> slots) -> BarLabels { Shared, Slots }` (F3)
   - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
@@ -163,7 +165,8 @@ EpicLoot.
   inventory's top row (the hotbar row). Config `General.HotbarLabels`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
   `OnEnable()`, and on `InventoryGrid.UpdateGui(Player, ItemDrop.ItemData)` (all private,
-  `assembly_valheim`). Only rewrite each slot's `binding` text; never add or remove objects.
+  `assembly_valheim`). Rewrite each slot's `binding` text; the only object added is one hold
+  badge per HUD bar (`cgf_HoldBadge`, a child of the bar), removed when glyphs turn off.
 - **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
   written only when the slots were rebuilt (count or first slot object changed), glyphs
   toggled, or Valheim just reset them; when glyphs turn off, Valheim's labels are restored
@@ -173,7 +176,9 @@ EpicLoot.
   the same count after Settings closes, which is why rebuilds are detected by the first slot
   object, not only the count. AzuEPI's inventory patches don't touch the top row.
 - **Inventory top row:** vanilla `InventoryGrid.UpdateGui` labels row 0 of the player grid
-  `1`–`8` in both input modes, once when the grid is built. Same labels as the hotbar.
+  `1`–`8` in both input modes, once when the grid is built. Same per-slot buttons as the
+  hotbar; no hold badge (the grid has the armour box on its right and the panel edge on its
+  left; revisit after an in-game look).
 - **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
   labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
   buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
@@ -187,21 +192,25 @@ EpicLoot.
   overwrites every label with `1`.. or blank. That's why AzuEPI's names (`R5 Up`) disappear.
   Mods patching `HotkeyBar.UpdateIcons`: MyLittleUI (prefix 800, 2 postfixes), AzuEPI (prefix
   and postfix, priority 0), EpicLoot (transpiler); none of their postfixes write labels.
-- **Implemented:** `SlotLabel.For` (Core, tested) builds a slot's label from its keyboard
-  shortcut (modifiers + main key) through the mapping; null leaves the slot alone (glyphs off,
-  no key, unmapped). `HotbarLabelsPatch` postfixes `UpdateIcons`, `ToggleBindingHint` and
+- **Implemented:** `SlotLabel.Buttons` (Core, tested) finds a slot's buttons from its keyboard
+  shortcut (modifiers + main key) through the mapping; null leaves the slot alone (no key,
+  unmapped). `BarLabels.Split` (Core, tested) moves the leading buttons all 8 slots of a bar
+  share (the R4/R5 hold) into the bar's hold badge and leaves each slot its own button(s). `HotbarLabelsPatch` postfixes `UpdateIcons`, `ToggleBindingHint` and
   `OnEnable` and calls `HotbarLabelWriter`, which only rewrites when slots were rebuilt, glyphs
   toggled, or Valheim just reset the labels, and restores Valheim's labels when glyphs turn off.
   Keys: Valheim's bar asks the original `GetBoundKeyString("HotbarN")` through a Harmony reverse
   patch (`OriginalBoundKeyString`, raw key, respects rebinding); AzuEPI's bar reads AzuEPI's
   `[8 - Quick Slot Hotkeys] Hotkey N` config at runtime (`QuickSlotKeys`, no compile reference).
   Config `General.HotbarLabels`. AzuEPI's own display names are ignored.
-- **Size / presentation (pending a screenshot):** `[R4] + (glyph)` may be too wide for a slot.
-  Alternatives to consider: a compact form (`R4+` glyph, or short labels via the mapping file's
-  `labels:` section); an outline around each bar with the hold button (R4/R5) drawn once outside
-  it and only the second button per slot; or highlighting the bar's slots while the action-set
-  button is held. Highlighting needs the Steam layout to also send a spare key while R4/R5 is
-  held (e.g. F13 on layer activation), which the mod would watch.
+- **Size / presentation (in-game look 2026-11-07):** the full `[R4] + (glyph)` label wrapped a
+  character per line in the hotbar's one-digit label box (`[` and `R` above the slot) and put
+  the glyph over the item icon on AzuEPI's bar. **Chosen:** each slot shows only its own button
+  (one glyph, like vanilla's digit) and the shared hold button shows once per bar in a badge
+  where one more slot would go, right of the rightmost slot (the bars sit at the screen's left
+  edge). Still to check in game: badge position, and whether Valheim's D-pad glyphs show their
+  direction clearly at slot-label size.
+- **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
+  send a spare key while the action set is active (e.g. F13 on layer activation).
 
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
@@ -283,9 +292,13 @@ Red → green → refactor for every Core function. Required cases:
   - `showGlyphs: false` → original result unchanged.
   - `name` starting with `Joy` → never looks up `JoyJoy…` (recursion guard).
   - unmapped key with no Joy binding → original result.
-- `SlotLabel.For`: hotbar and quick-slot keys give the mapped combos; modifiers first
-  (unmapped ones keep their name); null modifiers mean none; unmapped main key, no key, or
-  glyphs off → null (leave the label).
+- `SlotLabel.Buttons`: hotbar and quick-slot keys give the mapped buttons; modifiers first
+  (unmapped ones keep their name); null modifiers mean none; unmapped main key or no key →
+  null (leave the label).
+- `BarLabels.Split`: shared hold button moves to the bar; unmapped slots ignored; nothing in
+  common shares nothing; every slot keeps a button; one slot still splits; multi-button
+  prefixes; names match like the mapping file; no mapped slots.
+- `KeyMap.Buttons` / `KeyMap.Format`: raw button names; formatting matches `Translate`.
 - `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
   same count (new first-slot ID), count changed, glyphs on/off (restore once, never again).
 - `ValheimButtons`: every button with Valheim art; Steam-only buttons have none.
@@ -323,7 +336,8 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
   keyboard mode; `"$KEY_Hotbar1"` returns the mapped string;
 - F3: the raw `Hotbar1` key can be read (reverse patch); AzuEPI's quick slot 1 shortcut can
   be read (if installed); slot 1 of the hotbar, the quick-slot bar and the inventory's top
-  row shows the expected label (in a world, with the inventory opened once).
+  row shows its own button, and each HUD bar's hold badge shows the shared button (in a
+  world, with the inventory opened once).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and

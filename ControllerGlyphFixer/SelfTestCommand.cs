@@ -164,7 +164,8 @@ namespace ControllerGlyphFixer
                     continue;
                 }
 
-                string expected = m_labels.LabelFor(bar.name, 0);
+                BarLabels labels = m_labels.LabelsFor(bar.name);
+                string expected = m_labels.SlotText(labels, 0);
                 string actual = HotbarLabelWriter.BindingText(bar.m_elements[0].m_go)?.text;
                 if (expected == null)
                 {
@@ -172,8 +173,13 @@ namespace ControllerGlyphFixer
                     continue;
                 }
 
-                Check($"{bar.name} slot 1 shows the mapped buttons", actual == expected,
+                Check($"{bar.name} slot 1 shows its own button", actual == expected,
                     $"got \"{actual}\", expected \"{expected}\"");
+
+                string expectedBadge = m_labels.BadgeText(labels);
+                string actualBadge = HotbarLabelWriter.Badge(bar)?.text;
+                Check($"{bar.name} hold badge shows the shared button", actualBadge == expectedBadge,
+                    $"got \"{actualBadge}\", expected \"{expectedBadge}\"");
             }
         }
 
@@ -190,7 +196,7 @@ namespace ControllerGlyphFixer
                 return;
             }
 
-            string expected = m_labels.HotbarSlotLabel(0);
+            string expected = m_labels.SlotText(m_labels.LabelsFor(HotbarLabelWriter.VanillaBarName), 0);
             string actual = HotbarLabelWriter.BindingText(grid.m_elements[0].gameObject)?.text;
             if (expected == null)
             {
@@ -198,7 +204,7 @@ namespace ControllerGlyphFixer
                 return;
             }
 
-            Check("Inventory top-row slot 1 shows the mapped buttons", actual == expected,
+            Check("Inventory top-row slot 1 shows its own button", actual == expected,
                 $"got \"{actual}\", expected \"{expected}\" (open the inventory once if glyphs just turned on)");
         }
 
