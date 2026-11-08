@@ -605,6 +605,23 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
     free). Its rename hint reads "hold". First check that "Hold to stack" doesn't also fire
     while the alternate key is held.
   - **Current workaround (2026-11-08):** custom names turned off in MyLittleUI.
+- **Fix 3, one gamepad selection square at start** (needs `Azumatt.AzuExtendedPlayerInventory`;
+  found 2026-11-08):
+  - **Bug:** after loading in, both Valheim's hotbar and AzuEPI's quick-slot bar show the gamepad
+    selection square on slot 1. AzuEPI replaces `HotkeyBar.Update` (prefix returning false) with
+    its own controller (`HotkeyBarController.Hud_Update_Patch`, a `Hud.Update` postfix), which keeps
+    one selected bar and sets `m_selected = -1` on the others, but only in `SelectHotkeyBar`, on the
+    first D-pad left/right press. Until then `SelectedHotkeyBarIndex` is -1 and every bar keeps
+    Valheim's default `m_selected = 0`, and `HotkeyBar.UpdateIcons` draws a square at `m_selected`
+    whenever the gamepad is active. With the group prefixes it also makes the R4/R5 groups look
+    misaligned (the frame is larger than the slot).
+  - **Fix:** once AzuEPI has found its bars (`ExtendedPlayerInventory.HotkeyBars` set) while
+    `SelectedHotkeyBarIndex` is still -1, call its `SelectHotkeyBar(0, fromRight: false)`: the
+    hotbar keeps slot 1, the other bars get -1, exactly as the first D-pad press would. Postfix on
+    `Hud.Update` after AzuEPI's (`[HarmonyAfter]`).
+  - **Upstream:** worth reporting to AzuEPI's author (same fix inside its controller, e.g. select
+    bar 0 where it first fills `HotkeyBars`). To confirm first: the second square goes away after
+    one D-pad left/right press.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
