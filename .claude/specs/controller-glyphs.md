@@ -632,16 +632,16 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   - **Hover hints** this session: `HoverTextWriter` records each unmapped key's first line. Hover
     text doesn't say which mod wrote a line, so `HoverTextMods` names the mods with Harmony patches
     on the hovered object's `GetHoverText` (Harmony IDs shown as plugin names; cached per type;
-    only looked up on a key's first sighting): one mod, "A or B", or plain "hint" when none patch
+    only looked up on a key's first sighting): one mod, "A or B", or none ("UI Hint" alone) when none patch
     it. A best guess, said in the setting's description. Mods that add hint lines from other
     methods (e.g. MyLittleUI's smelter patches) aren't named.
   - **Shown as** a tree by key, chosen 2026-11-08 over a paste-ready YAML stub or a tree by mod
     after the one-line list was hard to read in game (~20 keys wrapping): the key, then
-    `├─ hint (AzuCraftyBoxes): Fill all` for hints, then `├─ Mod > Setting` for keybindings (the
+    `├─ AzuCraftyBoxes > UI Hint > Fill all` for hints (`A or B > UI Hint > …` when several mods patch it, `UI Hint > …` when none do; asked 2026-11-08), then `├─ Mod > Setting` for keybindings (the
     whole shortcut only for combos). `MonoTextDrawer` draws it in ConfigurationManager in an OS
     monospace font (Consolas, else Courier New; destroyed with the plugin) with a *Copy* button;
     the `.cfg` and Jotunn's Mod Settings show the one-line summary ("E (AzuCraftyBoxes, Epic
-    Loot), T (hint)"). A reload re-checks both sources against the new mapping without reading
+    Loot), T (UI Hint)"). A reload re-checks both sources against the new mapping without reading
     the mods again. My profile has ~60 keybinding settings, most of them keyboard-only
     conveniences; the description says to add only keys the Steam layout sends.
 - **Self-test:** mapping loaded, file watched, Localization cache reachable; the missing keys (INFO).

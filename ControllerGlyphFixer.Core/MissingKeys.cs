@@ -76,7 +76,7 @@ namespace ControllerGlyphFixer.Core
         /// </summary>
         /// <param name="key">Key name as first found.</param>
         /// <param name="uses">One line per place it was found, as the tree shows them.</param>
-        /// <param name="mods">Mods using it, each once ("hint" for a hint no mod patches).</param>
+        /// <param name="mods">Mods using it, each once ("UI Hint" for a hint no mod patches).</param>
         public MissingKey(string key, IReadOnlyList<string> uses, IReadOnlyList<string> mods)
         {
             Key = key;
@@ -104,8 +104,8 @@ namespace ControllerGlyphFixer.Core
         /// <summary>KeyCode name prefixes that aren't keyboard keys.</summary>
         private static readonly string[] NonKeyboardPrefixes = { "Mouse", "Joystick" };
 
-        /// <summary>Stands in for the mod in the summary when no mod patches a hint's hover text.</summary>
-        private const string UnknownHintSource = "hint";
+        /// <summary>Marks a hover-hint use; also stands in for the mod in the summary when no mod patches it.</summary>
+        private const string UiHint = "UI Hint";
 
         /// <summary>
         /// Finds the keys the mapping lacks, sorted by key.
@@ -118,7 +118,7 @@ namespace ControllerGlyphFixer.Core
             KeyMap map)
         {
             var uses = hints
-                .Select(hint => (hint.Key, Use: HintUse(hint), Mods: hint.Mods.Count > 0 ? hint.Mods : new[] { UnknownHintSource }))
+                .Select(hint => (hint.Key, Use: HintUse(hint), Mods: hint.Mods.Count > 0 ? hint.Mods : new[] { UiHint }))
                 .Concat(shortcuts.SelectMany(shortcut => shortcut.Keys.Select(key =>
                     (Key: key, Use: ShortcutUse(shortcut), Mods: (IReadOnlyList<string>)new[] { shortcut.Mod }))));
 
@@ -181,15 +181,16 @@ namespace ControllerGlyphFixer.Core
         }
 
         /// <summary>
-        /// A hint as the tree shows it: the mods that may have written it, and its text without the key.
+        /// A hint as the tree shows it, shaped like a keybinding line: the mods that may have written
+        /// it, "UI Hint", then its text without the key.
         /// </summary>
         /// <param name="hint">The hint use.</param>
-        /// <returns>"hint (AzuCraftyBoxes or My Little UI): Fill all", "hint: Fill all" or "hint".</returns>
+        /// <returns>"AzuCraftyBoxes > UI Hint > Fill all", "A or B > UI Hint > Fill all", or "UI Hint > Fill all".</returns>
         private static string HintUse(HintKeyUse hint)
         {
-            string mods = hint.Mods.Count > 0 ? $" ({string.Join(" or ", hint.Mods)})" : "";
+            string mods = hint.Mods.Count > 0 ? string.Join(" or ", hint.Mods) + " > " : "";
             string text = hint.Line.Replace("[" + hint.Key + "]", "").Trim();
-            return "hint" + mods + (text.Length > 0 ? ": " + text : "");
+            return mods + UiHint + (text.Length > 0 ? " > " + text : "");
         }
 
         /// <summary>

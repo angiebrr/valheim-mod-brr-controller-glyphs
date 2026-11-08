@@ -371,7 +371,7 @@ namespace ControllerGlyphFixer
             ConfigEntry<string> missingKeys = Config.Bind(SettingNames.KeyGlyphMapping,
                 SettingNames.KeysMissingFromMapping, MappingStatus.None, Describe(
                 "Keyboard keys your mapping doesn't have, with where each was found: in hover hints this session " +
-                "(\"hint\", with the mods that patch that object's hover text, a best guess at who wrote it), or in " +
+                "(\"Mod > UI Hint > text\", where the mod is a best guess: the mods that patch that object's hover text), or in " +
                 "other mods' keybinding settings (read once when the main menu first opens). Most keybindings are " +
                 "keyboard-only conveniences: add only the keys your Steam layout sends (Steam's controller " +
                 "configurator shows which key each button sends). Set by the mod.",

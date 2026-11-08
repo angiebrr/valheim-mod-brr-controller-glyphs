@@ -93,7 +93,7 @@ public class MissingKeysTests
             "DownArrow\n" +
             "└─ PlantEasily > DecreaseYKey\n" +
             "E\n" +
-            "├─ hint (AzuCraftyBoxes): Fill all\n" +
+            "├─ AzuCraftyBoxes > UI Hint > Fill all\n" +
             "├─ Epic Loot > Socket Overlay Shortcut\n" +
             "└─ AzuCraftyBoxes > Container Toggle Key (E + LeftShift)",
             MissingKeys.Tree(MissingKeys.Find(hints, shortcuts, SteamController)));
@@ -103,9 +103,9 @@ public class MissingKeysTests
     /// <param name="mods">Mods patching the hovered object's hover text.</param>
     /// <param name="expected">The tree's hint line.</param>
     [Theory]
-    [InlineData(new string[0], "└─ hint: Toggle crafting chest")]
-    [InlineData(new[] { "AzuCraftyBoxes" }, "└─ hint (AzuCraftyBoxes): Toggle crafting chest")]
-    [InlineData(new[] { "AzuCraftyBoxes", "My Little UI" }, "└─ hint (AzuCraftyBoxes or My Little UI): Toggle crafting chest")]
+    [InlineData(new string[0], "└─ UI Hint > Toggle crafting chest")]
+    [InlineData(new[] { "AzuCraftyBoxes" }, "└─ AzuCraftyBoxes > UI Hint > Toggle crafting chest")]
+    [InlineData(new[] { "AzuCraftyBoxes", "My Little UI" }, "└─ AzuCraftyBoxes or My Little UI > UI Hint > Toggle crafting chest")]
     public void Hint_names_the_mods_that_may_have_written_it(string[] mods, string expected)
     {
         var hints = new[] { Hint("T", "[T] Toggle crafting chest", mods) };
@@ -113,18 +113,22 @@ public class MissingKeysTests
         Assert.Equal("T\n" + expected, MissingKeys.Tree(MissingKeys.Find(hints, NoShortcuts, SteamController)));
     }
 
-    /// <summary>A hint that is only the key (nothing else on the line) shows "hint" alone.</summary>
-    [Fact]
-    public void Hint_with_no_other_text()
+    /// <summary>A hint that is only the key (nothing else on the line) ends at "UI Hint".</summary>
+    /// <param name="mods">Mods patching the hovered object's hover text.</param>
+    /// <param name="expected">The tree's hint line.</param>
+    [Theory]
+    [InlineData(new string[0], "└─ UI Hint")]
+    [InlineData(new[] { "AzuCraftyBoxes" }, "└─ AzuCraftyBoxes > UI Hint")]
+    public void Hint_with_no_other_text(string[] mods, string expected)
     {
-        var hints = new[] { Hint("E", "[E]") };
+        var hints = new[] { Hint("E", "[E]", mods) };
 
-        Assert.Equal("E\n└─ hint", MissingKeys.Tree(MissingKeys.Find(hints, NoShortcuts, SteamController)));
+        Assert.Equal("E\n" + expected, MissingKeys.Tree(MissingKeys.Find(hints, NoShortcuts, SteamController)));
     }
 
     /// <summary>
     /// The one-line summary (the .cfg and Jotunn's Mod Settings) lists each key with its mods, each
-    /// once; a hint no mod patches counts as "hint".
+    /// once; a hint no mod patches counts as "UI Hint".
     /// </summary>
     [Fact]
     public void Summary_lists_each_key_with_its_mods()
@@ -137,7 +141,7 @@ public class MissingKeysTests
             Shortcut("Valheim Configuration Manager", "Show config manager", "F1"),
         };
 
-        Assert.Equal("E (AzuCraftyBoxes, Epic Loot), F1 (Valheim Configuration Manager), T (hint)",
+        Assert.Equal("E (AzuCraftyBoxes, Epic Loot), F1 (Valheim Configuration Manager), T (UI Hint)",
             MissingKeys.Summary(MissingKeys.Find(hints, shortcuts, SteamController)));
     }
 
