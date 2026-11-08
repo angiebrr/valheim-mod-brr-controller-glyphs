@@ -90,6 +90,9 @@ namespace ControllerGlyphFixer
         /// </summary>
         private const float MappingReloadDelaySeconds = 0.5f;
 
+        /// <summary>Starts the tooltip of every setting the mod sets itself.</summary>
+        private const string ReadOnlyPrefix = "Read-only. ";
+
         /// <summary>The mapping file: loads, reloads, watches and reports status (F9).</summary>
         private MappingFile m_mappingFile;
 
@@ -399,13 +402,14 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="text">Description shown in the settings UIs and the .cfg.</param>
         /// <param name="order">Higher is listed first within the section.</param>
-        /// <param name="readOnly">True for values the mod sets (no editing, no reset button).</param>
+        /// <param name="readOnly">True for values the mod sets (no editing, no reset button, and the
+        /// tooltip starts with "Read-only." since the .cfg and some UIs can't enforce it).</param>
         /// <param name="drawer">Custom drawer for ConfigurationManager, or null for the default.</param>
         /// <returns>The description.</returns>
         private static ConfigDescription Describe(string text, int order, bool readOnly = false,
             Action<ConfigEntryBase> drawer = null)
         {
-            return new (text, null, new ConfigurationManagerAttributes
+            return new (readOnly ? ReadOnlyPrefix + text : text, null, new ConfigurationManagerAttributes
             {
                 Order = order,
                 ReadOnly = readOnly,

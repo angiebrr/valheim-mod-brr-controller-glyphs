@@ -612,7 +612,9 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   it's deleted (decided 2026-11-08; a carry-over through BepInEx's orphaned entries was built and
   removed). Short PascalCase `.cfg` keys with the long names as `DispName` were considered and
   dropped: most mods in my profile (Azumatt's, shudnal's) use readable keys with spaces, and one
-  name everywhere is simpler. Tooltips shortened to one or two sentences (asked 2026-11-08).
+  name everywhere is simpler. Tooltips shortened to one or two sentences, and read-only settings'
+  tooltips start with "Read-only." (the .cfg and Jotunn's Mod Settings may not enforce it; asked
+  2026-11-08).
 - **Status:** Core `MappingStatus` ("Loaded 20 keys", or the error plus "Still using the last good
   mapping"). A failed reload keeps the last good mapping; a failed first load maps nothing, as
   before. In shudnal's ConfigurationManager `Mapping status` has a *Reload mapping* button
