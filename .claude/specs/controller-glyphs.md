@@ -619,6 +619,12 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   Core `ShortcutAudit` lists the keys the mapping lacks (only the unmapped keys of a combo; `None`,
   mouse and joystick buttons skipped). `Mapping.UnmappedShortcuts` shows "E (EpicLoot,
   AzuCraftyBoxes), F1 (ConfigurationManager)"; the log names each setting and its whole shortcut.
+  **In game 2026-11-08:** the one-line list was hard to read (screenshot: ~20 keys wrapping in
+  ConfigurationManager). Chosen over a paste-ready YAML stub or a tree by mod: a **tree by key**
+  (Core `ShortcutAudit.Tree`: the key, then `├─ Mod > Setting` per use, the whole shortcut only for
+  combos), drawn by `MonoTextDrawer` in ConfigurationManager in an OS monospace font (Consolas,
+  else Courier New; destroyed with the plugin) with a *Copy* button. The `.cfg` and Jotunn's Mod
+  Settings keep the one-line summary.
   A reload re-checks the list against the new mapping without reading the mods again. Not seen:
   mods that keep settings in their own file or hard-code keys (hover hints' MissingKeys still
   catches those when they show a hint). My profile has ~60 shortcut settings, most of them
@@ -839,6 +845,14 @@ thin patches → in-game self-test checks → manual checklist.
 4. **v4 (branch `phase-4-mapping-setup`, started 2026-11-08):** F9 pieces 1–3 (mapping status,
    reload, mod shortcut audit) and the settings reorganisation below. F7 has no target (see F7).
 5. **v5 (next):** F9 piece 6, the Steam layout VDF audit, then the VDF → YAML generator.
+   **Also before sharing (asked 2026-11-08): rename the plugin ID.** ConfigurationManager's file
+   view lists configs by file name, and ours (`com.angiebrr.controllerglyphfixer.cfg`,
+   `….mapping.yaml`) reads oddly next to the others' `Author.ModName` style (`Azumatt.AzuAutoStore.yml`,
+   `aedenthorn.AmmoCount.cfg`); it also shows uncoloured where most mods' files are highlighted
+   (check why). Proposed: `angiebrr.ControllerGlyphFixer`. The GUID names both files, so on the
+   first run after the rename move the old `.cfg` and mapping file to the new names (keeping their
+   contents), and update the contract and self-test references to the GUID. Do it before anyone
+   else installs the mod.
 6. **Before sharing the mod:** F9 piece 4 and both READMEs.
 7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for

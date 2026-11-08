@@ -64,13 +64,17 @@ namespace ControllerGlyphFixer
             file.Value = path;
             m_missingKeys.Value = MappingStatus.None;
             m_unmappedShortcuts.Value = "Checked when the main menu first opens";
+            UnmappedShortcutsTree = m_unmappedShortcuts.Value;
         }
 
         /// <summary>The current status line (Mapping.Status).</summary>
         internal string Status => m_status.Value;
 
-        /// <summary>The current Mapping.UnmappedShortcuts text.</summary>
+        /// <summary>The current Mapping.UnmappedShortcuts text (one line).</summary>
         internal string UnmappedShortcuts => m_unmappedShortcuts.Value;
+
+        /// <summary>The same as a tree, for ConfigurationManager's monospace drawer.</summary>
+        internal string UnmappedShortcutsTree { get; private set; }
 
         /// <summary>Whether saves to the file are being watched.</summary>
         internal bool IsWatching => m_watcher != null;
@@ -138,6 +142,7 @@ namespace ControllerGlyphFixer
         internal void ShowUnmappedShortcuts(IReadOnlyList<UnmappedShortcutKey> unmapped)
         {
             m_unmappedShortcuts.Value = ShortcutAudit.Summary(unmapped);
+            UnmappedShortcutsTree = ShortcutAudit.Tree(unmapped);
         }
 
         /// <summary>

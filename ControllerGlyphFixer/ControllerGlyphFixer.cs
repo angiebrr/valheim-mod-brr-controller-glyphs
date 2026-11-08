@@ -104,6 +104,9 @@ namespace ControllerGlyphFixer
         private readonly PatchErrorLog m_cacheErrorLog = new (
             "Couldn't empty Localization's text cache; cached prompts keep their old glyphs until the next input switch");
 
+        /// <summary>Draws Mapping.UnmappedShortcuts as a monospace tree in ConfigurationManager; owns its font.</summary>
+        private MonoTextDrawer m_shortcutTreeDrawer;
+
         /// <summary>Other mods' shortcut settings, read once at the first main menu; null until then.</summary>
         private List<ModShortcut> m_modShortcuts;
 
@@ -152,6 +155,8 @@ namespace ControllerGlyphFixer
             m_prefixBackground = prefixBackground;
             m_buttonGlyphs = buttonGlyphs;
 
+            // Reads m_mappingFile only when drawn, after BindMappingFile has set it
+            m_shortcutTreeDrawer = new MonoTextDrawer(() => m_mappingFile.UnmappedShortcutsTree);
             m_mappingFile = BindMappingFile();
 
             // Built before the services that format buttons; without it, buttons fall back to [badges]
@@ -222,6 +227,7 @@ namespace ControllerGlyphFixer
             InputSystem.onDeviceChange -= OnDeviceChange;
             GUIManager.OnCustomGUIAvailable -= AuditModShortcuts;
             m_mappingFile?.Dispose();
+            m_shortcutTreeDrawer?.Destroy();
             if (m_hoverTextWriter != null)
             {
                 m_hoverTextWriter.MissingKeysChanged -= ShowMissingKeys;
@@ -379,7 +385,7 @@ namespace ControllerGlyphFixer
                 "Keys that other mods' keyboard shortcut settings use but your mapping doesn't have, with the mods " +
                 "using them. Read once when the main menu first opens; the log names each setting. Most are " +
                 "keyboard-only conveniences: add only the ones your Steam layout sends. Set by the mod.",
-                order: 1, readOnly: true));
+                order: 1, readOnly: true, drawer: m_shortcutTreeDrawer.Draw));
             return new MappingFile(MappingPath, file, status, missingKeys, unmappedShortcuts);
         }
 

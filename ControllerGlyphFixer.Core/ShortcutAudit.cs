@@ -106,6 +106,35 @@ namespace ControllerGlyphFixer.Core
         }
 
         /// <summary>
+        /// Tree form for ConfigurationManager (drawn in a monospace font): a line per key, then a
+        /// branch per setting using it, with the whole shortcut when it's a combo.
+        /// </summary>
+        /// <param name="unmapped">From <see cref="Unmapped"/>.</param>
+        /// <returns>The tree with "\n" line breaks, or "None".</returns>
+        public static string Tree(IReadOnlyList<UnmappedShortcutKey> unmapped)
+        {
+            if (unmapped.Count == 0)
+            {
+                return MappingStatus.None;
+            }
+
+            var lines = new List<string>();
+            foreach (UnmappedShortcutKey key in unmapped)
+            {
+                lines.Add(key.Key);
+                for (int i = 0; i < key.UsedBy.Count; i++)
+                {
+                    ModShortcut shortcut = key.UsedBy[i];
+                    string branch = i == key.UsedBy.Count - 1 ? "└─ " : "├─ ";
+                    string combo = shortcut.Keys.Count > 1 ? $" ({string.Join(" + ", shortcut.Keys)})" : "";
+                    lines.Add($"{branch}{shortcut.Mod} > {shortcut.Setting}{combo}");
+                }
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        /// <summary>
         /// Long form for the log: every setting that uses the key, with its whole shortcut.
         /// </summary>
         /// <param name="key">One entry from <see cref="Unmapped"/>.</param>

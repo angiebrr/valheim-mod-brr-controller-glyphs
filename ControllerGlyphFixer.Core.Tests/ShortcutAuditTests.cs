@@ -87,6 +87,35 @@ public class ShortcutAuditTests
             ShortcutAudit.LogLine(key));
     }
 
+    /// <summary>
+    /// The tree has a branch per key and a leaf per setting using it; the keys show only for combos.
+    /// </summary>
+    [Fact]
+    public void Tree_lists_each_key_with_the_settings_using_it()
+    {
+        var shortcuts = new[]
+        {
+            Shortcut("PlantEasily", "DecreaseYKey", "DownArrow"),
+            Shortcut("Epic Loot", "Socket Overlay Shortcut", "E"),
+            Shortcut("AzuCraftyBoxes", "Container Toggle Key", "E", "LeftShift"),
+        };
+
+        Assert.Equal(
+            "DownArrow\n" +
+            "└─ PlantEasily > DecreaseYKey\n" +
+            "E\n" +
+            "├─ Epic Loot > Socket Overlay Shortcut\n" +
+            "└─ AzuCraftyBoxes > Container Toggle Key (E + LeftShift)",
+            ShortcutAudit.Tree(ShortcutAudit.Unmapped(shortcuts, SteamController)));
+    }
+
+    /// <summary>No unmapped keys gives "None", like the summary.</summary>
+    [Fact]
+    public void Tree_with_no_keys_is_none()
+    {
+        Assert.Equal("None", ShortcutAudit.Tree(Array.Empty<UnmappedShortcutKey>()));
+    }
+
     /// <summary>Unbound keys, mouse buttons and joystick buttons aren't keyboard keys a layout sends.</summary>
     /// <param name="key">KeyCode name.</param>
     [Theory]
