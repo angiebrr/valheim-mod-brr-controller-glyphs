@@ -81,6 +81,15 @@ namespace ControllerGlyphFixer
         /// <summary>Shortest line worth drawing; a lone slot's prefix may already cover it.</summary>
         private const float MinLineLength = 6f;
 
+        /// <summary>Space between a prefix's text and the edge of its backing, in UI units.</summary>
+        private const float BackingPadding = 2f;
+
+        /// <summary>
+        /// Translucent black behind each prefix, so it stays readable over borders and highlights
+        /// (the inventory panel's gamepad highlight ran through it; checked in game 2026-11-07).
+        /// </summary>
+        private static readonly Color BackingColor = new (0f, 0f, 0f, 0.55f);
+
         /// <summary>
         /// Replaces the prefixes beside a set of slots.
         /// </summary>
@@ -115,6 +124,14 @@ namespace ControllerGlyphFixer
                 Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
                     new Vector2(bounds.xMin, y));
 
+                // Backing behind the text: created after it (to know its size), then moved before it
+                float textBottom = side == PrefixSide.Above ? y : y - size.y;
+                RectTransform backing = CreateRect(container, BackingColor, Rect.MinMaxRect(
+                    bounds.xMin - BackingPadding, textBottom - BackingPadding,
+                    bounds.xMin + size.x + BackingPadding, textBottom + size.y + BackingPadding));
+                backing.name = "Backing";
+                backing.SetSiblingIndex(text.transform.GetSiblingIndex());
+
                 GroupShape shape = GroupShapes.Of(prefix.Slots.Select(slot => (slot.localPosition.x, slot.localPosition.y)).ToList());
                 switch (shape)
                 {
@@ -128,7 +145,7 @@ namespace ControllerGlyphFixer
                         break;
                     default:
                         // Across, from the prefix to the last slot
-                        float lineStart = bounds.xMin + size.x + Gap * 2f;
+                        float lineStart = bounds.xMin + size.x + BackingPadding + Gap * 2f;
                         if (bounds.xMax - lineStart >= MinLineLength)
                         {
                             float lineY = side == PrefixSide.Above ? y + size.y / 2f : y - size.y / 2f;
@@ -235,12 +252,13 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Adds a solid rectangle (a line segment).
+        /// Adds a solid rectangle (a line segment or a backing).
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The colour.</param>
         /// <param name="area">Where it goes, in the parent's local space.</param>
-        private static void CreateRect(Transform container, Color color, Rect area)
+        /// <returns>The rectangle's rect.</returns>
+        private static RectTransform CreateRect(Transform container, Color color, Rect area)
         {
             var lineObject = new GameObject("Line", typeof(RectTransform));
             lineObject.transform.SetParent(container, worldPositionStays: false);
@@ -249,6 +267,7 @@ namespace ControllerGlyphFixer
             line.color = color;
             line.raycastTarget = false;
             Place(line.rectTransform, Vector2.zero, area.size, area.min);
+            return line.rectTransform;
         }
 
         /// <summary>
