@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using ControllerGlyphFixer.Core;
 using HarmonyLib;
 using TMPro;
@@ -179,16 +178,27 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Finds Valheim's xbox "A" sprite: registered once any text used it, else in Resources.
+        /// Finds Valheim's xbox sprite asset: registered once any text used it, else in Resources.
+        /// </summary>
+        /// <returns>The asset, or null if it isn't available yet.</returns>
+        internal static TMP_SpriteAsset FindValheimXbox()
+        {
+            if (MaterialReferenceManager.TryGetSpriteAsset(TMP_TextUtilities.GetHashCode(SpriteStyle.Xbox), out TMP_SpriteAsset xbox) && xbox)
+            {
+                return xbox;
+            }
+
+            xbox = Resources.Load<TMP_SpriteAsset>(TMP_Settings.defaultSpriteAssetPath + SpriteStyle.Xbox);
+            return xbox ? xbox : null;
+        }
+
+        /// <summary>
+        /// Finds Valheim's xbox "A" sprite, whose size and baseline ours copy.
         /// </summary>
         /// <returns>The sprite character, or null if Valheim's asset isn't available yet.</returns>
         private static TMP_SpriteCharacter FindReference()
         {
-            if (!MaterialReferenceManager.TryGetSpriteAsset(TMP_TextUtilities.GetHashCode(SpriteStyle.Xbox), out TMP_SpriteAsset xbox) || !xbox)
-            {
-                xbox = Resources.Load<TMP_SpriteAsset>(TMP_Settings.defaultSpriteAssetPath + SpriteStyle.Xbox);
-            }
-
+            TMP_SpriteAsset xbox = FindValheimXbox();
             if (!xbox)
             {
                 return null;
@@ -216,29 +226,13 @@ namespace ControllerGlyphFixer
             using var bytes = new MemoryStream();
             stream.CopyTo(bytes);
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, mipChain: false) { name = "cgf_" + sprite };
-            if (!LoadPng(texture, bytes.ToArray()) || texture.width != ImageSize || texture.height != ImageSize)
+            if (!PngFiles.Load(texture, bytes.ToArray()) || texture.width != ImageSize || texture.height != ImageSize)
             {
                 Object.Destroy(texture);
                 throw new InvalidOperationException($"Glyph image {sprite}.png isn't a {ImageSize} x {ImageSize} PNG");
             }
 
             return texture;
-        }
-
-        /// <summary>
-        /// Decodes a PNG into a texture with Unity's ImageConversion.LoadImage, called through
-        /// reflection: the module is built against netstandard 2.1, which this net48 plugin can't
-        /// reference at compile time (CS1705).
-        /// </summary>
-        /// <param name="texture">The texture to fill (resized to the image).</param>
-        /// <param name="png">The PNG file's bytes.</param>
-        /// <returns>True if the image was decoded.</returns>
-        /// <exception cref="InvalidOperationException">LoadImage isn't there (Unity changed).</exception>
-        private static bool LoadPng(Texture2D texture, byte[] png)
-        {
-            MethodInfo loadImage = AccessTools.Method("UnityEngine.ImageConversion:LoadImage", new[] { typeof(Texture2D), typeof(byte[]) })
-                ?? throw new InvalidOperationException("UnityEngine.ImageConversion.LoadImage(Texture2D, byte[]) not found");
-            return (bool)loadImage.Invoke(null, new object[] { texture, png });
         }
 
         /// <summary>

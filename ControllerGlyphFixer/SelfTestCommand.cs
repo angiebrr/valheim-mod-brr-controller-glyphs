@@ -9,6 +9,7 @@ using ControllerGlyphFixer.Core;
 using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Entities;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -45,6 +46,9 @@ namespace ControllerGlyphFixer
         /// <summary>The hover text writer (its missing keys and a sample rewrite).</summary>
         private readonly HoverTextWriter m_hoverText;
 
+        /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
+        private readonly ModSpriteAsset m_modSprites;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
@@ -54,9 +58,11 @@ namespace ControllerGlyphFixer
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
         /// <param name="prefixLabels">Draws the group prefixes, or null if it couldn't be set up.</param>
         /// <param name="hoverText">The hover text writer.</param>
+        /// <param name="modSprites">The mod's glyph sprite asset, or null if it couldn't be built.</param>
         internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
-            QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText)
+            QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText, ModSpriteAsset modSprites)
         {
+            m_modSprites = modSprites;
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
             m_inventoryLabels = inventoryLabels;
@@ -96,6 +102,7 @@ namespace ControllerGlyphFixer
 
             Info($"Key mapping has {m_glyphs.MappedKeyCount} keys");
 
+            CheckModGlyphs();
             CheckSlotLabels();
             CheckInventoryLabels();
             CheckHoverText();
@@ -302,6 +309,89 @@ namespace ControllerGlyphFixer
                 ? "No hover hint has used a key missing from the mapping yet"
                 : "Keys used in hover hints but missing from the mapping: " +
                   string.Join("; ", missing.Select(pair => $"{pair.Key} (\"{pair.Value}\")")));
+        }
+
+        /// <summary>
+        /// F5 checks: the glyph sprite asset was built, survived Valheim's asset sweeps, and renders
+        /// as a sprite; saves our atlas and Valheim's xbox sheet next to LogOutput.log to compare.
+        /// </summary>
+        private void CheckModGlyphs()
+        {
+            Check("Mod glyph sprite asset built", m_modSprites != null);
+            if (m_modSprites == null)
+            {
+                return;
+            }
+
+            Check("Mod glyph atlas, material and asset still loaded", m_modSprites.IsLoaded);
+            Info("Mod glyph size and baseline from " + m_modSprites.MetricsSource);
+            if (!m_modSprites.IsLoaded)
+            {
+                return;
+            }
+
+            CheckGlyphRenders();
+            Info($"ButtonGlyphs = {m_glyphs.ButtonGlyphs}; R4 + D-pad Up shows as {m_glyphs.FormatButtons(new[] { "R4", "DPadUp" })}");
+
+            SaveTexture(m_modSprites.Atlas, "cgf-glyphs-ours.png");
+            TMP_SpriteAsset xbox = ModSpriteAsset.FindValheimXbox();
+            if (xbox && xbox.spriteSheet)
+            {
+                SaveTexture(xbox.spriteSheet, "cgf-glyphs-xbox.png");
+            }
+            else
+            {
+                Info("Valheim's xbox sprite asset isn't loaded; its sheet wasn't saved");
+            }
+        }
+
+        /// <summary>
+        /// Lays out our R4 tag in a temporary text and checks TMP made it one sprite from our asset,
+        /// not the letters of the tag.
+        /// </summary>
+        private void CheckGlyphRenders()
+        {
+            var textObject = new GameObject("cgf_SelfTestGlyph");
+            try
+            {
+                TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
+                Hud hud = Hud.instance;
+                if (hud && hud.m_hoverName)
+                {
+                    text.font = hud.m_hoverName.font;
+                }
+
+                TMP_TextInfo info = text.GetTextInfo(ModGlyphs.Tag("r4"));
+                bool isOurSprite = info.characterCount == 1 &&
+                    info.characterInfo[0].elementType == TMP_TextElementType.Sprite &&
+                    info.characterInfo[0].textElement != null &&
+                    info.characterInfo[0].textElement.textAsset == m_modSprites.Asset;
+                Check("Mod glyph tag renders as one of our sprites", isOurSprite,
+                    $"{info.characterCount} characters, first is {(info.characterCount > 0 ? info.characterInfo[0].elementType.ToString() : "none")}");
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(textObject);
+            }
+        }
+
+        /// <summary>
+        /// Saves a texture as a PNG in the BepInEx folder (next to LogOutput.log) and reports the path.
+        /// </summary>
+        /// <param name="texture">The texture.</param>
+        /// <param name="fileName">File name.</param>
+        private void SaveTexture(Texture texture, string fileName)
+        {
+            string path = System.IO.Path.Combine(BepInEx.Paths.BepInExRootPath, fileName);
+            try
+            {
+                System.IO.File.WriteAllBytes(path, PngFiles.Encode(texture));
+                Info($"Saved {texture.width} x {texture.height} sheet to {path}");
+            }
+            catch (Exception ex)
+            {
+                Info($"Couldn't save {path}: {ex.Message}");
+            }
         }
 
         /// <summary>

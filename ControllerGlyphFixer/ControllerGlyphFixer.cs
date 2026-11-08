@@ -142,7 +142,7 @@ namespace ControllerGlyphFixer
             buttonGlyphs.SettingChanged += RedrawGlyphs;
 
             CommandManager.Instance.AddConsoleCommand(
-                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter));
+                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter, m_modSprites));
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;

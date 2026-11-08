@@ -87,6 +87,18 @@ public class TextMeshProContractTests
         Assert.Equal("System.Boolean", loadImage?.ReturnType.FullName);
     }
 
+    /// <summary>The PNG encoder the self-test saves sprite sheets with, also called through reflection.</summary>
+    [GameFact]
+    public void ImageConversion_EncodeToPNG_saves_textures()
+    {
+        Type imageConversion = GameAssemblies.Type("UnityEngine.ImageConversionModule", "UnityEngine.ImageConversion");
+        Type texture = GameAssemblies.Type("UnityEngine.CoreModule", "UnityEngine.Texture2D");
+
+        MethodInfo encode = imageConversion.GetMethod("EncodeToPNG", Static, null, new[] { texture }, null);
+
+        Assert.Equal("System.Byte[]", encode?.ReturnType.FullName);
+    }
+
     /// <summary>The constructors and properties used to add each glyph, and the default asset path.</summary>
     [GameFact]
     public void Sprite_glyph_and_character_constructors_exist()
