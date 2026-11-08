@@ -235,7 +235,7 @@ EpicLoot.
   rewrites the bars (`HotbarLabelWriter.Invalidate`).
 - **Backings (2026-11-07):** the inventory panel's gamepad highlight ran through `[R4]`. Each
   prefix now sits on a rounded, translucent backing (`General.PrefixBackground`, default black
-  at 55%, alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
+  at 70% (was 55%), alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
   for a column or outlined group, the prefix only. Corners: a 7-unit radius from a small sprite
   built once at startup (`RoundedSprite`, pixels from `RoundedCorners.Coverage` in Core) and
   stretched with fixed corners; Unity has no rounded shape mods can use at runtime. The
@@ -248,9 +248,13 @@ EpicLoot.
   layout box differs from what's drawn. Bounds now come from each slot's visible background
   (the largest active image on the slot or its direct children, ignoring the selected,
   equipped and queued overlays), measured in world space.
-- **Inventory spacing:** prefixes there sit 24 units above the slots
-  (`InventoryLabelWriter.PanelGap`) to clear the panel's border and gamepad highlight; the HUD
-  keeps the attached 2 units.
+- **Inventory spacing (2026-11-07):** tried 24 units above the slots to clear the panel border:
+  far too high, and it showed the HUD hotbar's own prefix peeking out from under the inventory
+  panel. Back to the attached 2 units, with the default backing darker (70%) to read over the
+  highlight. Revisit once F5's Steam glyph images replace the `[R4]` text.
+- **Edges flush (2026-11-07):** the backing's left edge sits on the first slot's and, for rows,
+  its right edge on the last slot's; padding goes inside, around the text and line. Outside
+  padding showed on one side only wherever the measured and drawn edges differed slightly.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
   whether the grid clips anything drawn above its first row.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
@@ -315,7 +319,7 @@ EpicLoot.
   - `Enabled` (bool, default true): master switch.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
   - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
-  - `PrefixBackground` (colour with alpha, default black at 55%) (F3).
+  - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
 
 ### F9. Helping other users set up their mapping

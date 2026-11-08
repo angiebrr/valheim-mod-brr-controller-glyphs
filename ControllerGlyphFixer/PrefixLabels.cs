@@ -119,10 +119,8 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
-        /// <param name="aboveGap">Space between the slots and a prefix above them; defaults to
-        /// <see cref="AboveGap"/>. Larger to clear a panel border (the inventory).</param>
         internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
-            string containerName = ContainerName, float aboveGap = AboveGap)
+            string containerName = ContainerName)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
@@ -146,13 +144,16 @@ namespace ControllerGlyphFixer
                 backing.sprite = m_backingSprite;
                 backing.type = Image.Type.Sliced;
 
+                // The backing's left edge is flush with the first slot; padding goes inside, around the
+                // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 Vector2 size = text.GetPreferredValues(prefix.Text);
-                float y = side == PrefixSide.Above ? bounds.yMax + aboveGap : bounds.yMin - Gap;
+                float textLeft = bounds.xMin + BackingPadding;
+                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
                 Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
-                    new Vector2(bounds.xMin, y));
+                    new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
-                float backingRight = bounds.xMin + size.x;
+                float backingRight = textLeft + size.x + BackingPadding;
 
                 GroupShape shape = GroupShapes.Of(prefix.Slots.Select(slot => (slot.localPosition.x, slot.localPosition.y)).ToList());
                 switch (shape)
@@ -166,13 +167,14 @@ namespace ControllerGlyphFixer
                         CreateOutline(container, color, bounds);
                         break;
                     default:
-                        // Across, from the prefix to the last slot, on the same backing
-                        float lineStart = bounds.xMin + size.x + Gap * 2f;
-                        if (bounds.xMax - lineStart >= MinLineLength)
+                        // Across, from the prefix to the last slot, on one backing flush with both end slots
+                        float lineStart = textLeft + size.x + Gap * 2f;
+                        float lineEnd = bounds.xMax - BackingPadding;
+                        if (lineEnd - lineStart >= MinLineLength)
                         {
                             float lineY = textBottom + size.y / 2f;
                             CreateRect(container, color, Rect.MinMaxRect(lineStart, lineY - LineThickness / 2f,
-                                bounds.xMax, lineY + LineThickness / 2f));
+                                lineEnd, lineY + LineThickness / 2f));
                             backingRight = bounds.xMax;
                         }
 
@@ -180,8 +182,8 @@ namespace ControllerGlyphFixer
                 }
 
                 Place(backing.rectTransform, Vector2.zero,
-                    new Vector2(backingRight - bounds.xMin + BackingPadding * 2f, size.y + BackingPadding * 2f),
-                    new Vector2(bounds.xMin - BackingPadding, textBottom - BackingPadding));
+                    new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f),
+                    new Vector2(bounds.xMin, textBottom - BackingPadding));
             }
         }
 

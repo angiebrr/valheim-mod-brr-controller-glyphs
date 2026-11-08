@@ -78,7 +78,7 @@ namespace ControllerGlyphFixer
             ConfigEntry<PrefixColorMode> prefixColors = Config.Bind("General", "PrefixColors", PrefixColorMode.Neutral,
                 "Colour of the prefix and line beside each group of slots. Neutral: the slot-label " +
                 "colour. Palette: a built-in colour per prefix button. Custom: the mapping file's colors section.");
-            ConfigEntry<Color> prefixBackground = Config.Bind("General", "PrefixBackground", new Color(0f, 0f, 0f, 0.55f),
+            ConfigEntry<Color> prefixBackground = Config.Bind("General", "PrefixBackground", new Color(0f, 0f, 0f, 0.7f),
                 "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
                 "Set the alpha to 0 to hide it.");
 
