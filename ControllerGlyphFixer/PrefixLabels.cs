@@ -461,7 +461,8 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Measures what a text draws, with the mod's glyphs trimmed to the glyph itself: their images
+        /// Measures what a text draws (each visible character's mesh quad), with the mod's glyphs
+        /// trimmed to the glyph itself: their images
         /// have transparent room for the shadow on every side (<see cref="ModGlyphs.ImageSize"/>).
         /// </summary>
         /// <param name="text">The text, with its mesh up to date.</param>
@@ -483,7 +484,9 @@ namespace ControllerGlyphFixer
                     continue;
                 }
 
-                Vector3 min = character.bottomLeft, max = character.topRight;
+                // The mesh corners: bottomLeft/topRight reach the font's ascent and descent lines for
+                // sprites, which lifted the hotbar prefix and lowered AzuEPI's (in game 2026-11-08)
+                Vector3 min = character.vertex_BL.position, max = character.vertex_TR.position;
                 bool isOurGlyph = character.elementType == TMP_TextElementType.Sprite &&
                     character.textElement != null && character.textElement.textAsset &&
                     character.textElement.textAsset.hashCode == ourAsset;
