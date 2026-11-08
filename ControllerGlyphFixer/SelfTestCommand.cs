@@ -8,7 +8,6 @@ using ControllerGlyphFixer.Core;
 using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Entities;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -173,18 +172,10 @@ namespace ControllerGlyphFixer
                 Check($"{bar.name} slot 1 shows its own button", actual == expected,
                     $"got \"{actual}\", expected \"{expected}\"");
 
-                string expectedBadge = m_labels.BadgeText(labels);
-                TMP_Text badge = HotbarLabelWriter.Badge(bar);
-                if (expectedBadge == null)
-                {
-                    // Slots share no button (e.g. an unused slot's shortcut differs), so no badge
-                    Check($"{bar.name} has no hold badge (its slots share no button)", !badge,
-                        badge ? $"badge shows \"{badge.text}\"" : null);
-                    continue;
-                }
-
-                Check($"{bar.name} hold badge shows the shared button", badge && badge.text == expectedBadge,
-                    $"got \"{(badge ? badge.text : "no badge")}\", expected \"{expectedBadge}\"");
+                string expectedBadges = string.Join(", ", m_labels.BadgeTexts(labels, bar.m_elements.Count));
+                string actualBadges = string.Join(", ", HoldBadges.Texts(bar.transform));
+                Check($"{bar.name} shows a hold badge per group", actualBadges == expectedBadges,
+                    $"got [{actualBadges}], expected [{expectedBadges}]");
             }
         }
 

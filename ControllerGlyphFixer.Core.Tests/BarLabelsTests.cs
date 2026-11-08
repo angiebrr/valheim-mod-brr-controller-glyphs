@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// BarLabelsTests.cs: unit tests for splitting a bar's shared hold button from its slot buttons (F3).
+// BarLabelsTests.cs: unit tests for grouping a bar's slots by their shared hold button (F3).
 // ------------------------------------------------------------------------------------------------
 
 using ControllerGlyphFixer.Core;
@@ -20,88 +20,116 @@ public class BarLabelsTests
     /// <returns>The button list, or null.</returns>
     private static IReadOnlyList<string> Slot(string buttons) => buttons?.Split(',');
 
-    /// <summary>My hotbar: every slot holds R4, so R4 moves to the bar and slots keep one button.</summary>
+    /// <summary>
+    /// Asserts a group's position and prefix.
+    /// </summary>
+    /// <param name="group">The group to check.</param>
+    /// <param name="firstSlot">Expected first slot.</param>
+    /// <param name="slotCount">Expected number of slots.</param>
+    /// <param name="prefix">Expected prefix buttons, comma-separated.</param>
+    private static void AssertGroup(BarGroup group, int firstSlot, int slotCount, string prefix)
+    {
+        Assert.Equal(firstSlot, group.FirstSlot);
+        Assert.Equal(slotCount, group.SlotCount);
+        Assert.Equal(prefix.Split(','), group.Prefix);
+    }
+
+    /// <summary>My hotbar: every slot holds R4, so one group; slots keep one button each.</summary>
     [Fact]
-    public void Shared_hold_button_moves_to_the_bar()
+    public void One_hold_button_makes_one_group()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,DPadUp"), Slot("R4,DPadRight"), Slot("R4,Y") });
 
-        Assert.Equal(new[] { "R4" }, labels.Shared);
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 0, slotCount: 3, prefix: "R4");
         Assert.Equal(new[] { "DPadUp" }, labels.Slots[0]);
         Assert.Equal(new[] { "DPadRight" }, labels.Slots[1]);
         Assert.Equal(new[] { "Y" }, labels.Slots[2]);
     }
 
-    /// <summary>Unmapped slots stay null and don't stop the others sharing.</summary>
+    /// <summary>Mixed hold buttons: one group per run of neighbouring slots.</summary>
     [Fact]
-    public void Unmapped_slots_are_ignored()
+    public void Mixed_hold_buttons_make_a_group_per_run()
     {
-        var labels = BarLabels.Split(new[] { Slot("R5,DPadUp"), null, Slot("R5,B") });
+        var labels = BarLabels.Split(new[] { Slot("R4,DPadUp"), Slot("R4,DPadDown"), Slot("L4,A"), Slot("L4,B") });
 
-        Assert.Equal(new[] { "R5" }, labels.Shared);
-        Assert.Null(labels.Slots[1]);
-        Assert.Equal(new[] { "B" }, labels.Slots[2]);
+        Assert.Equal(2, labels.Groups.Count);
+        AssertGroup(labels.Groups[0], firstSlot: 0, slotCount: 2, prefix: "R4");
+        AssertGroup(labels.Groups[1], firstSlot: 2, slotCount: 2, prefix: "L4");
+        Assert.Equal(new[] { "A" }, labels.Slots[2]);
     }
 
-    /// <summary>Slots with nothing in common share nothing and keep all their buttons.</summary>
+    /// <summary>The same hold button after a different one starts a new group.</summary>
     [Fact]
-    public void Nothing_in_common_shares_nothing()
+    public void A_returning_hold_button_starts_a_new_group()
     {
-        var labels = BarLabels.Split(new[] { Slot("R4,DPadUp"), Slot("R5,DPadUp") });
+        var labels = BarLabels.Split(new[] { Slot("R4,A"), Slot("L4,B"), Slot("R4,X") });
 
-        Assert.Empty(labels.Shared);
-        Assert.Equal(new[] { "R4", "DPadUp" }, labels.Slots[0]);
-        Assert.Equal(new[] { "R5", "DPadUp" }, labels.Slots[1]);
+        Assert.Equal(3, labels.Groups.Count);
+        AssertGroup(labels.Groups[2], firstSlot: 2, slotCount: 1, prefix: "R4");
     }
 
-    /// <summary>Every slot keeps at least one button, even when one slot is a prefix of another.</summary>
-    [Fact]
-    public void Every_slot_keeps_a_button()
-    {
-        var labels = BarLabels.Split(new[] { Slot("R4"), Slot("R4,Y") });
-
-        Assert.Empty(labels.Shared);
-        Assert.Equal(new[] { "R4" }, labels.Slots[0]);
-        Assert.Equal(new[] { "R4", "Y" }, labels.Slots[1]);
-    }
-
-    /// <summary>A bar with one mapped slot still moves the hold button, so it looks like the others.</summary>
+    /// <summary>A lone slot still moves its hold button to a badge, so it looks like the others.</summary>
     [Fact]
     public void Single_slot_still_moves_the_hold_button()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,DPadUp") });
 
-        Assert.Equal(new[] { "R4" }, labels.Shared);
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 0, slotCount: 1, prefix: "R4");
         Assert.Equal(new[] { "DPadUp" }, labels.Slots[0]);
     }
 
-    /// <summary>Longer shared prefixes (e.g. two held buttons) move together.</summary>
+    /// <summary>Unmapped slots stay null and split the groups around them.</summary>
+    [Fact]
+    public void Unmapped_slots_split_groups()
+    {
+        var labels = BarLabels.Split(new[] { Slot("R5,DPadUp"), null, Slot("R5,B") });
+
+        Assert.Equal(2, labels.Groups.Count);
+        AssertGroup(labels.Groups[1], firstSlot: 2, slotCount: 1, prefix: "R5");
+        Assert.Null(labels.Slots[1]);
+    }
+
+    /// <summary>A one-button slot has nothing to share: no group, it keeps its button.</summary>
+    [Fact]
+    public void One_button_slots_are_not_grouped()
+    {
+        var labels = BarLabels.Split(new[] { Slot("R4"), Slot("R4,Y") });
+
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 1, slotCount: 1, prefix: "R4");
+        Assert.Equal(new[] { "R4" }, labels.Slots[0]);
+        Assert.Equal(new[] { "Y" }, labels.Slots[1]);
+    }
+
+    /// <summary>Longer shared prefixes (two held buttons) move together; each slot keeps a button.</summary>
     [Fact]
     public void Several_shared_buttons_move_together()
     {
-        var labels = BarLabels.Split(new[] { Slot("L4,R4,A"), Slot("L4,R4,B") });
+        var labels = BarLabels.Split(new[] { Slot("L4,R4,A"), Slot("L4,R4,B"), Slot("L4,X") });
 
-        Assert.Equal(new[] { "L4", "R4" }, labels.Shared);
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 0, slotCount: 3, prefix: "L4");
+
+        labels = BarLabels.Split(new[] { Slot("L4,R4,A"), Slot("L4,R4,B") });
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 0, slotCount: 2, prefix: "L4,R4");
         Assert.Equal(new[] { "A" }, labels.Slots[0]);
     }
 
     /// <summary>Button names match the way the mapping file does (case, spaces, '_' and '-').</summary>
     [Fact]
-    public void Shared_buttons_match_like_the_mapping_file()
+    public void Hold_buttons_match_like_the_mapping_file()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,A"), Slot("r4,B") });
 
-        Assert.Equal(new[] { "R4" }, labels.Shared);
+        AssertGroup(Assert.Single(labels.Groups), firstSlot: 0, slotCount: 2, prefix: "R4");
     }
 
-    /// <summary>No slots, or no mapped slots: nothing shared, slots stay as given.</summary>
+    /// <summary>No slots, or no mapped slots: no groups, slots stay as given.</summary>
     [Fact]
-    public void No_mapped_slots_shares_nothing()
+    public void No_mapped_slots_make_no_groups()
     {
-        Assert.Empty(BarLabels.Split(Array.Empty<IReadOnlyList<string>>()).Shared);
+        Assert.Empty(BarLabels.Split(Array.Empty<IReadOnlyList<string>>()).Groups);
 
         var labels = BarLabels.Split(new IReadOnlyList<string>[] { null, null });
-        Assert.Empty(labels.Shared);
+        Assert.Empty(labels.Groups);
         Assert.All(labels.Slots, Assert.Null);
     }
 }

@@ -85,6 +85,38 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>The colors section sets a button's colour, matched like other button names.</summary>
+    [Fact]
+    public void Colors_section_sets_button_colours()
+    {
+        var map = KeyMap.Parse("colors:\n  R4: \"#9B8CFF\"\n  L 5: \"#5DCAA580\"\nkeys:\n  Q: L5\n");
+
+        Assert.Equal("#9B8CFF", map.Color("r4"));
+        Assert.Equal("#5DCAA580", map.Color("L5"));
+        Assert.Null(map.Color("R5"));
+    }
+
+    /// <summary>A colour that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
+    /// <param name="color">An invalid colour.</param>
+    [Theory]
+    [InlineData("purple")]
+    [InlineData("\"#12345\"")]
+    [InlineData("\"#GGGGGG\"")]
+    public void Invalid_colours_are_an_error(string color)
+    {
+        var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"colors:\n  R4: {color}\n"));
+
+        Assert.Contains("line 2", ex.Message);
+    }
+
+    /// <summary>Hold buttons are those pressed before another button in any key, sorted by name.</summary>
+    [Fact]
+    public void Hold_buttons_are_sorted_and_distinct()
+    {
+        Assert.Equal(new[] { "r4", "r5" }, SteamController.HoldButtons);
+        Assert.Empty(KeyMap.Parse("keys:\n  Q: L5\n").HoldButtons);
+    }
+
     /// <summary>Buttons returns a key's buttons as written in the file; null if unmapped.</summary>
     [Fact]
     public void Buttons_returns_the_raw_button_names()
@@ -254,6 +286,7 @@ public class KeyMapTests
         Assert.Equal("[R4] + <dpad_up>", map.Translate("1", FakeGlyph));
         Assert.Equal("[L5]", map.Translate("Pickup", FakeGlyph));
         Assert.Equal("[LPad Up]", map.Translate("LeftShift", FakeGlyph));
+        Assert.Equal("#9B8CFF", map.Color("R4"));
     }
 
     /// <summary>A section header with nothing under it ("keys:") is allowed.</summary>

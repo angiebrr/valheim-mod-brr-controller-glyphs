@@ -21,6 +21,8 @@ namespace ControllerGlyphFixer.Core
 # keys:    keyboard key -> the controller button(s) your Steam Input layout presses to send it.
 #          One button (Q: L5) or several, pressed together (""1"": [R4, DPadUp]).
 # labels:  text shown for buttons Valheim has no art for (default: the button name).
+# colors:  hold-button badge colours, used when the HoldBadgeColors setting is Custom
+#          (""#RRGGBB"" or ""#RRGGBBAA"", in quotes). Unlisted buttons use the slot-label colour.
 # aliases: extra spellings of a key name (e.g. what a mod writes in its hover text).
 #
 # Buttons with Valheim art: A B X Y LB RB LT RT LS RS Back Start DPadUp DPadRight DPadDown DPadLeft
@@ -32,6 +34,9 @@ namespace ControllerGlyphFixer.Core
 
 labels:
 #  LPadUp: LPad Up
+
+colors:
+#  R4: ""#9B8CFF""
 
 aliases:
 #  Pickup: Q
