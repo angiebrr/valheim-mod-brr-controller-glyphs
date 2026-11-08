@@ -232,6 +232,20 @@ public class KeyMapTests
         Assert.Equal("<leftStickPress>", map.Translate("Q", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
     }
 
+    /// <summary>
+    /// Only the first art source that has a glyph is asked: these lookups run on the $KEY_ path,
+    /// often every frame, so the other one must not build a tag that's thrown away.
+    /// </summary>
+    [Fact]
+    public void The_second_art_source_is_asked_only_when_the_first_has_nothing()
+    {
+        string NoCall(string button) => throw new InvalidOperationException("asked for " + button);
+
+        Assert.Equal("<dpad_up>", SteamController.Format(new[] { "DPadUp" }, FakeGlyph, NoCall));
+        Assert.Equal(Deck("dpad_up"),
+            SteamController.Format(new[] { "DPadUp" }, NoCall, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
+    }
+
     /// <summary>Without the mod's glyphs (the sprite asset couldn't be built), badges stay in either order.</summary>
     /// <param name="order">Lookup order.</param>
     [Theory]

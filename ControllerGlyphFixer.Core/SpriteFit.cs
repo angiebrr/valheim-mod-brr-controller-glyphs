@@ -65,10 +65,11 @@ namespace ControllerGlyphFixer.Core
         /// </summary>
         /// <param name="imageSize">Our image size (glyph plus padding).</param>
         /// <param name="glyphSize">Our glyph size inside the image.</param>
+        /// <param name="sizeFactor">As for <see cref="Match"/>: our glyph's height relative to the ascent.</param>
         /// <returns>The scale and bearing.</returns>
-        public static SpriteFit Fallback(int imageSize, int glyphSize)
+        public static SpriteFit Fallback(int imageSize, int glyphSize, float sizeFactor = 1f)
         {
-            return Match(glyphSize, glyphSize, 1f, 0f, imageSize, glyphSize);
+            return Match(glyphSize, glyphSize, 1f, 0f, imageSize, glyphSize, sizeFactor);
         }
     }
 }

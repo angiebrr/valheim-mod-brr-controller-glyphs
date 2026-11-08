@@ -471,7 +471,9 @@ namespace ControllerGlyphFixer
             Vector2 pivot = new (0f, side == PrefixSide.Above ? 0f : 1f);
             Place(text.rectTransform, pivot, size, corner);
 
-            text.ForceMeshUpdate();
+            // Ignoring the active state: TMP skips the update for a hidden text (a bar or panel shown
+            // later), which would place the prefix by its line box again
+            text.ForceMeshUpdate(ignoreActiveState: true);
             if (!TryVisibleBounds(text, out Rect drawn))
             {
                 return size;
@@ -494,7 +496,7 @@ namespace ControllerGlyphFixer
         // Untrimmed, the padding pushed AzuEPI's prefix towards Valheim's messages (in game 2026-11-08)
         private bool TryVisibleBounds(TMP_Text text, out Rect bounds)
         {
-            const float padFraction = (ModGlyphs.ImageSize - ModGlyphs.GlyphSize) / 2f / ModGlyphs.ImageSize;
+            const float padFraction = (float)ModGlyphs.ShadowPad / ModGlyphs.ImageSize;
             int ourAsset = TMP_TextUtilities.GetHashCode(ModGlyphs.AssetName);
             bool any = false;
             float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;

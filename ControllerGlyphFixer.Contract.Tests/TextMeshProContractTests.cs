@@ -73,6 +73,40 @@ public class TextMeshProContractTests
     }
 
     /// <summary>
+    /// What ModSpriteAsset reads to find Valheim's xbox sprites and copy their size, and what the
+    /// self-test uses to resolve our tag the way TMP does.
+    /// </summary>
+    [GameFact]
+    public void Sprite_lookup_and_sizing_members_exist()
+    {
+        Type spriteAsset = Tmp("TMP_SpriteAsset");
+        Type spriteAssetByRef = spriteAsset.MakeByRefType();
+
+        Assert.NotNull(Tmp("MaterialReferenceManager").GetMethod("TryGetSpriteAsset", Static, null,
+            new[] { typeof(int).InGame(), spriteAssetByRef }, null));
+        Assert.Equal("System.Int32", Tmp("TMP_TextUtilities").GetMethod("GetHashCode", Static, null,
+            new[] { typeof(string).InGame() }, null)?.ReturnType.FullName);
+        Assert.Equal("FaceInfo", Tmp("TMP_Asset").GetProperty("faceInfo", Instance)?.PropertyType.Name);
+        Assert.Equal("System.Int32", Tmp("TMP_Asset").GetProperty("hashCode", Instance)?.PropertyType.FullName);
+        Assert.Equal("TMP_Asset", Tmp("TMP_TextElement").GetProperty("textAsset", Instance)?.PropertyType.Name);
+        Assert.Equal("System.Single", TextCore("Glyph").GetProperty("scale", Instance)?.PropertyType.FullName);
+    }
+
+    /// <summary>The character info PrefixLabels measures prefixes with (mesh corners, not the line box).</summary>
+    [GameFact]
+    public void Character_info_fields_used_for_prefix_bounds_exist()
+    {
+        Type info = Tmp("TMP_CharacterInfo");
+
+        Assert.Equal("TMP_Vertex", info.GetField("vertex_BL", Instance)?.FieldType.Name);
+        Assert.Equal("TMP_Vertex", info.GetField("vertex_TR", Instance)?.FieldType.Name);
+        Assert.Equal("TMP_TextElement", info.GetField("textElement", Instance)?.FieldType.Name);
+        Assert.Equal("TMP_TextElementType", info.GetField("elementType", Instance)?.FieldType.Name);
+        Assert.Equal("System.Boolean", info.GetField("isVisible", Instance)?.FieldType.FullName);
+        Assert.Equal("Vector3", Tmp("TMP_Vertex").GetField("position", Instance)?.FieldType.Name);
+    }
+
+    /// <summary>
     /// The PNG decoder, called through reflection: its module is built against netstandard 2.1,
     /// which the net48 plugin can't reference at compile time.
     /// </summary>

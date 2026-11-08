@@ -26,6 +26,9 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Size of the glyph itself, centred in each image.</summary>
         public const int GlyphSize = 128;
 
+        /// <summary>Transparent room around the glyph on each side, for its shadow.</summary>
+        public const int ShadowPad = (ImageSize - GlyphSize) / 2;
+
         /// <summary>Normalized mapping-file button name (aliases included) to sprite name.</summary>
         // Sticks are missing: Kenney has no outline variant to recolour, and Valheim has stick art
         private static readonly Dictionary<string, string> Sprites = new ()

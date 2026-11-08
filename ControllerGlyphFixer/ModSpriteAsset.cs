@@ -30,7 +30,7 @@ namespace ControllerGlyphFixer
         private const int GlyphSize = ModGlyphs.GlyphSize;
 
         /// <summary>Padding around the glyph for its shadow.</summary>
-        private const int ShadowPad = (ImageSize - GlyphSize) / 2;
+        private const int ShadowPad = ModGlyphs.ShadowPad;
 
         /// <summary>
         /// Our glyph's height relative to Valheim's whole reference sprite (which has transparent
@@ -156,7 +156,7 @@ namespace ControllerGlyphFixer
         {
             // Our 128 px glyph matches Valheim's in size and top edge; the shadow padding overhangs
             TMP_SpriteCharacter reference = FindReference();
-            SpriteFit fit = SpriteFit.Fallback(ImageSize, GlyphSize);
+            SpriteFit fit = SpriteFit.Fallback(ImageSize, GlyphSize, SizeFactor);
             string source = "fallback";
             if (reference != null)
             {

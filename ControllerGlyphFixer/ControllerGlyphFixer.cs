@@ -113,7 +113,9 @@ namespace ControllerGlyphFixer
             ConfigEntry<ButtonGlyphOrder> buttonGlyphs = Config.Bind("General", "ButtonGlyphs", ButtonGlyphOrder.ValheimFirst,
                 "Which art shows for controller buttons in hotbar labels, prefixes and hover hints. ValheimFirst: " +
                 "Valheim's glyphs where it has them, this mod's Steam Deck glyphs for the rest (R4/R5, L4/L5, " +
-                "trackpads). ModGlyphsForAll: this mod's glyphs for every button. Buttons with no art show as [text].");
+                "trackpads). ModGlyphsForAll: this mod's glyphs for every button. Buttons with no art show as [text]. " +
+                "Bars and hover hints update at once; a few action prompts update after the next switch between " +
+                "controller and keyboard input.");
 
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;

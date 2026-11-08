@@ -79,4 +79,11 @@ public class SpriteFitTests
         Assert.Equal(144f / 128, fit.Scale, 4);
         Assert.Equal(136f, fit.BearingY, 4);
     }
+
+    /// <summary>The fallback takes the same size factor as a matched fit, so it isn't 1.4 times Valheim's size.</summary>
+    [Fact]
+    public void Fallback_uses_the_size_factor()
+    {
+        Assert.Equal(SpriteFit.Fallback(Image, Glyph).Scale * 0.7f, SpriteFit.Fallback(Image, Glyph, 0.7f).Scale, 4);
+    }
 }

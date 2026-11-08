@@ -375,9 +375,9 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   parameter; the zip isn't committed, the script says where to download it), recolours the
   128 px `Double` PNGs, pads them for the shadow and writes `ControllerGlyphFixer/Glyphs/*.png`.
   The outputs are committed and embedded in the DLL as resources, with Kenney's `License.txt`
-  beside them and a credit in the README. The whole Deck set is made (A/B/X/Y, D-pad, bumpers,
-  triggers, sticks, R4/R5/L4/L5, both trackpads and their directions; ~40 images), so
-  `ModGlyphsForAll` needs no new art.
+  beside them and a credit in the README. 28 images: A/B/X/Y, D-pad, bumpers, triggers,
+  View/Options, R4/R5/L4/L5, both trackpads and their directions. Sticks are left out (Kenney has
+  no outline variant to recolour them from), so under `ModGlyphsForAll` they keep Valheim's art.
 - **Which art wins (decided 2026-11-08):** config `General.ButtonGlyphs`:
   - `ValheimFirst` (default): Valheim's sprite where it has one (A/B/X/Y, D-pad, bumpers;
     follows Valheim's Xbox/PlayStation glyph setting), else ours, else the `[badge]`.
@@ -394,7 +394,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 - **Sprite set (plugin, `ModSpriteAsset`):** at startup, load the embedded PNGs, pack them into
   one texture (`Texture2D.PackTextures`) and build a `TMP_SpriteAsset` named `cgf_deck` with
   TMP's sprite shader (a glyph and a character per image, lookup tables updated). Register it with
-  `MaterialReferenceManager.AddSpriteAsset(hash, asset)` so `<sprite="cgf_deck" name="r4">`
+  `MaterialReferenceManager.AddSpriteAsset(asset)` (keyed by the hash of its name) so `<sprite="cgf_deck" name="r4">`
   finds it: TMP checks that table before `Resources.Load` (decompiled `TMP_Text` 2026-11-08).
   - Size and baseline copied from Valheim's `xbox` sprite asset (its `button_a` glyph metrics,
     scaled to our image size), so our glyphs line up with Valheim's in the same label.
@@ -414,9 +414,11 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   our sprite tag, and a TMP text with it has a sprite character in its text info (not the letters
   `[R4]`); dump Valheim's `xbox` sprite sheet to a PNG next to `LogOutput.log` (INFO) to compare
   the looks.
-- **Contract tests:** `MaterialReferenceManager.AddSpriteAsset(int, TMP_SpriteAsset)`,
-  `TMP_SpriteAsset.spriteGlyphTable` / `spriteCharacterTable` / `UpdateLookupTables()`, and
-  `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors we use (`Unity.TextMeshPro`).
+- **Contract tests:** `MaterialReferenceManager.AddSpriteAsset(TMP_SpriteAsset)` /
+  `TryGetSpriteAsset`, `TMP_Asset.m_Version` / `faceInfo` / `hashCode`, `TMP_SpriteAsset` tables and
+  `UpdateLookupTables()`, the `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors, the
+  `TMP_CharacterInfo` fields prefixes are measured with, `ImageConversion.LoadImage` /
+  `EncodeToPNG` (called by reflection), and `MessageHud.m_messageText`.
 - **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
   for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
 - **In game (2026-11-08), tuned over five rounds of screenshots:**
@@ -456,6 +458,17 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   - Build notes: `UnityEngine.ImageConversionModule` targets netstandard 2.1, which the net48
     plugin can't reference (CS1705), so `PngFiles` calls `LoadImage`/`EncodeToPNG` by reflection
     (contract-tested); `UnityEngine.TextCoreFontEngineModule` is referenced directly for glyph metrics.
+- **Known limits (review, 2026-11-08):**
+  - Hover-hint glyphs use `<size=75%>`, which TMP takes from the text's base size, not the size
+    around it. Inside a hint a mod wraps in its own `<size=…>`, our glyph keeps the base-relative
+    size (the `<space=0.12em>` padding does follow the current size). None of my hints do this. If
+    one does: a second sprite asset (`cgf_deck_hint`) built at 0.75 scale shrinks with its context.
+  - Switching `ButtonGlyphs` live redraws bars, prefixes and hover hints at once, but `$KEY_` text
+    Valheim's Localization cached updates after the next input-mode switch (said in the setting's
+    description). Clearing that cache is planned with F9's mapping reload.
+  - `MessageRoom` moves the messages back when AzuEPI's quick-slot row loses its prefixes through our
+    labels (glyphs off, no groups) or a world load; if AzuEPI's bar is turned off mid-session they
+    stay lowered until then. It also doesn't check where the user placed AzuEPI's bar.
 - **Later (asked 2026-11-08): `ModGlyphsForAll` everywhere.** Today it only changes text the mod
   writes (slot labels, prefixes, mapped keys in hover hints), as designed above; Valheim's own
   prompts keep Valheim's art, so a hint can mix both styles ("Use Wood" with Valheim's X next to

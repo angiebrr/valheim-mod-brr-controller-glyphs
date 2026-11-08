@@ -258,11 +258,18 @@ namespace ControllerGlyphFixer.Core
             ButtonGlyphOrder order)
         {
             string normalized = Normalize(button);
-            string glyph = order == ButtonGlyphOrder.ModGlyphsForAll
-                ? FirstGlyph(ModGlyph(normalized, modGlyph), ValheimGlyph(normalized, valheimGlyph))
-                : FirstGlyph(ValheimGlyph(normalized, valheimGlyph), ModGlyph(normalized, modGlyph));
+            bool modFirst = order == ButtonGlyphOrder.ModGlyphsForAll;
 
-            return glyph ?? "[" + (m_labels.TryGetValue(normalized, out string label) ? label : button) + "]";
+            // The second source is asked only when the first has nothing: this runs on the $KEY_ path
+            string glyph = modFirst ? ModGlyph(normalized, modGlyph) : ValheimGlyph(normalized, valheimGlyph);
+            if (string.IsNullOrEmpty(glyph))
+            {
+                glyph = modFirst ? ValheimGlyph(normalized, valheimGlyph) : ModGlyph(normalized, modGlyph);
+            }
+
+            return !string.IsNullOrEmpty(glyph)
+                ? glyph
+                : "[" + (m_labels.TryGetValue(normalized, out string label) ? label : button) + "]";
         }
 
         /// <summary>
@@ -287,16 +294,6 @@ namespace ControllerGlyphFixer.Core
             return modGlyph?.Invoke(normalized);
         }
 
-        /// <summary>
-        /// Picks the first of two glyph lookups that found something.
-        /// </summary>
-        /// <param name="first">Result of the lookup tried first.</param>
-        /// <param name="second">Result of the other lookup.</param>
-        /// <returns>The first non-empty result, or null.</returns>
-        private static string FirstGlyph(string first, string second)
-        {
-            return !string.IsNullOrEmpty(first) ? first : !string.IsNullOrEmpty(second) ? second : null;
-        }
 
         /// <summary>
         /// Turns any supported spelling of a key into the normalized name used in <see cref="m_keys"/>.
