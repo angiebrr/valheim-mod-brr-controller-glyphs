@@ -126,6 +126,36 @@ public class HintRewriterTests
         Assert.Empty(result.UnmappedKeys);
     }
 
+    /// <summary>
+    /// MyLittleUI's chest hints in gamepad mode: Valheim's cleanup removed the closing
+    /// "&lt;/b&gt;&lt;/color&gt;]" but not the opening (it only matches "yellow"), so the leftover
+    /// "[" and its tags before the glyph are removed too.
+    /// </summary>
+    /// <param name="broken">The hint as Valheim left it.</param>
+    /// <param name="repaired">The hint as vanilla hints look in gamepad mode.</param>
+    [Theory]
+    [InlineData("[<color=#ffff00ff><b>" + UseGlyph + " Open (Hold to stack)", UseGlyph + " Open (Hold to stack)")]
+    [InlineData("[<color=#ffff00ff><b><sprite=\"xbox\" name=\"button_lt\"> + " + UseGlyph + " Rename",
+        "<sprite=\"xbox\" name=\"button_lt\"> + " + UseGlyph + " Rename")]
+    public void Leftover_opening_before_a_glyph_is_removed(string broken, string repaired)
+    {
+        Assert.Equal("Chest\n" + repaired, Rewrite("Chest\n" + broken).Text);
+    }
+
+    /// <summary>
+    /// An unclosed "[" not followed by a glyph is ordinary text, and a closed one is a hint (or
+    /// not) as usual; neither is touched by the repair.
+    /// </summary>
+    /// <param name="text">Text with a bracket.</param>
+    [Theory]
+    [InlineData("[<color=#ffff00ff><b>Open")]
+    [InlineData("( Fuel [10/10")]
+    [InlineData("[<color=#ffff00ff><b>" + UseGlyph + " Open]")]
+    public void Brackets_without_a_leftover_before_a_glyph_stay(string text)
+    {
+        Assert.Equal(text, Rewrite(text).Text);
+    }
+
     /// <summary>Every hint in a text is rewritten, each on its own merits.</summary>
     [Fact]
     public void Several_hints_are_each_rewritten()
@@ -154,6 +184,7 @@ public class HintRewriterTests
     [InlineData("[<color=yellow><b>E + LeftShift</b></color>] Crafting")]
     [InlineData("[<b><color=yellow>LeftShift</color> + <color=yellow><sprite=\"xbox\" name=\"button_x\"></color></b>] Fill")]
     [InlineData("[Q] Pick up\n[Zebra]")]
+    [InlineData("Chest\n[<color=#ffff00ff><b><sprite=\"xbox\" name=\"button_x\"> Open")]
     public void Rewriting_is_idempotent(string text)
     {
         string once = Rewrite(text).Text;

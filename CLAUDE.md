@@ -102,8 +102,9 @@ and decisions there (dated).
   `<VALHEIM_INSTALL>\valheim_Data\Managed`).
 - Git: `main` is the default branch. Work on a branch per phase or feature (e.g.
   `phase-2-hover-text`), commit in focused steps with clear messages, push when asked or as
-  established in the session. The user opens and merges PRs on GitHub themselves (`gh` isn't
-  installed); write the description in the Athena template
+  established in the session. `gh` is installed and logged in as angiebrr (if Git Bash can't
+  find it, use `"/c/Program Files/GitHub CLI/gh.exe"`); create PRs only when the user asks, and
+  they merge them. Write PR descriptions in the Athena template
   (github.com/angiebrr/athenas-telemetry-svc, `.github/pull_request_template.md`) with the specs
   path as `.claude/specs/`, and offer diagrams as PNGs to drag in.
 

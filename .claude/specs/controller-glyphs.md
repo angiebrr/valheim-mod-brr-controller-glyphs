@@ -295,6 +295,11 @@ EpicLoot.
     gamepad mode (also makes keyboard mode match gamepad mode for vanilla hints and avoids
     `[[L5]]`). Partly translated hints keep their brackets.
   - Idempotent: rewriting its own output changes nothing.
+  - **Leftover repair (2026-11-08):** an unclosed `[` whose opening `<color=…>`/`<b>` tags run
+    straight into a `<sprite=` is removed with those tags. That's what Valheim's gamepad cleanup
+    leaves of a hint coloured anything but `yellow` (it strips `"></b></color>]` but only matches
+    `[<color=yellow><b><sprite=`). Other unclosed brackets stay. TODO in code: report it to
+    MyLittleUI's author; once fixed upstream the repair finds nothing to do.
   - Whether a piece is a key name is a predicate from the plugin (Unity `KeyCode` names, any
     case), so Core stays free of Unity.
 - **Patch:** postfix on `Hud.UpdateCrosshair`, low priority; runs only when `ShowKeyPrompts` and
@@ -315,7 +320,8 @@ EpicLoot.
   - **Chest in gamepad mode:** a stray `[` and yellow text to the end of the line. MyLittleUI
     writes chest hints as `[<color=#ffff00ff><b>…`; vanilla's gamepad cleanup only matches
     `<color=yellow>`, so it removes the closing `</b></color>]` but not the opening. The hint
-    has no closing bracket left, so `HintRewriter` leaves it.
+    has no closing bracket left, so the bracket rewrite can't see it; the leftover repair above
+    fixes it (added after this check).
   - Missing-key reports first named the wrong line (substring match: "Chest ( EMPTY )" contains
     `E`); `UnmappedKey.Line` now carries the hint's own line, tags removed.
 - **Out of scope:** ImpactfulSkills' crafting-panel hint (`m_recipeDecription`, not hover text);
@@ -417,6 +423,25 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 outside your Steam layout and must match it"; the four setup steps (open the file, find each
 key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
 sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
+
+### F10. AutomaticFuel x MyLittleUI compat plugin (later, separate mod)
+- **Problem:** MyLittleUI's postfixes on `Smelter.OnHoverAddFuel` / `OnHoverAddOre` replace the
+  whole `__result`; when they run after AutomaticFuel's, its "[B] AutoFuel …" line is lost.
+  Fuelling still works; only the hint is missing.
+- **Plan:** a tiny separate BepInEx plugin (not part of ControllerGlyphFixer, whose rules forbid
+  touching other mods' patches). After all plugins load (`Chainloader` done), it finds
+  AutomaticFuel's two postfixes (`TastyChickenLegs.AutomaticFuel`, classes
+  `Smelter_GetHoverText_Patch` / `Smelter_GetHoverTextFuel_Patch`) via `Harmony.GetPatchInfo`,
+  unpatches them, and patches them again with `Priority.Last` (or `after: shudnal.MyLittleUI`),
+  so they append to MyLittleUI's text. If either mod is missing or renamed, it logs a warning
+  and does nothing. Contract test: the two patch classes still exist in AutomaticFuel's DLL.
+- **Alternatives:** turn off MyLittleUI's `hoverSmelterShowFuelAndItem` and
+  `hoverSmelterEstimatedTime`; or ask AutomaticFuel's author to add
+  `[HarmonyAfter("shudnal.MyLittleUI")]` to those two patches (no source repo or licence found).
+- **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
+  add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
+  lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
+  chest hints use a non-`yellow` colour (`#ffff00ff`).
 
 ## Testing strategy
 
@@ -530,6 +555,7 @@ thin patches → in-game self-test checks → manual checklist.
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
+6. **Later:** F10 compat plugin (separate mod).
    Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
