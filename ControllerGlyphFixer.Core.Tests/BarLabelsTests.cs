@@ -62,6 +62,7 @@ public class BarLabelsTests
 
         Assert.Empty(labels.Shared);
         Assert.Equal(new[] { "R4" }, labels.Slots[0]);
+        Assert.Equal(new[] { "R4", "Y" }, labels.Slots[1]);
     }
 
     /// <summary>A bar with one mapped slot still moves the hold button, so it looks like the others.</summary>
