@@ -172,10 +172,10 @@ namespace ControllerGlyphFixer
                 Check($"{bar.name} slot 1 shows its own button", actual == expected,
                     $"got \"{actual}\", expected \"{expected}\"");
 
-                string expectedBadges = string.Join(", ", m_labels.BadgeTexts(labels, bar.m_elements.Count));
-                string actualBadges = string.Join(", ", HoldBadges.Texts(bar.transform));
-                Check($"{bar.name} shows a hold badge per group", actualBadges == expectedBadges,
-                    $"got [{actualBadges}], expected [{expectedBadges}]");
+                string expectedPrefixes = string.Join(", ", m_labels.PrefixTexts(labels, bar.m_elements.Count));
+                string actualPrefixes = string.Join(", ", PrefixLabels.Texts(bar.transform));
+                Check($"{bar.name} shows a prefix per group", actualPrefixes == expectedPrefixes,
+                    $"got [{actualPrefixes}], expected [{expectedPrefixes}]");
             }
         }
 

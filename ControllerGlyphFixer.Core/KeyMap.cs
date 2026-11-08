@@ -78,7 +78,7 @@ namespace ControllerGlyphFixer.Core
             m_colors = colors;
 
             // Buttons held while pressing another one (the action-set buttons), for palette colours
-            HoldButtons = keys.Values
+            PrefixButtons = keys.Values
                 .SelectMany(buttons => buttons.Take(buttons.Count - 1))
                 .Select(Normalize)
                 .Distinct()
@@ -94,9 +94,9 @@ namespace ControllerGlyphFixer.Core
 
         /// <summary>
         /// Normalized names of buttons pressed before another button in any key (e.g. "r4"),
-        /// sorted by name. <see cref="BadgeColors"/> numbers palette colours in this order.
+        /// sorted by name. <see cref="PrefixColors"/> numbers palette colours in this order.
         /// </summary>
-        public IReadOnlyList<string> HoldButtons { get; }
+        public IReadOnlyList<string> PrefixButtons { get; }
 
         /// <summary>
         /// Returns a button's colour from the colors section.

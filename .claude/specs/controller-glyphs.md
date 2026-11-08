@@ -109,8 +109,8 @@ My mapping (test fixture and profile config):
   - `KeyMap.Buttons(string keyName) -> IReadOnlyList<string>`, `KeyMap.Format(buttons, valheimGlyph) -> string`
   - `SlotLabel.Buttons(string mainKey, IReadOnlyList<string> modifiers, Func<string, IReadOnlyList<string>> buttonsFor) -> IReadOnlyList<string>` (F3)
   - `BarLabels.Split(IReadOnlyList<IReadOnlyList<string>> slots) -> BarLabels { Groups, Slots }` (F3)
-  - `BadgeColors.For(BadgeColorMode mode, IReadOnlyList<string> prefix, KeyMap map) -> string` (F3);
-    `KeyMap.Color(button)`, `KeyMap.HoldButtons`
+  - `PrefixColors.For(PrefixColorMode mode, IReadOnlyList<string> prefix, KeyMap map) -> string` (F3);
+    `KeyMap.Color(button)`, `KeyMap.PrefixButtons`
   - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
@@ -164,10 +164,10 @@ EpicLoot.
 
 ### F3. Hotbar slot labels
 - **Covers:** Valheim's hotbar and AzuExtendedPlayerInventory's quick-slot bar. Config
-  `General.HotbarLabels`; badge colours `General.HoldBadgeColors`.
+  `General.HotbarLabels`; prefix colours `General.PrefixColors`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
   `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
-  objects added are the group badges and lines under one container per bar (`cgf_HoldBadges`,
+  objects added are the group prefixes and lines under one container per bar (`cgf_PrefixLabels`,
   a child of the bar), rebuilt on each write and removed when glyphs turn off.
 - **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
   written only when the slots were rebuilt (count or first slot object changed), glyphs
@@ -178,7 +178,7 @@ EpicLoot.
   the same count after Settings closes, which is why rebuilds are detected by the first slot
   object, not only the count. AzuEPI keeps shortcuts for 8 quick slots whatever its
   `[3 - Quick Slots] Number of Quick Slots` is; unused ones keep defaults (`Alt + 7`, ...), so
-  only the first "Number of Quick Slots" count when finding the shared hold button.
+  only the first "Number of Quick Slots" count when finding the shared prefix.
 - **Not covered: inventory top row.** Vanilla `InventoryGrid.UpdateGui` labels the player
   grid's first row `1`–`8`. Tried mapped glyphs there (2026-11-07) and dropped them: preferred
   vanilla numbers in the inventory.
@@ -210,19 +210,24 @@ EpicLoot.
 - **Size / presentation (in-game look 2026-11-07):** the full `[R4] + (glyph)` label wrapped a
   character per line in the hotbar's one-digit label box (`[` and `R` above the slot) and put
   the glyph over the item icon on AzuEPI's bar. Each slot now shows only its own button (one
-  glyph, like vanilla's digit); a badge right of the last slot looked good (2026-11-07).
-- **Groups (2026-11-07):** each group gets its badge at its left end with a thin line to its
-  last slot (`HoldBadges`): above the hotbar (free space at the top of the screen), below
-  AzuEPI's bar (the hotbar is right above it). The bars start ~20 px from the screen edge, so
-  nothing fits directly to their left. Mixed hold buttons in one bar give one badge per run.
-- **Colours:** `General.HoldBadgeColors` = `Neutral` (default; slot-label colour), `Palette`
-  (built-in colour per hold button, numbered in hold-button name order) or `Custom` (mapping
+  glyph, like vanilla's digit); a prefix right of the last slot looked good (2026-11-07).
+- **Groups (2026-11-07):** each prefix group gets its prefix at its left end with a thin line
+  to its last slot (`PrefixLabels`): above the hotbar (8 UI units of space; 2 looked cramped),
+  below AzuEPI's bar (the hotbar is right above it). The bars start ~20 px from the screen
+  edge, so nothing fits directly to their left. Mixed prefix buttons in one bar give one
+  prefix per run.
+- **Naming:** "prefix", not "hold": the shared leading buttons are an action-set hold in my
+  layout, but Steam Input also has chords and mode shifts, so the mod doesn't assume how
+  they're pressed. A *prefix group* is a run of slots; its *prefix* is the label beside it.
+  ("Badge" still means the `[R4]` text shown for buttons Valheim has no art for.)
+- **Colours:** `General.PrefixColors` = `Neutral` (default; slot-label colour), `Palette`
+  (built-in colour per prefix button, numbered in prefix-button name order) or `Custom` (mapping
   file `colors:` section, `"#RRGGBB"`/`"#RRGGBBAA"`; unlisted buttons stay neutral). Keyed by
-  the group's first hold button, so R4 looks the same everywhere. Changing the setting
+  the group's first prefix button, so R4 looks the same everywhere. Changing the setting
   rewrites the bars (`HotbarLabelWriter.Invalidate`).
 - **Next (step 2):** the inventory: smaller glyphs on the top row (hotbar) and on AzuEPI's
   quick-slot cells (replacing its display text, restored when glyphs turn off), with the same
-  group badges above each group (quick slots: above each column, line down its side; an
+  group prefixes above each group (quick slots: above each column, line down its side; an
   outline if a group ends mid-column).
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
@@ -310,14 +315,14 @@ Red → green → refactor for every Core function. Required cases:
 - `SlotLabel.Buttons`: hotbar and quick-slot keys give the mapped buttons; modifiers first
   (unmapped ones keep their name); null modifiers mean none; unmapped main key or no key →
   null (leave the label).
-- `BarLabels.Split`: one hold button → one group; mixed → a group per run; a returning hold
+- `BarLabels.Split`: one prefix button → one group; mixed → a group per run; a returning prefix
   button starts a new group; a lone slot still gets a group; unmapped slots split groups;
   one-button slots aren't grouped; multi-button prefixes; names match like the mapping file;
   no mapped slots.
-- `BadgeColors.For`: neutral → none; palette in hold-button name order, unknown buttons none,
+- `PrefixColors.For`: neutral → none; palette in prefix-button name order, unknown buttons none,
   wraps around; custom from `colors:`, unlisted none; multi-button prefixes use the first.
 - `KeyMap` colors section: values matched like button names; invalid colours name the line;
-  `HoldButtons` sorted and distinct.
+  `PrefixButtons` sorted and distinct.
 - `KeyMap.Buttons` / `KeyMap.Format`: raw button names; formatting matches `Translate`.
 - `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
   same count (new first-slot ID), count changed, glyphs on/off (restore once, never again).
@@ -355,7 +360,7 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
   keyboard mode; `"$KEY_Hotbar1"` returns the mapped string;
 - F3: the raw `Hotbar1` key can be read (reverse patch); AzuEPI's quick slot 1 shortcut can
   be read (if installed); slot 1 of the hotbar and the quick-slot bar shows its own button,
-  and each bar shows one hold badge per group of slots on screen
+  and each bar shows one prefix per group of slots on screen
   (in a world).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a

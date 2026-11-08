@@ -61,11 +61,11 @@ namespace ControllerGlyphFixer
             ConfigEntry<bool> hotbarLabels = Config.Bind("General", "HotbarLabels", true,
                 "While a gamepad is connected, label hotbar and AzuExtendedPlayerInventory quick slots with the " +
                 "Steam Input buttons from the mapping file instead of keyboard keys or nothing.");
-            ConfigEntry<BadgeColorMode> badgeColors = Config.Bind("General", "HoldBadgeColors", BadgeColorMode.Neutral,
-                "Colour of the hold-button badge and line beside each group of slots. Neutral: the slot-label " +
-                "colour. Palette: a built-in colour per hold button. Custom: the mapping file's colors section.");
+            ConfigEntry<PrefixColorMode> prefixColors = Config.Bind("General", "PrefixColors", PrefixColorMode.Neutral,
+                "Colour of the prefix and line beside each group of slots. Neutral: the slot-label " +
+                "colour. Palette: a built-in colour per prefix button. Custom: the mapping file's colors section.");
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, badgeColors);
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
@@ -78,7 +78,7 @@ namespace ControllerGlyphFixer
             if (ApplyPatch(typeof(OriginalBoundKeyString)))
             {
                 labels = new HotbarLabelWriter(glyphs, quickSlots);
-                badgeColors.SettingChanged += (_, _) => HotbarLabelsPatch.Writer?.Invalidate();
+                prefixColors.SettingChanged += (_, _) => HotbarLabelsPatch.Writer?.Invalidate();
                 HotbarLabelsPatch.Writer = labels;
                 ApplyPatch(typeof(HotbarLabelsPatch));            }
 

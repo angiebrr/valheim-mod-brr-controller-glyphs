@@ -16,10 +16,10 @@ namespace ControllerGlyphFixer
 {
     /// <summary>
     /// Writes slot labels on Valheim's hotbar and AzuEPI's quick-slot bar while controller glyphs
-    /// are on: each slot shows its own button, and each group of slots sharing a hold button
-    /// (R4/R5) gets one badge and line (<see cref="HoldBadges"/>). When and what to write is
+    /// are on: each slot shows its own button, and each group of slots sharing a prefix button
+    /// (R4/R5) gets one prefix and line (<see cref="PrefixLabels"/>). When and what to write is
     /// decided in Core (<see cref="SlotLabelRefresh"/>, <see cref="SlotLabel"/>,
-    /// <see cref="BarLabels"/>, <see cref="BadgeColors"/>); this class reads game state and sets text.
+    /// <see cref="BarLabels"/>, <see cref="PrefixColors"/>); this class reads game state and sets text.
     /// </summary>
     internal sealed class HotbarLabelWriter
     {
@@ -94,7 +94,7 @@ namespace ControllerGlyphFixer
                     WriteLabels(bar, barName);
                     break;
                 case SlotLabelAction.Restore:
-                    HoldBadges.Clear(bar.transform);
+                    PrefixLabels.Clear(bar.transform);
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
                     break;
             }
@@ -133,12 +133,12 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Renders the badge texts of the groups with slots on screen, in order.
+        /// Renders the prefix texts of the groups with slots on screen, in order.
         /// </summary>
         /// <param name="labels">The bar's labels from <see cref="LabelsFor"/>.</param>
         /// <param name="slotsOnScreen">Number of slots the bar shows.</param>
         /// <returns>One text per group that starts on screen.</returns>
-        internal IReadOnlyList<string> BadgeTexts(BarLabels labels, int slotsOnScreen)
+        internal IReadOnlyList<string> PrefixTexts(BarLabels labels, int slotsOnScreen)
         {
             return labels.Groups
                 .Where(group => group.FirstSlot < slotsOnScreen)
@@ -148,7 +148,7 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Forgets what was written, so every bar is rewritten on its next update (e.g. after the
-        /// badge colour setting changes).
+        /// prefix colour setting changes).
         /// </summary>
         internal void Invalidate()
         {
@@ -192,7 +192,7 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Sets every slot's label to its own buttons (leaving unmapped slots alone) and draws a
-        /// badge and line for each group.
+        /// prefix and line for each group.
         /// </summary>
         /// <param name="bar">The hotbar.</param>
         /// <param name="barName">The bar's name, already read.</param>
@@ -212,20 +212,20 @@ namespace ControllerGlyphFixer
             }
 
             // Below for AzuEPI's bar: it sits right under the hotbar
-            BadgeSide side = barName == QuickSlotBarName ? BadgeSide.Below : BadgeSide.Above;
-            HoldBadges.Show(bar.transform, BadgesFor(bar, labels), style, side);
+            PrefixSide side = barName == QuickSlotBarName ? PrefixSide.Below : PrefixSide.Above;
+            PrefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
         }
 
         /// <summary>
-        /// Builds the badges for the groups that have slots on screen.
+        /// Builds the prefixes for the groups that have slots on screen.
         /// </summary>
         /// <param name="bar">The hotbar.</param>
         /// <param name="labels">The bar's labels.</param>
-        /// <returns>One badge per group with at least one slot on screen.</returns>
-        private List<HoldBadge> BadgesFor(HotkeyBar bar, BarLabels labels)
+        /// <returns>One prefix per group with at least one slot on screen.</returns>
+        private List<PrefixLabel> PrefixLabelsFor(HotkeyBar bar, BarLabels labels)
         {
-            var badges = new List<HoldBadge>();
-            foreach (BarGroup group in labels.Groups)
+            var prefixes = new List<PrefixLabel>();
+            foreach (PrefixGroup group in labels.Groups)
             {
                 // Skip slots another mod destroyed without removing them from the list yet
                 var slots = bar.m_elements
@@ -236,11 +236,11 @@ namespace ControllerGlyphFixer
                     .ToList();
                 if (slots.Count > 0)
                 {
-                    badges.Add(new HoldBadge(m_glyphs.FormatButtons(group.Prefix), m_glyphs.BadgeColor(group.Prefix), slots));
+                    prefixes.Add(new PrefixLabel(m_glyphs.FormatButtons(group.Prefix), m_glyphs.PrefixColor(group.Prefix), slots));
                 }
             }
 
-            return badges;
+            return prefixes;
         }
     }
 }

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// HoldBadges.cs: draws a hold badge and a line beside each group of slots (F3).
+// PrefixLabels.cs: draws a group prefix and a line beside each group of slots (F3).
 // ------------------------------------------------------------------------------------------------
 
 using System.Collections.Generic;
@@ -14,9 +14,9 @@ using Object = UnityEngine.Object;
 namespace ControllerGlyphFixer
 {
     /// <summary>
-    /// Which side of a group of slots its badge and line go on.
+    /// Which side of a group of slots its prefix and line go on.
     /// </summary>
-    internal enum BadgeSide
+    internal enum PrefixSide
     {
         /// <summary>Above the slots (Valheim's hotbar, with free space at the top of the screen).</summary>
         Above,
@@ -26,24 +26,24 @@ namespace ControllerGlyphFixer
     }
 
     /// <summary>
-    /// One group's badge: the hold button(s), their colour, and the slots the line spans.
+    /// One group's prefix label: its text, its colour, and the slots its line spans.
     /// </summary>
-    internal readonly struct HoldBadge
+    internal readonly struct PrefixLabel
     {
         /// <summary>
-        /// Creates a badge.
+        /// Creates a prefix label.
         /// </summary>
-        /// <param name="text">Badge text (the formatted hold buttons).</param>
+        /// <param name="text">Prefix text (the formatted prefix buttons).</param>
         /// <param name="color">Colour as #RRGGBB or #RRGGBBAA; null for the slot-label colour.</param>
         /// <param name="slots">The group's slots on screen, in order; at least one.</param>
-        internal HoldBadge(string text, string color, IReadOnlyList<RectTransform> slots)
+        internal PrefixLabel(string text, string color, IReadOnlyList<RectTransform> slots)
         {
             Text = text;
             Color = color;
             Slots = slots;
         }
 
-        /// <summary>Badge text (the formatted hold buttons).</summary>
+        /// <summary>Prefix text (the formatted prefix buttons).</summary>
         internal string Text { get; }
 
         /// <summary>Colour as #RRGGBB or #RRGGBBAA; null for the slot-label colour.</summary>
@@ -54,36 +54,42 @@ namespace ControllerGlyphFixer
     }
 
     /// <summary>
-    /// Draws each group's badge at the group's left end, above or below its slots, and a line from
-    /// the badge to the group's last slot. Everything lives under one container object, which is
+    /// Draws each group's prefix at the group's left end, above or below its slots, and a line from
+    /// the prefix to the group's last slot. Everything lives under one container object, which is
     /// rebuilt on every write and removed when glyphs turn off.
     /// </summary>
     // TODO(F3): check sizes and spacing in game; make the side configurable if it collides with other HUD mods.
-    internal static class HoldBadges
+    internal static class PrefixLabels
     {
         /// <summary>Name of the container object added next to the slots.</summary>
-        internal const string ContainerName = "cgf_HoldBadges";
+        internal const string ContainerName = "cgf_PrefixLabels";
 
-        /// <summary>Space between the slots, the badge and the line, in UI units.</summary>
+        /// <summary>Space between the prefix and the line, and below the slots, in UI units.</summary>
         private const float Gap = 2f;
+
+        /// <summary>
+        /// Space between the slots and a prefix above them. Larger than <see cref="Gap"/>: with 2 the
+        /// hotbar's prefix looked cramped against the slots (checked in game 2026-11-07).
+        /// </summary>
+        private const float AboveGap = 8f;
 
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
 
-        /// <summary>Shortest line worth drawing; a lone slot's badge may already cover it.</summary>
+        /// <summary>Shortest line worth drawing; a lone slot's prefix may already cover it.</summary>
         private const float MinLineLength = 6f;
 
         /// <summary>
-        /// Replaces the badges beside a set of slots.
+        /// Replaces the prefixes beside a set of slots.
         /// </summary>
         /// <param name="parent">The slots' parent (the bar); the container is added here.</param>
-        /// <param name="badges">One badge per group; empty removes them all.</param>
+        /// <param name="prefixes">One prefix per group; empty removes them all.</param>
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
-        internal static void Show(Transform parent, IReadOnlyList<HoldBadge> badges, TMP_Text style, BadgeSide side)
+        internal static void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side)
         {
             Clear(parent);
-            if (badges.Count == 0 || !style)
+            if (prefixes.Count == 0 || !style)
             {
                 return;
             }
@@ -92,30 +98,30 @@ namespace ControllerGlyphFixer
             container.SetParent(parent, worldPositionStays: false);
             container.localPosition = Vector3.zero;
 
-            foreach (HoldBadge badge in badges)
+            foreach (PrefixLabel prefix in prefixes)
             {
-                Rect bounds = Bounds(badge.Slots);
-                Color color = badge.Color != null && ColorUtility.TryParseHtmlString(badge.Color, out Color parsed)
+                Rect bounds = Bounds(prefix.Slots);
+                Color color = prefix.Color != null && ColorUtility.TryParseHtmlString(prefix.Color, out Color parsed)
                     ? parsed
                     : style.color;
 
-                TextMeshProUGUI text = CreateText(container, style, badge.Text, color);
-                Vector2 size = text.GetPreferredValues(badge.Text);
-                float y = side == BadgeSide.Above ? bounds.yMax + Gap : bounds.yMin - Gap;
-                Place(text.rectTransform, new Vector2(0f, side == BadgeSide.Above ? 0f : 1f), size,
+                TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
+                Vector2 size = text.GetPreferredValues(prefix.Text);
+                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
+                Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
                     new Vector2(bounds.xMin, y));
 
                 float lineStart = bounds.xMin + size.x + Gap * 2f;
                 if (bounds.xMax - lineStart >= MinLineLength)
                 {
-                    float lineY = side == BadgeSide.Above ? y + size.y / 2f : y - size.y / 2f;
+                    float lineY = side == PrefixSide.Above ? y + size.y / 2f : y - size.y / 2f;
                     CreateLine(container, color, lineStart, bounds.xMax, lineY);
                 }
             }
         }
 
         /// <summary>
-        /// Removes the badges beside a set of slots, if any.
+        /// Removes the prefixes beside a set of slots, if any.
         /// </summary>
         /// <param name="parent">The slots' parent.</param>
         internal static void Clear(Transform parent)
@@ -130,10 +136,10 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Returns the texts of the badges beside a set of slots, in order.
+        /// Returns the texts of the prefixes beside a set of slots, in order.
         /// </summary>
         /// <param name="parent">The slots' parent.</param>
-        /// <returns>The badge texts; empty if there are none.</returns>
+        /// <returns>The prefix texts; empty if there are none.</returns>
         internal static IReadOnlyList<string> Texts(Transform parent)
         {
             Transform container = parent.Find(ContainerName);
@@ -165,19 +171,19 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Adds a badge text styled like the slot labels.
+        /// Adds a prefix text styled like the slot labels.
         /// </summary>
-        /// <param name="container">The badges' container.</param>
+        /// <param name="container">The prefixes' container.</param>
         /// <param name="style">A slot label to copy the font and size from.</param>
         /// <param name="value">The text.</param>
         /// <param name="color">The text colour.</param>
         /// <returns>The new text.</returns>
         private static TextMeshProUGUI CreateText(Transform container, TMP_Text style, string value, Color color)
         {
-            var badgeObject = new GameObject("Badge", typeof(RectTransform));
-            badgeObject.transform.SetParent(container, worldPositionStays: false);
+            var prefixObject = new GameObject("Prefix", typeof(RectTransform));
+            prefixObject.transform.SetParent(container, worldPositionStays: false);
 
-            TextMeshProUGUI text = badgeObject.AddComponent<TextMeshProUGUI>();
+            TextMeshProUGUI text = prefixObject.AddComponent<TextMeshProUGUI>();
             text.font = style.font;
             text.fontSharedMaterial = style.fontSharedMaterial;
             text.fontSize = style.fontSize;
@@ -192,7 +198,7 @@ namespace ControllerGlyphFixer
         /// <summary>
         /// Adds a horizontal line.
         /// </summary>
-        /// <param name="container">The badges' container.</param>
+        /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The line colour.</param>
         /// <param name="xStart">Left end, in the parent's local space.</param>
         /// <param name="xEnd">Right end.</param>

@@ -26,7 +26,7 @@ namespace ControllerGlyphFixer.Core
 
         /// <summary>
         /// Config key for the number of quick slots (0-8). AzuEPI keeps shortcuts for all 8, so
-        /// unused ones (default Alt + 7, ...) must not count when finding the shared hold button.
+        /// unused ones (default Alt + 7, ...) must not count when finding the shared prefix.
         /// </summary>
         public const string CountKey = "Number of Quick Slots";
 

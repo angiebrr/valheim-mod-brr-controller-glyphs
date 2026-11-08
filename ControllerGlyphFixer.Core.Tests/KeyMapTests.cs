@@ -109,12 +109,12 @@ public class KeyMapTests
         Assert.Contains("line 2", ex.Message);
     }
 
-    /// <summary>Hold buttons are those pressed before another button in any key, sorted by name.</summary>
+    /// <summary>Prefix buttons are those pressed before another button in any key, sorted by name.</summary>
     [Fact]
-    public void Hold_buttons_are_sorted_and_distinct()
+    public void Prefix_buttons_are_sorted_and_distinct()
     {
-        Assert.Equal(new[] { "r4", "r5" }, SteamController.HoldButtons);
-        Assert.Empty(KeyMap.Parse("keys:\n  Q: L5\n").HoldButtons);
+        Assert.Equal(new[] { "r4", "r5" }, SteamController.PrefixButtons);
+        Assert.Empty(KeyMap.Parse("keys:\n  Q: L5\n").PrefixButtons);
     }
 
     /// <summary>Buttons returns a key's buttons as written in the file; null if unmapped.</summary>

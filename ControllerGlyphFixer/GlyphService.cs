@@ -29,8 +29,8 @@ namespace ControllerGlyphFixer
         /// <summary>Config General.HotbarLabels: mapped buttons on hotbar and quick slots (F3).</summary>
         private readonly ConfigEntry<bool> m_hotbarLabels;
 
-        /// <summary>Config General.HoldBadgeColors: how hold badges and lines are coloured (F3).</summary>
-        private readonly ConfigEntry<BadgeColorMode> m_badgeColors;
+        /// <summary>Config General.PrefixColors: how group prefixes and lines are coloured (F3).</summary>
+        private readonly ConfigEntry<PrefixColorMode> m_prefixColors;
 
         /// <summary>
         /// Creates the service.
@@ -39,15 +39,15 @@ namespace ControllerGlyphFixer
         /// <param name="enabled">Config master switch; read live so changes apply immediately.</param>
         /// <param name="keyPrompts">Config switch for F1 + F2; read live.</param>
         /// <param name="hotbarLabels">Config switch for F3; read live.</param>
-        /// <param name="badgeColors">Config colour mode for hold badges; read live.</param>
+        /// <param name="prefixColors">Config colour mode for group prefixes; read live.</param>
         internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts,
-            ConfigEntry<bool> hotbarLabels, ConfigEntry<BadgeColorMode> badgeColors)
+            ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors)
         {
             m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
             m_enabled = enabled ?? throw new ArgumentNullException(nameof(enabled));
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
             m_hotbarLabels = hotbarLabels ?? throw new ArgumentNullException(nameof(hotbarLabels));
-            m_badgeColors = badgeColors ?? throw new ArgumentNullException(nameof(badgeColors));
+            m_prefixColors = prefixColors ?? throw new ArgumentNullException(nameof(prefixColors));
         }
 
         /// <summary>Number of keys in the loaded mapping.</summary>
@@ -113,13 +113,13 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Returns the colour of a group's hold badge and line, per the current colour mode.
+        /// Returns the colour of a group's prefix and line, per the current colour mode.
         /// </summary>
-        /// <param name="prefix">The group's hold buttons.</param>
+        /// <param name="prefix">The group's prefix buttons.</param>
         /// <returns>A colour (#RRGGBB or #RRGGBBAA), or null for the slot-label colour.</returns>
-        internal string BadgeColor(IReadOnlyList<string> prefix)
+        internal string PrefixColor(IReadOnlyList<string> prefix)
         {
-            return BadgeColors.For(m_badgeColors.Value, prefix, m_keyMap);
+            return PrefixColors.For(m_prefixColors.Value, prefix, m_keyMap);
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// BarLabelsTests.cs: unit tests for grouping a bar's slots by their shared hold button (F3).
+// BarLabelsTests.cs: unit tests for grouping a bar's slots by their shared prefix (F3).
 // ------------------------------------------------------------------------------------------------
 
 using ControllerGlyphFixer.Core;
@@ -27,7 +27,7 @@ public class BarLabelsTests
     /// <param name="firstSlot">Expected first slot.</param>
     /// <param name="slotCount">Expected number of slots.</param>
     /// <param name="prefix">Expected prefix buttons, comma-separated.</param>
-    private static void AssertGroup(BarGroup group, int firstSlot, int slotCount, string prefix)
+    private static void AssertGroup(PrefixGroup group, int firstSlot, int slotCount, string prefix)
     {
         Assert.Equal(firstSlot, group.FirstSlot);
         Assert.Equal(slotCount, group.SlotCount);
@@ -36,7 +36,7 @@ public class BarLabelsTests
 
     /// <summary>My hotbar: every slot holds R4, so one group; slots keep one button each.</summary>
     [Fact]
-    public void One_hold_button_makes_one_group()
+    public void One_prefix_button_makes_one_group()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,DPadUp"), Slot("R4,DPadRight"), Slot("R4,Y") });
 
@@ -46,9 +46,9 @@ public class BarLabelsTests
         Assert.Equal(new[] { "Y" }, labels.Slots[2]);
     }
 
-    /// <summary>Mixed hold buttons: one group per run of neighbouring slots.</summary>
+    /// <summary>Mixed prefix buttons: one group per run of neighbouring slots.</summary>
     [Fact]
-    public void Mixed_hold_buttons_make_a_group_per_run()
+    public void Mixed_prefix_buttons_make_a_group_per_run()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,DPadUp"), Slot("R4,DPadDown"), Slot("L4,A"), Slot("L4,B") });
 
@@ -58,9 +58,9 @@ public class BarLabelsTests
         Assert.Equal(new[] { "A" }, labels.Slots[2]);
     }
 
-    /// <summary>The same hold button after a different one starts a new group.</summary>
+    /// <summary>The same prefix button after a different one starts a new group.</summary>
     [Fact]
-    public void A_returning_hold_button_starts_a_new_group()
+    public void A_returning_prefix_button_starts_a_new_group()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,A"), Slot("L4,B"), Slot("R4,X") });
 
@@ -68,9 +68,9 @@ public class BarLabelsTests
         AssertGroup(labels.Groups[2], firstSlot: 2, slotCount: 1, prefix: "R4");
     }
 
-    /// <summary>A lone slot still moves its hold button to a badge, so it looks like the others.</summary>
+    /// <summary>A lone slot still moves its prefix button to a prefix, so it looks like the others.</summary>
     [Fact]
-    public void Single_slot_still_moves_the_hold_button()
+    public void Single_slot_still_moves_the_prefix_button()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,DPadUp") });
 
@@ -115,7 +115,7 @@ public class BarLabelsTests
 
     /// <summary>Button names match the way the mapping file does (case, spaces, '_' and '-').</summary>
     [Fact]
-    public void Hold_buttons_match_like_the_mapping_file()
+    public void Prefix_buttons_match_like_the_mapping_file()
     {
         var labels = BarLabels.Split(new[] { Slot("R4,A"), Slot("r4,B") });
 

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// BarLabels.cs: groups a bar's slots by their shared hold button(s) (F3).
+// BarLabels.cs: groups a bar's slots by their shared prefix (F3).
 // ------------------------------------------------------------------------------------------------
 
 using System;
@@ -12,9 +12,9 @@ namespace ControllerGlyphFixer.Core
 {
     /// <summary>
     /// A run of neighbouring slots that share leading buttons (e.g. the R4 action-set hold). The
-    /// prefix shows once in a badge beside the run; each slot shows only its own button(s).
+    /// prefix shows once beside the run; each slot shows only its own button(s).
     /// </summary>
-    public sealed class BarGroup
+    public sealed class PrefixGroup
     {
         /// <summary>
         /// Creates a group.
@@ -22,7 +22,7 @@ namespace ControllerGlyphFixer.Core
         /// <param name="firstSlot">Zero-based index of the group's first slot.</param>
         /// <param name="slotCount">Number of slots in the group.</param>
         /// <param name="prefix">Buttons every slot in the group starts with.</param>
-        public BarGroup(int firstSlot, int slotCount, IReadOnlyList<string> prefix)
+        public PrefixGroup(int firstSlot, int slotCount, IReadOnlyList<string> prefix)
         {
             FirstSlot = firstSlot;
             SlotCount = slotCount;
@@ -40,7 +40,7 @@ namespace ControllerGlyphFixer.Core
     }
 
     /// <summary>
-    /// A bar's labels: its groups (one badge each) and each slot's remaining buttons. Slot labels
+    /// A bar's labels: its groups (one prefix each) and each slot's remaining buttons. Slot labels
     /// with the full combo were too wide for a slot.
     /// </summary>
     public sealed class BarLabels
@@ -50,14 +50,14 @@ namespace ControllerGlyphFixer.Core
         /// </summary>
         /// <param name="groups">Runs of slots sharing a prefix, in slot order.</param>
         /// <param name="slots">Each slot's remaining buttons; null leaves the slot alone.</param>
-        private BarLabels(IReadOnlyList<BarGroup> groups, IReadOnlyList<IReadOnlyList<string>> slots)
+        private BarLabels(IReadOnlyList<PrefixGroup> groups, IReadOnlyList<IReadOnlyList<string>> slots)
         {
             Groups = groups;
             Slots = slots;
         }
 
         /// <summary>Runs of neighbouring slots sharing a prefix, in slot order; may be empty.</summary>
-        public IReadOnlyList<BarGroup> Groups { get; }
+        public IReadOnlyList<PrefixGroup> Groups { get; }
 
         /// <summary>Each slot's buttons after its group's prefix (at least one); null for unmapped slots.</summary>
         public IReadOnlyList<IReadOnlyList<string>> Slots { get; }
@@ -72,7 +72,7 @@ namespace ControllerGlyphFixer.Core
         /// one button.</returns>
         public static BarLabels Split(IReadOnlyList<IReadOnlyList<string>> slots)
         {
-            var groups = new List<BarGroup>();
+            var groups = new List<PrefixGroup>();
             var remainders = new IReadOnlyList<string>[slots.Count];
 
             int start = 0;
@@ -86,16 +86,16 @@ namespace ControllerGlyphFixer.Core
                     continue;
                 }
 
-                string holdButton = KeyMap.Normalize(slots[start][0]);
+                string prefixButton = KeyMap.Normalize(slots[start][0]);
                 int end = start + 1;
-                while (end < slots.Count && CanGroup(slots[end]) && KeyMap.Normalize(slots[end][0]) == holdButton)
+                while (end < slots.Count && CanGroup(slots[end]) && KeyMap.Normalize(slots[end][0]) == prefixButton)
                 {
                     end++;
                 }
 
                 var run = slots.Skip(start).Take(end - start).ToList();
                 int shared = SharedPrefixLength(run);
-                groups.Add(new BarGroup(start, run.Count, run[0].Take(shared).ToArray()));
+                groups.Add(new PrefixGroup(start, run.Count, run[0].Take(shared).ToArray()));
                 for (int slot = start; slot < end; slot++)
                 {
                     remainders[slot] = slots[slot].Skip(shared).ToArray();
@@ -108,7 +108,7 @@ namespace ControllerGlyphFixer.Core
         }
 
         /// <summary>
-        /// Whether a slot can join a group: mapped, with a hold button and a button of its own.
+        /// Whether a slot can join a group: mapped, with a prefix button and a button of its own.
         /// </summary>
         /// <param name="slot">The slot's buttons, or null.</param>
         /// <returns>True for slots with two or more buttons.</returns>
