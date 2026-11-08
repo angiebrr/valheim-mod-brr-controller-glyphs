@@ -346,33 +346,19 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Lays out our R4 tag in a temporary text and checks TMP made it one sprite from our asset,
-        /// not the letters of the tag.
+        /// Resolves our R4 tag the way TMP_Text does for &lt;sprite="cgf_deck" name="r4"&gt;: the asset
+        /// by its name's hash in MaterialReferenceManager, then the sprite by name.
         /// </summary>
+        // A TextMeshProUGUI made here has no font or canvas (NullReferenceException in game 2026-11-08),
+        // so this checks the lookups instead of laying out text
         private void CheckGlyphRenders()
         {
-            var textObject = new GameObject("cgf_SelfTestGlyph");
-            try
-            {
-                TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
-                Hud hud = Hud.instance;
-                if (hud && hud.m_hoverName)
-                {
-                    text.font = hud.m_hoverName.font;
-                }
-
-                TMP_TextInfo info = text.GetTextInfo(ModGlyphs.Tag("r4"));
-                bool isOurSprite = info.characterCount == 1 &&
-                    info.characterInfo[0].elementType == TMP_TextElementType.Sprite &&
-                    info.characterInfo[0].textElement != null &&
-                    info.characterInfo[0].textElement.textAsset == m_modSprites.Asset;
-                Check("Mod glyph tag renders as one of our sprites", isOurSprite,
-                    $"{info.characterCount} characters, first is {(info.characterCount > 0 ? info.characterInfo[0].elementType.ToString() : "none")}");
-            }
-            finally
-            {
-                UnityEngine.Object.Destroy(textObject);
-            }
+            bool registered = MaterialReferenceManager.TryGetSpriteAsset(
+                TMP_TextUtilities.GetHashCode(ModGlyphs.AssetName), out TMP_SpriteAsset asset) && asset == m_modSprites.Asset;
+            ModGlyphs.TryGetSprite("r4", out string sprite);
+            int index = registered ? asset.GetSpriteIndexFromName(sprite) : -1;
+            Check("Mod glyph tag resolves to our sprite asset and its R4 sprite", registered && index >= 0,
+                registered ? $"sprite index {index}" : "cgf_deck isn't registered with TMP");
         }
 
         /// <summary>

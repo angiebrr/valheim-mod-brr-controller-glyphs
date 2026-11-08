@@ -147,28 +147,29 @@ namespace ControllerGlyphFixer
         /// <returns>Where the size came from ("Valheim xbox button_a" or "fallback").</returns>
         private static string FillTables(TMP_SpriteAsset asset, Rect[] uvs, int atlasWidth, int atlasHeight)
         {
-            // Valheim's glyph height H maps to our 128 px glyph; the shadow padding overhangs
+            // Our 128 px glyph matches Valheim's in size and top edge; the shadow padding overhangs
             TMP_SpriteCharacter reference = FindReference();
-            float scale = 1f;
-            float bearingY = ImageSize - ShadowPad;
+            SpriteFit fit = SpriteFit.Fallback(ImageSize, GlyphSize);
             string source = "fallback";
             if (reference != null)
             {
                 GlyphMetrics metrics = reference.glyph.metrics;
-                float pixelsPerUnit = GlyphSize / metrics.height;
-                asset.faceInfo = ((TMP_SpriteAsset)reference.textAsset).faceInfo;
-                scale = reference.scale * reference.glyph.scale / pixelsPerUnit;
-                bearingY = metrics.horizontalBearingY * pixelsPerUnit + ShadowPad;
-                source = $"Valheim {SpriteStyle.Xbox} {ReferenceSprite}";
+                FaceInfo face = ((TMP_SpriteAsset)reference.textAsset).faceInfo;
+                float referenceScale = reference.scale * reference.glyph.scale;
+                asset.faceInfo = face;
+                fit = SpriteFit.Match(metrics.height, metrics.horizontalBearingY, referenceScale, face.pointSize,
+                    ImageSize, GlyphSize);
+                source = $"Valheim {SpriteStyle.Xbox} {ReferenceSprite} (height {metrics.height}, bearing {metrics.horizontalBearingY}, " +
+                    $"scale {referenceScale}, point size {face.pointSize}) -> scale {fit.Scale}, bearing {fit.BearingY}";
             }
 
-            var glyphMetrics = new GlyphMetrics(ImageSize, ImageSize, -ShadowPad, bearingY, GlyphSize);
+            var glyphMetrics = new GlyphMetrics(ImageSize, ImageSize, -ShadowPad, fit.BearingY, GlyphSize);
             for (int i = 0; i < uvs.Length; i++)
             {
                 var rect = new GlyphRect(
                     Mathf.RoundToInt(uvs[i].x * atlasWidth), Mathf.RoundToInt(uvs[i].y * atlasHeight),
                     Mathf.RoundToInt(uvs[i].width * atlasWidth), Mathf.RoundToInt(uvs[i].height * atlasHeight));
-                var glyph = new TMP_SpriteGlyph((uint)i, glyphMetrics, rect, scale, 0);
+                var glyph = new TMP_SpriteGlyph((uint)i, glyphMetrics, rect, fit.Scale, 0);
                 asset.spriteGlyphTable.Add(glyph);
                 asset.spriteCharacterTable.Add(new TMP_SpriteCharacter(NoUnicode, asset, glyph) { name = ModGlyphs.SpriteNames[i] });
             }
