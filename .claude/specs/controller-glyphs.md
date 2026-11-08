@@ -478,6 +478,9 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
   be read (if installed); slot 1 of the hotbar and the quick-slot bar shows its own button,
   and each bar shows one prefix per group of slots on screen
   (in a world).
+- F4: the `Hud.UpdateCrosshair` postfix is applied; a sample hint loses its brackets around a
+  glyph while `[Zebra]` stays; the keys hover hints used this session that the mapping lacks
+  are listed (INFO).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and

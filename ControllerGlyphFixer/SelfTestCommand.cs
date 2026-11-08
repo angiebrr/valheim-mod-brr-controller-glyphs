@@ -42,6 +42,9 @@ namespace ControllerGlyphFixer
         /// <summary>Draws the group prefixes; null if the reverse patch didn't apply.</summary>
         private readonly PrefixLabels m_prefixLabels;
 
+        /// <summary>The hover text writer (its missing keys and a sample rewrite).</summary>
+        private readonly HoverTextWriter m_hoverText;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
@@ -50,14 +53,16 @@ namespace ControllerGlyphFixer
         /// <param name="inventoryLabels">The inventory label writer, or null if it couldn't be set up.</param>
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
         /// <param name="prefixLabels">Draws the group prefixes, or null if it couldn't be set up.</param>
+        /// <param name="hoverText">The hover text writer.</param>
         internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
-            QuickSlotKeys quickSlots, PrefixLabels prefixLabels)
+            QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
             m_inventoryLabels = inventoryLabels;
             m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
             m_prefixLabels = prefixLabels;
+            m_hoverText = hoverText ?? throw new ArgumentNullException(nameof(hoverText));
         }
 
         /// <summary>Command name typed in the console.</summary>
@@ -82,6 +87,8 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.OnEnable))));
             Check("InventoryGui.UpdateInventory label postfix applied",
                 HasOurPostfix(AccessTools.Method(typeof(InventoryGui), nameof(InventoryGui.UpdateInventory))));
+            Check("Hud.UpdateCrosshair hover text postfix applied",
+                HasOurPostfix(AccessTools.Method(typeof(Hud), nameof(Hud.UpdateCrosshair))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
@@ -91,6 +98,7 @@ namespace ControllerGlyphFixer
 
             CheckSlotLabels();
             CheckInventoryLabels();
+            CheckHoverText();
 
             bool showGlyphs = m_glyphs.ShowKeyPrompts;
             Info($"Controller glyphs on: {showGlyphs}; Valheim input mode is gamepad: {ZInput.IsGamepadActive()}; " +
@@ -268,6 +276,32 @@ namespace ControllerGlyphFixer
             string expectedText = string.Join(", ", expected);
             string actualText = string.Join(", ", m_prefixLabels.Texts(parent, containerName));
             Check($"{what} show a prefix per group", actualText == expectedText, $"got [{actualText}], expected [{expectedText}]");
+        }
+
+        /// <summary>
+        /// F4 checks: a sample hint is rewritten the way hover text will be, and the keys hover
+        /// hints used this session that the mapping doesn't have are listed.
+        /// </summary>
+        private void CheckHoverText()
+        {
+            if (!m_glyphs.ShowHoverText)
+            {
+                Info("Skipping hover text checks (glyphs, KeyPrompts or HoverText off)");
+                return;
+            }
+
+            const string glyph = "<sprite=\"xbox\" name=\"button_a\">";
+            string sample = $"[<b>{glyph}</b>] Open [Zebra]";
+            string expected = $"<b>{glyph}</b> Open [Zebra]";
+            string actual = m_hoverText.Rewrite(sample);
+            Check("Hover hint rewriter drops brackets around glyphs and leaves other text", actual == expected,
+                $"got \"{actual}\"");
+
+            IReadOnlyDictionary<string, string> missing = m_hoverText.MissingKeys;
+            Info(missing.Count == 0
+                ? "No hover hint has used a key missing from the mapping yet"
+                : "Keys used in hover hints but missing from the mapping: " +
+                  string.Join("; ", missing.Select(pair => $"{pair.Key} (\"{pair.Value}\")")));
         }
 
         /// <summary>

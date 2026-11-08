@@ -63,7 +63,6 @@ namespace ControllerGlyphFixer
         /// Called by Unity when BepInEx loads the plugin: builds every object with its
         /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
-        // TODO(phase 2): bind a HoverText (F4) toggle and apply its patch.
         // TODO(before sharing): sections and ConfigurationManagerAttributes.Order for Mod Config (spec: Phases).
         private void Awake()
         {
@@ -82,15 +81,23 @@ namespace ControllerGlyphFixer
                 "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
                 "Set the alpha to 0 to hide it.");
 
+            ConfigEntry<bool> hoverText = Config.Bind("General", "HoverText", true,
+                "While controller glyphs are on, show key names that mods write in hover hints (e.g. [B] AutoFuel) as " +
+                "the Steam Input buttons from the mapping file. Keys missing from the mapping are listed in the log.");
+
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors);
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
             InputHintPatch.Glyphs = glyphs;
             ApplyPatch(typeof(InputHintPatch));
+
+            var hoverTextWriter = new HoverTextWriter(glyphs);
+            HoverTextPatch.Writer = hoverTextWriter;
+            ApplyPatch(typeof(HoverTextPatch));
 
             // Hotbar labels need the raw key lookup, so only patch them if the reverse patch applied
             var quickSlots = new QuickSlotKeys();
@@ -115,7 +122,7 @@ namespace ControllerGlyphFixer
             }
 
             CommandManager.Instance.AddConsoleCommand(
-                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels));
+                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter));
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
@@ -144,6 +151,7 @@ namespace ControllerGlyphFixer
             InputHintPatch.Glyphs = null;
             HotbarLabelsPatch.Writer = null;
             InventoryLabelsPatch.Writer = null;
+            HoverTextPatch.Writer = null;
             RoundedSprite.Destroy(m_backingSprite);
         }
 
