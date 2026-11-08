@@ -146,6 +146,19 @@ public class PatchTargetTests
         Assert.Equal("TextMeshProUGUI", hoverName.FieldType.Name);
     }
 
+    /// <summary>
+    /// The top-left message text whose parent is moved down to make room for prefixes under
+    /// AzuEPI's quick-slot bar (F5; AzuEPI lowers the same parent in MessageHud.Awake).
+    /// </summary>
+    [GameFact]
+    public void MessageHud_message_text_exists()
+    {
+        Type messageHud = GameAssemblies.Type("assembly_valheim", "MessageHud");
+
+        AssertStaticProperty(messageHud, "instance", "MessageHud");
+        AssertField(messageHud, "m_messageText", "TMP_Text");
+    }
+
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
     [GameFact]
     public void Settings_instance_exists_for_the_rebinding_screen_check()

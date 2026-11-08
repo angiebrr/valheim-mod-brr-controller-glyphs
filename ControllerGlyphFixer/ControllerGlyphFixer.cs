@@ -77,6 +77,9 @@ namespace ControllerGlyphFixer
         /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
         private ModSpriteAsset m_modSprites;
 
+        /// <summary>Moves Valheim's top-left messages below prefixes under AzuEPI's bar; undone in OnDestroy.</summary>
+        private MessageRoom m_messageRoom;
+
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
         private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
@@ -143,7 +146,8 @@ namespace ControllerGlyphFixer
                 m_backingSprite = RoundedSprite.Create(BackingCornerRadius);
                 prefixLabels = new PrefixLabels(m_backingSprite, prefixBackground);
 
-                labels = new HotbarLabelWriter(glyphs, quickSlots, prefixLabels);
+                m_messageRoom = new MessageRoom();
+                labels = new HotbarLabelWriter(glyphs, quickSlots, prefixLabels, m_messageRoom);
                 HotbarLabelsPatch.Writer = labels;
                 ApplyPatch(typeof(HotbarLabelsPatch));
 
@@ -195,6 +199,7 @@ namespace ControllerGlyphFixer
             HoverTextPatch.Writer = null;
             RoundedSprite.Destroy(m_backingSprite);
             m_modSprites?.Destroy();
+            m_messageRoom?.Restore();
         }
 
         /// <summary>

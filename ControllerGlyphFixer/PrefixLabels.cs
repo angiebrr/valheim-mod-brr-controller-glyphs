@@ -124,14 +124,18 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
-        internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
+        /// <returns>How far the prefixes reach below their slots, in the parent's units; 0 when none do
+        /// (above the slots, or no prefixes).</returns>
+        internal float Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
             string containerName = ContainerName)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
             {
-                return;
+                return 0f;
             }
+
+            float depthBelow = 0f;
 
             // Prefixes and lines draw on top of everything, so the selected slot's frame never cuts
             // them. Above the slots, the backings go in a second container behind the slots: Valheim's
@@ -193,10 +197,17 @@ namespace ControllerGlyphFixer
                         break;
                 }
 
+                float backingBottom = textBottom - BackingPadding;
                 Place(backing.rectTransform, Vector2.zero,
                     new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f),
-                    new Vector2(bounds.xMin, textBottom - BackingPadding));
+                    new Vector2(bounds.xMin, backingBottom));
+                if (side == PrefixSide.Below)
+                {
+                    depthBelow = Mathf.Max(depthBelow, bounds.yMin - backingBottom);
+                }
             }
+
+            return depthBelow;
         }
 
         /// <summary>

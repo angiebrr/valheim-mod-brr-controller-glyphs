@@ -209,6 +209,8 @@ namespace ControllerGlyphFixer
                 Check($"{bar.name} shows a prefix per group", actualPrefixes == expectedPrefixes,
                     $"got [{actualPrefixes}], expected [{expectedPrefixes}]");
             }
+
+            Info($"Top-left messages moved down {m_labels.MessageShift:0.#} units for prefixes under the quick-slot bar");
         }
 
         /// <summary>

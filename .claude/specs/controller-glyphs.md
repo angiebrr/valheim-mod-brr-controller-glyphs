@@ -437,6 +437,20 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
     self-test), so the chosen look matches.
   - Group alignment looked slightly off from a distance in full screen; up close it's the selected
     slot's white frame, which is larger than the slot. Left as is.
+  - Prefix layering: prefixes and lines draw on top of the slots, so the selected slot's frame
+    never cuts them (the user wanted the hotbar's R4 to overlap the frame like AzuEPI's row); the
+    backings of prefixes above the slots go in a second container behind the slots, because
+    Valheim's labels overhang the slots' top edge (the arrow on the D-pad-up glyph). A 6-unit lift
+    for the hotbar was tried and dropped: the backing looked too tall and the raised prefix showed
+    above the inventory panel.
+  - Prefix bounds come from each character's mesh corners (`vertex_BL`/`vertex_TR`):
+    `bottomLeft`/`topRight` reach the font's ascent and descent lines for sprites.
+  - **Messages moved (decided 2026-11-08):** Valheim's top-left messages sat right under AzuEPI's
+    bar and touched its R5 prefix. Chosen over moving R5 to the row's right end: `MessageRoom`
+    moves the message text's parent down by how far the prefixes reach below the bar, only while
+    the quick-slot row has prefixes, and moves it back otherwise (glyphs off, no groups, plugin
+    destroyed). AzuEPI already lowers the same object by 75 units in its `MessageHud.Awake`
+    postfix, so we only add and undo our own shift. First time the mod moves Valheim UI.
   - The self-test's text-layout check threw (a bare `TextMeshProUGUI` has no font or canvas); it now
     checks TMP's two lookups for the tag instead.
   - Build notes: `UnityEngine.ImageConversionModule` targets netstandard 2.1, which the net48
