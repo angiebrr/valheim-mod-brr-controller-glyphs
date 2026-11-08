@@ -115,6 +115,7 @@ My mapping (test fixture and profile config):
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, Func<string, string> translateKey, Func<string, bool> isKeyName) -> HintRewrite { Text, UnmappedKeys }` (F4; see rules below)
   - `ModGlyphs.TryGetSprite(string normalizedButton, out string sprite)` (F5)
+  - `HintVisibility.Decide(...)`, `BadgeVisibility.Show(...)` (F6)
 - See **Testing strategy** for what the tests cover.
 
 ## Dependencies (reuse what the profile already has)
@@ -503,6 +504,24 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   glyphs after keyboard/trackpad input, no key-cap boxes; trackpad cursor still works.
   **Still switching:** the `UIGamePad` badges on inventory buttons (e.g. `Y`, `LSt`) disappear
   after trackpad input. Next F6 target.
+- **Scope checked in game (2026-11-08), keyboard vs gamepad screenshots:** bottom hint bars
+  (inventory, build mode), the build piece list's badges (LB/RB tabs, LS/Y by the filter) and hover
+  hints already show controller glyphs in keyboard mode. Only `UIGamePad` badges were missing: the
+  inventory's LS/Y on the panel tabs, and at a crafting station RT (Upgrade tab), RS (item tabs)
+  and X (Craft button).
+  - Dropped after that check: `KeyHints` build-menu GP/KB arrays and `RadialKeyHints` next/prev,
+    which switch by input mode in the decompiled code but looked right in game. The pause menu's
+    controller diagram (`Menu.m_gamepadRoot`) is out of scope: Xbox layout, not a prompt.
+- **Badges (2026-11-08):** `UIGamePad.Update` shows `m_hint` only when
+  `IsGamepadActive() && (!IsMouseActive() || m_availableForConsoleMouse)` (or its alternative group is
+  active). Postfix at `Priority.Low` re-decides with Core `BadgeVisibility.Show`: with glyphs on,
+  keyboard/mouse mode counts as plain gamepad mode; Valheim's gamepad cursor mode (gamepad and
+  mouse both active) keeps vanilla's choice, since there unmarked buttons are blocked. Uses vanilla's
+  own `IsInteractive()`; copies the rest of the condition (FIXME). Returns early in gamepad mode
+  (vanilla's answer is ours there; runs per badge per frame) and only calls `SetActive` on a change.
+  Covered by `KeyPrompts`; when glyphs turn off, vanilla's next `Update` restores the badge.
+  **Verified in game (2026-11-08):** badges stay in keyboard mode in the inventory and at a crafting
+  station; `cgf_selftest` all PASS, including the new badge postfix check.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
@@ -666,6 +685,9 @@ Red → green → refactor for every Core function. Required cases:
   translated, brackets dropped when fully translated; partly translated hints keep brackets
   and report unmapped keys; non-key brackets (`[Zebra]`, `[1/5]`) and free text untouched;
   nested badges count as glyphs; idempotent.
+- `BadgeVisibility.Show` (F6): glyphs off matches vanilla `UIGamePad.Update`; glyphs on shows
+  interactive badges after keyboard or trackpad input; inactive buttons stay hidden; Valheim's
+  gamepad cursor mode keeps vanilla.
 - `ModGlyphs` / `KeyMap.Format` (F5): every Deck button and alias; `ValheimFirst` and
   `ModGlyphsForAll` orders; badge fallback when neither has art; every sprite name has a PNG.
 
@@ -677,7 +699,8 @@ expected signature:
 - `ZInput.GetBoundKeyString(string, bool) : string`, `ZInput.instance`, `IsGamepadEnabled()`,
   `IsGamepadActive()`, `IsMouseActive()`, `CurrentGlyph`, `ConnectedGamepadType`,
   `s_gamepadSpriteMap`, glyph enum names (assembly_utils)
-- `UIInputHint` members used by the F6 patch
+- `UIInputHint` members used by the F6 patch; `UIGamePad.Update`, `IsInteractive()`, `m_hint`,
+  `m_availableForConsoleMouse`, `alternativeGroupHandler` (F6 badges)
 - `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)`, `OnEnable()`, `m_elements`,
   `ElementData.m_go` (F3)
 - `Settings.instance`, `Localization.instance.Localize(string)`
