@@ -87,6 +87,8 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(ZInput), nameof(ZInput.GetBoundKeyString))));
             Check("UIInputHint.UpdateInputHints postfix applied",
                 HasOurPostfix(AccessTools.Method(typeof(UIInputHint), nameof(UIInputHint.UpdateInputHints))));
+            Check("UIGamePad.Update badge postfix applied",
+                HasOurPostfix(AccessTools.Method(typeof(UIGamePad), nameof(UIGamePad.Update))));
             Check("HotkeyBar label postfixes applied (UpdateIcons, ToggleBindingHint, OnEnable)",
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.UpdateIcons))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.ToggleBindingHint))) &&

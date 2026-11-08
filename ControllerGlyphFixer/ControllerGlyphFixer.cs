@@ -133,6 +133,8 @@ namespace ControllerGlyphFixer
             ApplyPatch(typeof(BoundKeyStringPatch));
             InputHintPatch.Glyphs = glyphs;
             ApplyPatch(typeof(InputHintPatch));
+            GamePadBadgePatch.Glyphs = glyphs;
+            ApplyPatch(typeof(GamePadBadgePatch));
 
             var hoverTextWriter = new HoverTextWriter(glyphs);
             HoverTextPatch.Writer = hoverTextWriter;
@@ -196,6 +198,7 @@ namespace ControllerGlyphFixer
             m_harmony.UnpatchSelf();
             BoundKeyStringPatch.Glyphs = null;
             InputHintPatch.Glyphs = null;
+            GamePadBadgePatch.Glyphs = null;
             HotbarLabelsPatch.Writer = null;
             InventoryLabelsPatch.Writer = null;
             HoverTextPatch.Writer = null;

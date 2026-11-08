@@ -98,6 +98,26 @@ public class PatchTargetTests
         Assert.Equal("System.Boolean", isActive.PropertyType.FullName);
     }
 
+    /// <summary>The F6 badge patch target and the members its postfix reads and calls exist.</summary>
+    [GameFact]
+    public void UIGamePad_members_used_by_the_F6_badge_patch_exist()
+    {
+        Type badge = GameAssemblies.Type("assembly_valheim", "UIGamePad");
+
+        Assert.NotNull(badge.GetMethod("Update", Instance, null, Type.EmptyTypes, null));
+
+        MethodInfo isInteractive = badge.GetMethod("IsInteractive", Instance, null, Type.EmptyTypes, null);
+        Assert.NotNull(isInteractive);
+        Assert.Equal("System.Boolean", isInteractive.ReturnType.FullName);
+
+        AssertField(badge, "m_hint", "GameObject");
+        AssertField(badge, "alternativeGroupHandler", "UIGroupHandler");
+
+        FieldInfo consoleMouse = badge.GetField("m_availableForConsoleMouse", Instance);
+        Assert.NotNull(consoleMouse);
+        Assert.Equal("System.Boolean", consoleMouse.FieldType.FullName);
+    }
+
     /// <summary>The F3 patch targets on HotkeyBar and the slot fields the postfix reads exist.</summary>
     [GameFact]
     public void HotkeyBar_members_used_by_the_F3_patch_exist()
