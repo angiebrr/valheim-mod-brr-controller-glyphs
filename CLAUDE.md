@@ -104,9 +104,10 @@ and decisions there (dated).
   `phase-2-hover-text`), commit in focused steps with clear messages, push when asked or as
   established in the session. `gh` is installed and logged in as angiebrr (if Git Bash can't
   find it, use `"/c/Program Files/GitHub CLI/gh.exe"`); create PRs only when the user asks, and
-  they merge them. Write PR descriptions in the Athena template
-  (github.com/angiebrr/athenas-telemetry-svc, `.github/pull_request_template.md`) with the specs
-  path as `.claude/specs/`, and offer diagrams as PNGs to drag in.
+  they merge them. Write PR descriptions with this repo's `.github/pull_request_template.md`
+  (adapted from the user's Athena template: no checkbox list, since this repo has no
+  `specifications/` folder; testing is described in prose instead). Offer diagrams as PNGs to
+  drag in.
 
 ## Reviewing code
 
