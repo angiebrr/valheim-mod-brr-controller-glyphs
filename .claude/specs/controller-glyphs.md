@@ -304,7 +304,9 @@ EpicLoot.
     case), so Core stays free of Unity.
 - **Patch:** postfix on `Hud.UpdateCrosshair`, low priority; runs only when `ShowKeyPrompts` and
   config `General.HoverText` are on. Caches the last input and output, so an unchanged hover
-  costs one string compare per frame.
+  costs one string compare per frame. Known cost: while a hint is rewritten, Valheim sets the
+  original text every frame and we set ours back, so TMP re-lays out that one label each frame.
+  Avoiding it would need a prefix or transpiler, which the design rules rule out; it's small.
 - **Missing keys (2026-11-08):** each unmapped key name the rewriter meets is logged once per
   session ("Hover hint uses key E, which isn't in your mapping file: no controller button
   shows for it"), and `cgf_selftest` lists the ones seen so far. Later, F9's mapping status in

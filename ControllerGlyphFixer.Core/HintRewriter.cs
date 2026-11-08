@@ -73,6 +73,15 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Start of a TextMeshPro sprite tag, which is a glyph.</summary>
         private const string SpriteTagStart = "<sprite";
 
+        /// <summary>Start of a TextMeshPro colour tag.</summary>
+        private const string ColorTagStart = "<color=";
+
+        /// <summary>TextMeshPro's bold tag.</summary>
+        private const string BoldTag = "<b>";
+
+        /// <summary>Characters that end a run of plain text inside a hint: a tag or a nested bracket.</summary>
+        private static readonly char[] RunEnds = { '<', '[' };
+
         /// <summary>TextMeshPro tags, removed from report lines.</summary>
         private static readonly Regex Tags = new ("<[^>]*>");
 
@@ -152,13 +161,12 @@ namespace ControllerGlyphFixer.Core
             int index = open + 1;
             while (index < text.Length && text[index] == '<')
             {
-                if (string.CompareOrdinal(text, index, SpriteTagStart, 0, SpriteTagStart.Length) == 0)
+                if (StartsWithAt(text, index, SpriteTagStart))
                 {
                     return index;
                 }
 
-                bool opening = string.CompareOrdinal(text, index, "<color=", 0, 7) == 0 ||
-                               string.CompareOrdinal(text, index, "<b>", 0, 3) == 0;
+                bool opening = StartsWithAt(text, index, ColorTagStart) || StartsWithAt(text, index, BoldTag);
                 int end = text.IndexOf('>', index);
                 if (!opening || end < 0)
                 {
@@ -169,6 +177,18 @@ namespace ControllerGlyphFixer.Core
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// Whether a text has a given string at a position (ordinal, no substring allocated).
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="index">The position.</param>
+        /// <param name="value">The string to look for.</param>
+        /// <returns>True if the text continues with it there.</returns>
+        private static bool StartsWithAt(string text, int index, string value)
+        {
+            return string.CompareOrdinal(text, index, value, 0, value.Length) == 0;
         }
 
         /// <summary>
@@ -332,7 +352,7 @@ namespace ControllerGlyphFixer.Core
         /// <returns>Index just past the run.</returns>
         private static int NextSpecial(string inner, int start)
         {
-            int next = inner.IndexOfAny(new[] { '<', '[' }, start + 1);
+            int next = inner.IndexOfAny(RunEnds, start + 1);
             return next < 0 ? inner.Length : next;
         }
     }

@@ -83,7 +83,8 @@ namespace ControllerGlyphFixer
 
             ConfigEntry<bool> hoverText = Config.Bind("General", "HoverText", true,
                 "While controller glyphs are on, show key names that mods write in hover hints (e.g. [B] AutoFuel) as " +
-                "the Steam Input buttons from the mapping file. Keys missing from the mapping are listed in the log.");
+                "the Steam Input buttons from the mapping file. Needs KeyPrompts on. Keys missing from the mapping are " +
+                "listed in the log.");
 
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;
