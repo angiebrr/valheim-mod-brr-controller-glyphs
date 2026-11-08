@@ -97,6 +97,19 @@ public class ModGlyphsTests
     }
 
     /// <summary>
+    /// A smaller glyph takes less room than Valheim's, so hint text after it started further left and
+    /// the glyph sat left of the ones above (in game 2026-11-08); equal space on both sides puts both back.
+    /// </summary>
+    [Fact]
+    public void Sized_tag_with_padding_adds_equal_space_on_both_sides()
+    {
+        Assert.Equal("<space=0.12em><size=75%><sprite=\"cgf_deck\" name=\"lpad_up\"></size><space=0.12em>",
+            ModGlyphs.Tag("lpadup", 75, 0.12f));
+        Assert.Equal(ModGlyphs.Tag("lpadup", 75), ModGlyphs.Tag("lpadup", 75, 0f));
+        Assert.Null(ModGlyphs.Tag("lg", 75, 0.12f));
+    }
+
+    /// <summary>
     /// The plugin loads one embedded image per sprite name, so the table and the Glyphs folder
     /// (made by scripts/make-glyphs.ps1) must list the same names.
     /// </summary>

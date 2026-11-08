@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,11 +67,25 @@ namespace ControllerGlyphFixer.Core
         /// </summary>
         /// <param name="normalizedButton">Lowercase button name without spaces, '_' or '-'.</param>
         /// <param name="sizePercent">Glyph size in percent; 100 gives the plain <see cref="Tag(string)"/>.</param>
+        /// <param name="sidePaddingEm">Space added on each side, in em, so a smaller glyph takes the room
+        /// of a full-size one; 0 adds none.</param>
         /// <returns>A tag such as &lt;size=85%&gt;&lt;sprite="cgf_deck" name="r4"&gt;&lt;/size&gt;, or null if there's no glyph.</returns>
-        public static string Tag(string normalizedButton, int sizePercent)
+        public static string Tag(string normalizedButton, int sizePercent, float sidePaddingEm = 0f)
         {
             string tag = Tag(normalizedButton);
-            return tag == null || sizePercent == 100 ? tag : "<size=" + sizePercent + "%>" + tag + "</size>";
+            if (tag == null || sizePercent == 100)
+            {
+                return tag;
+            }
+
+            string sized = "<size=" + sizePercent + "%>" + tag + "</size>";
+            if (sidePaddingEm <= 0f)
+            {
+                return sized;
+            }
+
+            string space = "<space=" + sidePaddingEm.ToString("0.###", CultureInfo.InvariantCulture) + "em>";
+            return space + sized + space;
         }
     }
 }

@@ -63,15 +63,15 @@ public class HintRewriterTests
     }
 
     /// <summary>
-    /// Hover hints get the smaller glyph (a size tag around the sprite): still a glyph, so the
-    /// brackets go, and rewriting the output again changes nothing.
+    /// Hover hints get the smaller, padded glyph (space and size tags around the sprite): still a
+    /// glyph, so the brackets go, and rewriting the output again changes nothing.
     /// </summary>
     [Fact]
     public void Mapped_key_hint_becomes_the_smaller_mod_glyph()
     {
-        const string glyph = "<size=85%><sprite=\"cgf_deck\" name=\"lpad_up\"></size>";
+        const string glyph = "<space=0.12em><size=75%><sprite=\"cgf_deck\" name=\"lpad_up\"></size><space=0.12em>";
         Func<string, string> translate = key =>
-            SteamController.Translate(key, control => $"<{control}>", button => ModGlyphs.Tag(button, 85));
+            SteamController.Translate(key, control => $"<{control}>", button => ModGlyphs.Tag(button, 75, 0.12f));
 
         HintRewrite result = HintRewriter.Rewrite("[B] AutoFuel: On", translate, KeyNames.Contains);
 

@@ -52,6 +52,13 @@ namespace ControllerGlyphFixer
         /// </summary>
         private const int HintGlyphPercent = 75;
 
+        /// <summary>
+        /// Space each side of a hover-hint glyph, in em: at 75% our glyph was ~35 px wide against
+        /// Valheim's ~45 px (hint font ~40 px), so it sat 4 px left and the text after it ~9 px left
+        /// of the lines above (in game 2026-11-08).
+        /// </summary>
+        private const float HintGlyphPaddingEm = 0.12f;
+
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
@@ -112,7 +119,7 @@ namespace ControllerGlyphFixer
             // Built before the services that format buttons; without it, buttons fall back to [badges]
             m_modSprites = ModSpriteAsset.TryCreate();
             Func<string, string> modGlyph = m_modSprites != null ? ModGlyphs.Tag : null;
-            Func<string, string> hintModGlyph = m_modSprites != null ? button => ModGlyphs.Tag(button, HintGlyphPercent) : null;
+            Func<string, string> hintModGlyph = m_modSprites != null ? button => ModGlyphs.Tag(button, HintGlyphPercent, HintGlyphPaddingEm) : null;
 
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText,
                 buttonGlyphs, modGlyph, hintModGlyph);
