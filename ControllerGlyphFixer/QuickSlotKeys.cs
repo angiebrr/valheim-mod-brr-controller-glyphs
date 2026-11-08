@@ -27,6 +27,21 @@ namespace ControllerGlyphFixer
         internal static bool IsInstalled => Chainloader.PluginInfos.ContainsKey(AzuEpiQuickSlots.PluginGuid);
 
         /// <summary>
+        /// Number of quick slots AzuEPI shows, from its config; null if it can't be read.
+        /// </summary>
+        internal static int? Count
+        {
+            get
+            {
+                ConfigFile config = Config();
+                return config != null && config.TryGetEntry(AzuEpiQuickSlots.CountSection, AzuEpiQuickSlots.CountKey,
+                    out ConfigEntry<int> entry)
+                    ? entry.Value
+                    : (int?)null;
+            }
+        }
+
+        /// <summary>
         /// Gets the keyboard shortcut for a quick slot.
         /// </summary>
         /// <param name="slot">Zero-based quick-slot index.</param>
@@ -39,9 +54,7 @@ namespace ControllerGlyphFixer
             modifiers = null;
 
             string keyName = AzuEpiQuickSlots.KeyName(slot);
-            ConfigFile config = Chainloader.PluginInfos.TryGetValue(AzuEpiQuickSlots.PluginGuid, out PluginInfo info) && info.Instance
-                ? info.Instance.Config
-                : null;
+            ConfigFile config = Config();
             if (config == null || !config.TryGetEntry(AzuEpiQuickSlots.Section, keyName, out ConfigEntry<KeyboardShortcut> entry))
             {
                 if (!m_loggedMissing)
@@ -57,6 +70,17 @@ namespace ControllerGlyphFixer
             mainKey = entry.Value.MainKey.ToString();
             modifiers = entry.Value.Modifiers.Select(key => key.ToString()).ToArray();
             return true;
+        }
+
+        /// <summary>
+        /// AzuEPI's config file, through BepInEx's plugin registry.
+        /// </summary>
+        /// <returns>The config, or null if AzuEPI isn't loaded.</returns>
+        private static ConfigFile Config()
+        {
+            return Chainloader.PluginInfos.TryGetValue(AzuEpiQuickSlots.PluginGuid, out PluginInfo info) && info.Instance
+                ? info.Instance.Config
+                : null;
         }
     }
 }

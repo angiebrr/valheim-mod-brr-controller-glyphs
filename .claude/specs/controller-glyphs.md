@@ -161,24 +161,25 @@ EpicLoot.
 - **Risk:** low.
 
 ### F3. Hotbar slot labels
-- **Covers:** Valheim's hotbar, AzuExtendedPlayerInventory's quick-slot bar, and the
-  inventory's top row (the hotbar row). Config `General.HotbarLabels`.
+- **Covers:** Valheim's hotbar and AzuExtendedPlayerInventory's quick-slot bar. Config
+  `General.HotbarLabels`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
-  `OnEnable()`, and on `InventoryGrid.UpdateGui(Player, ItemDrop.ItemData)` (all private,
-  `assembly_valheim`). Rewrite each slot's `binding` text; the only object added is one hold
-  badge per HUD bar (`cgf_HoldBadge`, a child of the bar), removed when glyphs turn off.
+  `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
+  object added is one hold badge per bar (`cgf_HoldBadge`, a child of the bar), removed when
+  glyphs turn off.
 - **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
   written only when the slots were rebuilt (count or first slot object changed), glyphs
   toggled, or Valheim just reset them; when glyphs turn off, Valheim's labels are restored
-  once (`ToggleBindingHint` for bars; `1`–`8` for the inventory row, copied from vanilla).
+  once with `ToggleBindingHint` (checked in game 2026-11-07: Settings shows `1`, `2`, ...).
 - **Risk:** medium (private but long-stable).
 - **Compat:** AzuEPI's quick-slot bar is a second `HotkeyBar`; AzuEPI rebuilds its slots with
   the same count after Settings closes, which is why rebuilds are detected by the first slot
-  object, not only the count. AzuEPI's inventory patches don't touch the top row.
-- **Inventory top row:** vanilla `InventoryGrid.UpdateGui` labels row 0 of the player grid
-  `1`–`8` in both input modes, once when the grid is built. Same per-slot buttons as the
-  hotbar; no hold badge (the grid has the armour box on its right and the panel edge on its
-  left; revisit after an in-game look).
+  object, not only the count. AzuEPI keeps shortcuts for 8 quick slots whatever its
+  `[3 - Quick Slots] Number of Quick Slots` is; unused ones keep defaults (`Alt + 7`, ...), so
+  only the first "Number of Quick Slots" count when finding the shared hold button.
+- **Not covered: inventory top row.** Vanilla `InventoryGrid.UpdateGui` labels the player
+  grid's first row `1`–`8`. Tried mapped glyphs there (2026-11-07) and dropped them: preferred
+  vanilla numbers in the inventory.
 - **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
   labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
   buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
@@ -317,14 +318,13 @@ expected signature:
 - `UIInputHint` members used by the F6 patch
 - `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)`, `OnEnable()`, `m_elements`,
   `ElementData.m_go` (F3)
-- `InventoryGrid.UpdateGui(Player, ItemDrop.ItemData)`, `m_elements`, `m_width`,
-  `InventoryGui.instance`, `InventoryGui.m_playerGrid` (F3, inventory top row)
 - `Settings.instance`, `Localization.instance.Localize(string)`
 - To do with F4: `Hud.UpdateCrosshair(Player, float)`, `Hud.m_hoverName : TMP_Text`
 
 Other mods' names we copy are checked against their DLLs in the Gale profile
 (`GALE_PROFILE`), by reading the string literals in their code; tests skip when the mod isn't
-installed. AzuExtendedPlayerInventory: plugin ID, `8 - Quick Slot Hotkeys`, `Hotkey N`.
+installed. AzuExtendedPlayerInventory: plugin ID, `8 - Quick Slot Hotkeys`, `Hotkey N`,
+`3 - Quick Slots`, `Number of Quick Slots`.
 Run after every Valheim or mod update before launching the game.
 
 ### 3. In-game self-test (Jotunn console command `cgf_selftest`) — real game
@@ -335,9 +335,9 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
 - `Localization.instance.Localize("$KEY_Use")` returns a controller sprite while in
   keyboard mode; `"$KEY_Hotbar1"` returns the mapped string;
 - F3: the raw `Hotbar1` key can be read (reverse patch); AzuEPI's quick slot 1 shortcut can
-  be read (if installed); slot 1 of the hotbar, the quick-slot bar and the inventory's top
-  row shows its own button, and each HUD bar's hold badge shows the shared button (in a
-  world, with the inventory opened once).
+  be read (if installed); slot 1 of the hotbar and the quick-slot bar shows its own button,
+  and each bar's hold badge shows the shared button, or the bar has no badge when its slots
+  share none (in a world).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and

@@ -59,9 +59,8 @@ namespace ControllerGlyphFixer
                 "While a gamepad is connected, show controller glyphs in $KEY_ prompts and hint panels even after " +
                 "keyboard input, and show keyboard-only keys as the Steam Input buttons from the mapping file.");
             ConfigEntry<bool> hotbarLabels = Config.Bind("General", "HotbarLabels", true,
-                "While a gamepad is connected, label the hotbar, the inventory's top row and " +
-                "AzuExtendedPlayerInventory quick slots with the Steam Input buttons from the mapping file " +
-                "instead of keyboard keys or nothing.");
+                "While a gamepad is connected, label hotbar and AzuExtendedPlayerInventory quick slots with the " +
+                "Steam Input buttons from the mapping file instead of keyboard keys or nothing.");
 
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels);
 
@@ -77,10 +76,7 @@ namespace ControllerGlyphFixer
             {
                 labels = new HotbarLabelWriter(glyphs, quickSlots);
                 HotbarLabelsPatch.Writer = labels;
-                ApplyPatch(typeof(HotbarLabelsPatch));
-                InventoryGridLabelsPatch.Writer = new InventoryLabelWriter(glyphs, labels);
-                ApplyPatch(typeof(InventoryGridLabelsPatch));
-            }
+                ApplyPatch(typeof(HotbarLabelsPatch));            }
 
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs, labels, quickSlots));
             CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand(this));

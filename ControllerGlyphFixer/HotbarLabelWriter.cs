@@ -25,7 +25,7 @@ namespace ControllerGlyphFixer
     internal sealed class HotbarLabelWriter
     {
         /// <summary>Name of Valheim's own hotbar object.</summary>
-        internal const string VanillaBarName = "HotKeyBar";
+        private const string VanillaBarName = "HotKeyBar";
 
         /// <summary>Name of AzuExtendedPlayerInventory's quick-slot bar (a second HotkeyBar).</summary>
         private const string QuickSlotBarName = "AzuEPI_QuickAccessBar";
@@ -105,15 +105,19 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Builds a bar's labels from the shortcuts of all its slots (not only the ones on screen,
-        /// so the shared button doesn't change as items are bound).
+        /// Builds a bar's labels from the shortcuts of every slot the bar can show (not only the
+        /// ones on screen now, so the shared button doesn't change as items are bound).
         /// </summary>
         /// <param name="barName">Name of Valheim's hotbar or AzuEPI's quick-slot bar.</param>
         /// <returns>The shared buttons and each slot's own buttons.</returns>
         internal BarLabels LabelsFor(string barName)
         {
-            var slots = new IReadOnlyList<string>[MaxSlots];
-            for (int slot = 0; slot < MaxSlots; slot++)
+            // AzuEPI keeps shortcuts for 8 quick slots; unused ones (default Alt + 7, ...) would stop sharing
+            int slotCount = barName == VanillaBarName
+                ? MaxSlots
+                : Math.Min(QuickSlotKeys.Count ?? MaxSlots, MaxSlots);
+            var slots = new IReadOnlyList<string>[slotCount];
+            for (int slot = 0; slot < slotCount; slot++)
             {
                 slots[slot] = barName == VanillaBarName ? HotbarSlotButtons(slot) : QuickSlotButtons(slot);
             }

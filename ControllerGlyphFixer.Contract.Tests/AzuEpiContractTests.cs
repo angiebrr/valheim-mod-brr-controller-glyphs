@@ -28,6 +28,16 @@ public class AzuEpiContractTests
         Assert.Contains(AzuEpiQuickSlots.Section, ModAssemblies.StringLiterals(ModAssemblies.AzuEpiPath));
     }
 
+    /// <summary>The quick-slot count setting is still in its DLL.</summary>
+    [AzuEpiFact]
+    public void Quick_slot_count_setting_matches()
+    {
+        List<string> literals = ModAssemblies.StringLiterals(ModAssemblies.AzuEpiPath);
+
+        Assert.Contains(AzuEpiQuickSlots.CountSection, literals);
+        Assert.Contains(AzuEpiQuickSlots.CountKey, literals);
+    }
+
     /// <summary>
     /// The "Hotkey N" key format is still in its DLL. AzuEPI builds it with $"Hotkey {i + 1}", which
     /// compiles to a format string ("Hotkey {0}") or a literal prefix ("Hotkey ").

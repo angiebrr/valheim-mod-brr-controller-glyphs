@@ -8,6 +8,7 @@ using ControllerGlyphFixer.Core;
 using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Entities;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -68,8 +69,6 @@ namespace ControllerGlyphFixer
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.UpdateIcons))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.ToggleBindingHint))) &&
                 HasOurPostfix(AccessTools.Method(typeof(HotkeyBar), nameof(HotkeyBar.OnEnable))));
-            Check("InventoryGrid.UpdateGui label postfix applied",
-                HasOurPostfix(AccessTools.Method(typeof(InventoryGrid), nameof(InventoryGrid.UpdateGui))));
 
             Gamepad gamepad = Gamepad.current;
             Check("Gamepad device present", gamepad != null,
@@ -146,8 +145,6 @@ namespace ControllerGlyphFixer
                 return;
             }
 
-            CheckInventoryTopRow();
-
             var bars = UnityEngine.Object.FindObjectsByType<HotkeyBar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
                 .Where(bar => HotbarLabelWriter.Handles(bar.name))
                 .ToList();
@@ -177,35 +174,18 @@ namespace ControllerGlyphFixer
                     $"got \"{actual}\", expected \"{expected}\"");
 
                 string expectedBadge = m_labels.BadgeText(labels);
-                string actualBadge = HotbarLabelWriter.Badge(bar)?.text;
-                Check($"{bar.name} hold badge shows the shared button", actualBadge == expectedBadge,
-                    $"got \"{actualBadge}\", expected \"{expectedBadge}\"");
-            }
-        }
+                TMP_Text badge = HotbarLabelWriter.Badge(bar);
+                if (expectedBadge == null)
+                {
+                    // Slots share no button (e.g. an unused slot's shortcut differs), so no badge
+                    Check($"{bar.name} has no hold badge (its slots share no button)", !badge,
+                        badge ? $"badge shows \"{badge.text}\"" : null);
+                    continue;
+                }
 
-        /// <summary>
-        /// Checks the inventory's first top-row label. Labels only update while the inventory is
-        /// open, so this needs the inventory opened once since glyphs last turned on.
-        /// </summary>
-        private void CheckInventoryTopRow()
-        {
-            InventoryGrid grid = InventoryGui.instance ? InventoryGui.instance.m_playerGrid : null;
-            if (!grid || grid.m_elements.Count == 0)
-            {
-                Info("Inventory grid not built yet; open the inventory once to check its top-row labels");
-                return;
+                Check($"{bar.name} hold badge shows the shared button", badge && badge.text == expectedBadge,
+                    $"got \"{(badge ? badge.text : "no badge")}\", expected \"{expectedBadge}\"");
             }
-
-            string expected = m_labels.SlotText(m_labels.LabelsFor(HotbarLabelWriter.VanillaBarName), 0);
-            string actual = HotbarLabelWriter.BindingText(grid.m_elements[0].gameObject)?.text;
-            if (expected == null)
-            {
-                Info($"Key 1 isn't in the mapping; inventory slot 1 label is \"{actual}\"");
-                return;
-            }
-
-            Check("Inventory top-row slot 1 shows its own button", actual == expected,
-                $"got \"{actual}\", expected \"{expected}\" (open the inventory once if glyphs just turned on)");
         }
 
         /// <summary>

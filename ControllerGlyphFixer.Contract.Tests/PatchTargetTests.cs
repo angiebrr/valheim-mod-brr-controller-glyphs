@@ -117,26 +117,6 @@ public class PatchTargetTests
         AssertField(GameAssemblies.Type("assembly_valheim", "HotkeyBar+ElementData"), "m_go", "GameObject");
     }
 
-    /// <summary>The inventory top-row patch target and the grid fields the postfix reads exist.</summary>
-    [GameFact]
-    public void InventoryGrid_members_used_by_the_F3_patch_exist()
-    {
-        Type grid = GameAssemblies.Type("assembly_valheim", "InventoryGrid");
-
-        Assert.NotNull(grid.GetMethod("UpdateGui", Instance, null,
-            new[] { GameAssemblies.Type("assembly_valheim", "Player"), GameAssemblies.Type("assembly_valheim", "ItemDrop+ItemData") },
-            null));
-
-        FieldInfo elements = grid.GetField("m_elements", Instance);
-        Assert.NotNull(elements);
-        Assert.StartsWith("System.Collections.Generic.List`1[[InventoryElement", elements.FieldType.FullName);
-        AssertField(grid, "m_width", "Int32");
-
-        Type gui = GameAssemblies.Type("assembly_valheim", "InventoryGui");
-        AssertStaticProperty(gui, "instance", "InventoryGui");
-        AssertField(gui, "m_playerGrid", "InventoryGrid");
-    }
-
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
     [GameFact]
     public void Settings_instance_exists_for_the_rebinding_screen_check()
