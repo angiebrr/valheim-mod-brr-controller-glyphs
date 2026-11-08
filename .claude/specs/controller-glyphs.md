@@ -840,7 +840,7 @@ thin patches → in-game self-test checks → manual checklist.
    reload, mod shortcut audit) and the settings reorganisation below. F7 has no target (see F7).
 5. **v5 (next):** F9 piece 6, the Steam layout VDF audit, then the VDF → YAML generator.
 6. **Before sharing the mod:** F9 piece 4 and both READMEs.
-6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
+7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
