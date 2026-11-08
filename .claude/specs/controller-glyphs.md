@@ -257,7 +257,8 @@ EpicLoot.
   its right edge on the last slot's; padding goes inside, around the text and line. Outside
   padding showed on one side only wherever the measured and drawn edges differed slightly.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
-  whether the grid clips anything drawn above its first row.
+  whether the grid clips anything drawn above its first row. **Checked with F5's glyphs
+  (2026-11-08):** the inventory looked good; nothing clipped.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
 
@@ -398,6 +399,29 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors we use (`Unity.TextMeshPro`).
 - **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
   for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
+- **In game (2026-11-08), tuned over five rounds of screenshots:**
+  - Valheim's `xbox` sprite asset has no point size (`button_a`: height 32, bearing 20, scale 2.5,
+    point size 0). TMP then fits every sprite's own height to the font ascent, so scaling by
+    Valheim's pixel height made ours tiny. `SpriteFit` (Core, tested) handles both TMP paths.
+  - Valheim's sprites carry transparent padding, so our 128 px glyph at its full size looked about
+    1.4 times Valheim's round glyphs. Glyphs are drawn at 0.7 of Valheim's sprite, centred on it.
+  - Hover-hint lines are packed tightly (Valheim's own glyphs nearly touch), and the trackpad-up
+    arrow was squeezed under the glyph on the line above: hover hints use their own translator
+    with the glyph in `<size=75%>` (85% was still crowded). `$KEY_` prompts keep the full size.
+  - Prefix glyphs hang below the text line and ran into the slots: prefixes are now placed by
+    TMP's drawn bounds (`PrefixLabels.PlaceByDrawnBounds`), not the line box.
+  - Kenney's 6 px rim looked thick next to Valheim's thin one: the script keeps the outer 3 px.
+    The thin rim made the trackpad arrows dark and invisible at hint size: small separate shapes
+    are drawn fully light.
+  - Valheim's own glyphs are dark with a light rim and a soft shadow (its sheet, dumped by the
+    self-test), so the chosen look matches.
+  - Group alignment looked slightly off from a distance in full screen; up close it's the selected
+    slot's white frame, which is larger than the slot. Left as is.
+  - The self-test's text-layout check threw (a bare `TextMeshProUGUI` has no font or canvas); it now
+    checks TMP's two lookups for the tag instead.
+  - Build notes: `UnityEngine.ImageConversionModule` targets netstandard 2.1, which the net48
+    plugin can't reference (CS1705), so `PngFiles` calls `LoadImage`/`EncodeToPNG` by reflection
+    (contract-tested); `UnityEngine.TextCoreFontEngineModule` is referenced directly for glyph metrics.
 - **Later (asked 2026-11-08): `ModGlyphsForAll` everywhere.** Today it only changes text the mod
   writes (slot labels, prefixes, mapped keys in hover hints), as designed above; Valheim's own
   prompts keep Valheim's art, so a hint can mix both styles ("Use Wood" with Valheim's X next to
