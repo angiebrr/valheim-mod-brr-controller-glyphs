@@ -72,11 +72,13 @@ public static class GlyphComposer
             // keep everything deeper (letters, a pressed D-pad arm) as Kenney drew it
             float[] pastThinRim = Erode(solid, w, h, rimWidth);
             float[] pastKenneyRim = Erode(solid, w, h, KenneyRim);
+            bool[] marker = SmallParts(solid, w, h);
             var rim = new float[w * h];
             for (int i = 0; i < rim.Length; i++)
             {
-                float keep = Math.Max(solid[i] - pastThinRim[i], pastKenneyRim[i]);
-                rim[i] = light[i] * Math.Min(1f, keep);
+                // Direction arrows are small separate shapes: fully light, or they vanish at hint size
+                float keep = marker[i] ? 1f : Math.Max(solid[i] - pastThinRim[i], pastKenneyRim[i]);
+                rim[i] = (marker[i] ? solid[i] : light[i]) * Math.Min(1f, keep);
             }
 
             float[] shadow = Blur(Shift(solid, w, h, shadowX, shadowY), w, h, blur);
@@ -105,6 +107,79 @@ public static class GlyphComposer
 
             return result;
         }
+    }
+
+    /// <summary>
+    /// Marks the pixels of shapes much smaller than the glyph's main body (the trackpad direction
+    /// arrows), found as connected parts of the mask (half covered or more, 8-connected).
+    /// </summary>
+    private static bool[] SmallParts(float[] mask, int w, int h)
+    {
+        var label = new int[w * h];
+        var sizes = new System.Collections.Generic.List<int> { 0 };
+        var queue = new System.Collections.Generic.Queue<int>();
+        for (int start = 0; start < mask.Length; start++)
+        {
+            if (mask[start] < 0.5f || label[start] != 0)
+            {
+                continue;
+            }
+
+            int id = sizes.Count, size = 0;
+            label[start] = id;
+            queue.Enqueue(start);
+            while (queue.Count > 0)
+            {
+                int i = queue.Dequeue();
+                size++;
+                int x = i % w, y = i / w;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy, n = ny * w + nx;
+                        if (nx >= 0 && ny >= 0 && nx < w && ny < h && mask[n] >= 0.5f && label[n] == 0)
+                        {
+                            label[n] = id;
+                            queue.Enqueue(n);
+                        }
+                    }
+                }
+            }
+
+            sizes.Add(size);
+        }
+
+        int largest = 0;
+        foreach (int size in sizes)
+        {
+            largest = Math.Max(largest, size);
+        }
+
+        // Grow the marks by a pixel so the arrows' anti-aliased edges count too
+        var small = new bool[w * h];
+        for (int i = 0; i < small.Length; i++)
+        {
+            if (label[i] == 0 || sizes[label[i]] * 5 > largest)
+            {
+                continue;
+            }
+
+            int x = i % w, y = i / w;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && ny >= 0 && nx < w && ny < h)
+                    {
+                        small[ny * w + nx] = true;
+                    }
+                }
+            }
+        }
+
+        return small;
     }
 
     /// <summary>Shrinks a mask by a radius: each pixel takes the lowest value within the disc around it.</summary>
@@ -199,7 +274,7 @@ public static class GlyphComposer
 '@
 
 if (-not ([System.Management.Automation.PSTypeName]'GlyphComposer').Type) {
-    Add-Type -TypeDefinition $Composer -ReferencedAssemblies System.Drawing.Common, System.Drawing.Primitives
+    Add-Type -TypeDefinition $Composer -ReferencedAssemblies System.Drawing.Common, System.Drawing.Primitives, System.Collections
 }
 
 $source = Join-Path $KenneyDir 'Steam Deck\Double'

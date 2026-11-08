@@ -398,6 +398,14 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors we use (`Unity.TextMeshPro`).
 - **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
   for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
+- **Later (asked 2026-11-08): `ModGlyphsForAll` everywhere.** Today it only changes text the mod
+  writes (slot labels, prefixes, mapped keys in hover hints), as designed above; Valheim's own
+  prompts keep Valheim's art, so a hint can mix both styles ("Use Wood" with Valheim's X next to
+  our trackpad glyph). The user expects the setting to switch every glyph. Needs: F1's `$KEY_`
+  results mapped from Valheim's sprite names (`button_x`, `dpad_up`, ...) to ours; hint panels
+  and `UIInputHint` text the same way; image badges (`UIGamePad`) can't take a sprite tag, so
+  those need our sprites as `Image` sprites. Design it before building (look per place, what
+  happens for buttons we have no glyph for, e.g. sticks).
 
 ### F6. Hint panels and menu-button badges
 - Bottom-right `KeyHints` panels, build-menu hints (`m_buildMenuHintsGP` / `KB`),
