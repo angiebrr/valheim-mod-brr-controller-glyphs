@@ -100,6 +100,10 @@ namespace ControllerGlyphFixer
         /// <summary>Unscaled time at which to reload the changed mapping file; null when none is pending.</summary>
         private float? m_reloadAt;
 
+        /// <summary>Logs the first failure to empty Localization's text cache in <see cref="RedrawGlyphs"/>.</summary>
+        private readonly PatchErrorLog m_cacheErrorLog = new (
+            "Couldn't empty Localization's text cache; cached prompts keep their old glyphs until the next input switch");
+
         /// <summary>Other mods' shortcut settings, read once at the first main menu; null until then.</summary>
         private List<ModShortcut> m_modShortcuts;
 
@@ -261,8 +265,16 @@ namespace ControllerGlyphFixer
             RedrawPrefixes(sender, args);
             HoverTextPatch.Writer?.Invalidate();
 
-            // Localize caches each $KEY_ text with our glyphs in it; forget it so prompts ask again
-            Localization.instance.m_cache.EvictAll();
+            // Localize caches each $KEY_ text with our glyphs in it; forget it so prompts ask again.
+            // If a game update breaks this, cached prompts update on the next input switch instead.
+            try
+            {
+                Localization.instance.m_cache.EvictAll();
+            }
+            catch (Exception ex)
+            {
+                m_cacheErrorLog.LogOnce(ex);
+            }
         }
 
         /// <summary>
@@ -376,15 +388,22 @@ namespace ControllerGlyphFixer
         /// Jotunn's Mod Settings ignores custom drawers and shows the plain read-only text.
         /// </summary>
         /// <param name="entry">The Status entry.</param>
+        // ConfigurationManager disables the GUI for read-only entries (its "Style readonly entries"
+        // setting), and its edit window passes a copy of the entry made when the window opened. So
+        // the label reads the live status, and the button turns the GUI back on for itself.
         private void DrawMappingStatus(ConfigEntryBase entry)
         {
             UnityEngine.GUILayout.BeginVertical();
-            UnityEngine.GUILayout.Label((string)entry.BoxedValue);
+            UnityEngine.GUILayout.Label(m_mappingFile.Status);
+
+            bool wasEnabled = UnityEngine.GUI.enabled;
+            UnityEngine.GUI.enabled = true;
             if (UnityEngine.GUILayout.Button("Reload mapping"))
             {
                 ReloadMapping();
             }
 
+            UnityEngine.GUI.enabled = wasEnabled;
             UnityEngine.GUILayout.EndVertical();
         }
 
