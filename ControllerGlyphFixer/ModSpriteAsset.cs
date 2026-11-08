@@ -32,6 +32,13 @@ namespace ControllerGlyphFixer
         /// <summary>Padding around the glyph for its shadow.</summary>
         private const int ShadowPad = (ImageSize - GlyphSize) / 2;
 
+        /// <summary>
+        /// Our glyph's height relative to Valheim's whole reference sprite (which has transparent
+        /// padding of its own). At 1 our square glyphs looked about 1.4 times Valheim's round ones in
+        /// the hotbar and hover hints (in game 2026-11-08).
+        /// </summary>
+        private const float SizeFactor = 0.8f;
+
         /// <summary>Valheim sprite whose size and baseline ours copy.</summary>
         private const string ReferenceSprite = "button_a";
 
@@ -158,7 +165,7 @@ namespace ControllerGlyphFixer
                 float referenceScale = reference.scale * reference.glyph.scale;
                 asset.faceInfo = face;
                 fit = SpriteFit.Match(metrics.height, metrics.horizontalBearingY, referenceScale, face.pointSize,
-                    ImageSize, GlyphSize);
+                    ImageSize, GlyphSize, SizeFactor);
                 source = $"Valheim {SpriteStyle.Xbox} {ReferenceSprite} (height {metrics.height}, bearing {metrics.horizontalBearingY}, " +
                     $"scale {referenceScale}, point size {face.pointSize}) -> scale {fit.Scale}, bearing {fit.BearingY}";
             }

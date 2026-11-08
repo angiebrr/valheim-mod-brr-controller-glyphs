@@ -49,6 +49,27 @@ public class SpriteFitTests
         Assert.Equal(56f * 128 / 64 + 8, fit.BearingY, 4);
     }
 
+    /// <summary>
+    /// A size factor shrinks our glyph around the middle of Valheim's (in game 2026-11-08: at full
+    /// size our square glyphs looked about 1.4 times Valheim's round ones), on both sizing paths.
+    /// </summary>
+    /// <param name="facePointSize">Copied face info's point size (0: TMP's ascent-fitting path).</param>
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(32f)]
+    public void Size_factor_shrinks_around_the_reference_middle(float facePointSize)
+    {
+        SpriteFit full = SpriteFit.Match(64, 56, 1.5f, facePointSize, Image, Glyph);
+        SpriteFit smaller = SpriteFit.Match(64, 56, 1.5f, facePointSize, Image, Glyph, sizeFactor: 0.8f);
+
+        Assert.Equal(full.Scale * 0.8f, smaller.Scale, 4);
+        // Middle of Valheim's glyph: 56 - 64 / 2 = 24 reference px above the baseline, which is 48 of
+        // our px at full size; our glyph's middle (bearing - 8 - 64 px) must land there at either size
+        float ourPixel = full.Scale / smaller.Scale;
+        Assert.Equal(48f, (full.BearingY - 8 - 64), 4);
+        Assert.Equal(48f * ourPixel, (smaller.BearingY - 8 - 64), 4);
+    }
+
     /// <summary>Without Valheim's sprite, the glyph fills the font ascent with its top on the ascent line.</summary>
     [Fact]
     public void Fallback_fills_the_ascent()

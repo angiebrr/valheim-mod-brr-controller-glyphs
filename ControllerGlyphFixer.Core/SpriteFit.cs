@@ -38,18 +38,25 @@ namespace ControllerGlyphFixer.Core
         /// <param name="facePointSize">The copied face info's point size.</param>
         /// <param name="imageSize">Our image size (glyph plus padding).</param>
         /// <param name="glyphSize">Our glyph size inside the image.</param>
+        /// <param name="sizeFactor">Our glyph's height relative to the reference sprite's, kept centred on it.</param>
         /// <returns>The scale and bearing.</returns>
         // TMP_Text: with a point size, a sprite is metrics * scale * fontSize / pointSize. Without one,
         // each sprite's own height is fitted to the font ascent (times its scale), so pixel heights cancel.
         public static SpriteFit Match(float referenceHeight, float referenceBearingY, float referenceScale,
-            float facePointSize, int imageSize, int glyphSize)
+            float facePointSize, int imageSize, int glyphSize, float sizeFactor = 1f)
         {
-            float pixelsPerReferencePixel = glyphSize / referenceHeight;
+            // One of our pixels at full size, in reference pixels: our glyph spans the reference's height
+            float ourPixelsPerReferencePixel = glyphSize / referenceHeight;
             float scale = facePointSize > 0f
-                ? referenceScale / pixelsPerReferencePixel
+                ? referenceScale / ourPixelsPerReferencePixel
                 : referenceScale * imageSize / glyphSize;
             float pad = (imageSize - glyphSize) / 2f;
-            return new SpriteFit(scale, referenceBearingY * pixelsPerReferencePixel + pad);
+
+            // Our glyph's middle sits on the reference's middle; at a smaller size each of our pixels
+            // is smaller on screen, so the same height takes more of them
+            float referenceMiddle = referenceBearingY - referenceHeight / 2f;
+            float bearingY = referenceMiddle * ourPixelsPerReferencePixel / sizeFactor + glyphSize / 2f + pad;
+            return new SpriteFit(scale * sizeFactor, bearingY);
         }
 
         /// <summary>
