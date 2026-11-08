@@ -46,9 +46,11 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Size of the mod's glyphs in hover hints, in percent. Hint lines are packed tightly (Valheim's
-        /// own glyphs nearly touch); at full size the trackpad-up arrow reached the line above (in game 2026-11-08).
+        /// own glyphs nearly touch); at full size the trackpad-up arrow reached the line above, and at
+        /// 85% it was still squeezed under the D-pad glyph there (in game 2026-11-08). The size tag
+        /// shrinks towards the baseline, so a smaller glyph also moves its top down.
         /// </summary>
-        private const int HintGlyphPercent = 85;
+        private const int HintGlyphPercent = 75;
 
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
