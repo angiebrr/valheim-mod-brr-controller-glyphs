@@ -311,7 +311,10 @@ namespace ControllerGlyphFixer
         /// <returns>The new text.</returns>
         private TextMeshProUGUI CreateText(Transform container, TMP_Text style, string value, Color color)
         {
+            // Built inactive: TMP initialises on activation, and would otherwise look for its default
+            // font (LiberationSans, not in Valheim) and log a warning before ours is assigned
             var prefixObject = new GameObject("Prefix", typeof(RectTransform));
+            prefixObject.SetActive(false);
             prefixObject.transform.SetParent(container, worldPositionStays: false);
 
             TextMeshProUGUI text = prefixObject.AddComponent<TextMeshProUGUI>();
@@ -323,6 +326,8 @@ namespace ControllerGlyphFixer
             text.textWrappingMode = TextWrappingModes.NoWrap;
             text.raycastTarget = false;
             text.text = value;
+
+            prefixObject.SetActive(true);
             return text;
         }
 
