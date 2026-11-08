@@ -259,6 +259,15 @@ EpicLoot.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
   whether the grid clips anything drawn above its first row. **Checked with F5's glyphs
   (2026-11-08):** the inventory looked good; nothing clipped.
+- **Bug (found 2026-11-08, for later): AzuEPI's other inventory layouts.** Everything above was
+  built and checked in AzuEPI's *legacy* layout. In its "equipment slots and quick slots" layout,
+  AzuEPI moves the quick-slot cells into their own panel under the equipment: those cells keep
+  AzuEPI's own names (`R5 Up`, `R5 Right`, ...) instead of our glyphs, and our R5 outline is drawn
+  around an empty column at the right of the equipment panel, where the cells were in legacy mode.
+  To check: which layout setting AzuEPI uses and its values; how `QuickSlotCells.Find` and the
+  group bounds pick the cells' parent and positions when the cells live in a separate panel; and
+  each layout's look (outline vs a row prefix). Add the setting's name to `AzuEpiQuickSlots` with
+  a contract test.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
 
