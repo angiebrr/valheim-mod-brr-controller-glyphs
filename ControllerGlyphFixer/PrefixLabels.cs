@@ -79,6 +79,13 @@ namespace ControllerGlyphFixer
         /// </summary>
         private const float AboveGap = Gap;
 
+        /// <summary>
+        /// Extra space under a prefix above the slots, inside its backing (which still meets the slots).
+        /// Glyph prefixes sat on the slots' top edge, where the selected slot's frame (larger than the
+        /// slot) and labels overhanging the slot drew over them (in game 2026-11-08).
+        /// </summary>
+        private const float AboveClearance = 6f;
+
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
 
@@ -151,7 +158,8 @@ namespace ControllerGlyphFixer
                 // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 float textLeft = bounds.xMin + BackingPadding;
-                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
+                float clearance = side == PrefixSide.Above ? AboveClearance : 0f;
+                float y = side == PrefixSide.Above ? bounds.yMax + AboveGap + clearance : bounds.yMin - Gap;
                 Vector2 size = PlaceByDrawnBounds(text, prefix.Text, side, new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
                 float backingRight = textLeft + size.x + BackingPadding;
@@ -182,9 +190,10 @@ namespace ControllerGlyphFixer
                         break;
                 }
 
+                // The clearance is inside the backing, so it still meets the slots
                 Place(backing.rectTransform, Vector2.zero,
-                    new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f),
-                    new Vector2(bounds.xMin, textBottom - BackingPadding));
+                    new Vector2(backingRight - bounds.xMin, size.y + BackingPadding * 2f + clearance),
+                    new Vector2(bounds.xMin, textBottom - BackingPadding - clearance));
             }
         }
 
