@@ -131,6 +131,9 @@ namespace ControllerGlyphFixer
             var container = new GameObject(containerName, typeof(RectTransform)).GetComponent<RectTransform>();
             container.SetParent(parent, worldPositionStays: false);
             container.localPosition = Vector3.zero;
+            // Moved among the slots below; never a cell if the parent ever gets a layout group
+            container.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            DrawBehindSlots(container, parent, prefixes);
 
             foreach (PrefixLabel prefix in prefixes)
             {
@@ -373,6 +376,42 @@ namespace ControllerGlyphFixer
             image.color = color;
             image.raycastTarget = false;
             return image;
+        }
+
+        /// <summary>
+        /// Moves the container just before the first slot among the parent's children, so the slots
+        /// (and labels that overhang them, like the arrow on Valheim's D-pad-up glyph) draw over the
+        /// backings. Drawn last, the R4 backing covered that arrow on slot 1 (in game 2026-11-08).
+        /// </summary>
+        /// <param name="container">The prefixes' container, a child of <paramref name="parent"/>.</param>
+        /// <param name="parent">The slots' parent.</param>
+        /// <param name="prefixes">The prefixes, with their slots.</param>
+        // Before the first slot rather than first overall, so anything drawn under the slots (a bar
+        // background) stays under the backings too
+        private void DrawBehindSlots(Transform container, Transform parent, IReadOnlyList<PrefixLabel> prefixes)
+        {
+            int first = int.MaxValue;
+            foreach (PrefixLabel prefix in prefixes)
+            {
+                foreach (RectTransform slot in prefix.Slots)
+                {
+                    Transform child = slot;
+                    while (child && child.parent != parent)
+                    {
+                        child = child.parent;
+                    }
+
+                    if (child && child != container)
+                    {
+                        first = Mathf.Min(first, child.GetSiblingIndex());
+                    }
+                }
+            }
+
+            if (first != int.MaxValue)
+            {
+                container.SetSiblingIndex(first);
+            }
         }
 
         /// <summary>
