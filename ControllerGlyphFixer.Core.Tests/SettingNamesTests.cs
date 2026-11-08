@@ -17,7 +17,10 @@ public class SettingNamesTests
     [Fact]
     public void Sections_sort_in_reading_order()
     {
-        string[] order = { SettingNames.General, SettingNames.HotbarGlyphs, SettingNames.KeyGlyphMapping };
+        string[] order =
+        {
+            SettingNames.General, SettingNames.HintGlyphs, SettingNames.HotbarGlyphs, SettingNames.KeyGlyphMapping,
+        };
 
         Assert.Equal(order, order.OrderBy(name => name, StringComparer.Ordinal));
         Assert.Equal(order, order.OrderBy(name => name, StringComparer.OrdinalIgnoreCase));

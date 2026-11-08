@@ -532,9 +532,10 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 
 ### F8. Config and mapping generation
 - BepInEx config (renamed 2026-11-08, see "Settings names" under F9; old names in brackets):
-  - `General`: `Enabled` (master switch); `Override keyboard prompts` [KeyPrompts] (F1+F2);
-    `Glyphs in mod hints` [HoverText] (F4); `Glyphs used by mod` [ButtonGlyphs] (`Valheim` /
+  - `General`: `Enabled` (master switch); `Glyphs used by mod` [ButtonGlyphs] (`Valheim` /
     `SteamDeck`, default `Valheim`) (F5).
+  - `Hint Glyphs`: `Force controller glyphs in Valheim hints` [KeyPrompts] (F1+F2, F6);
+    `Force controller glyphs in mod hints` [HoverText] (F4).
   - `Hotbar Glyphs`: `Show hotbar controller glyphs` [HotbarLabels]; `Hotbar group colors`
     [PrefixColors] (`Neutral` / `Palette` / `Custom`); `Hotbar group background` [PrefixBackground]
     (color with alpha, default black at 70%) (F3).
@@ -601,11 +602,15 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 **Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`), not yet tested in game:**
 - **Settings names (reviewed with me one by one, 2026-11-08):** sections in Title Case, settings in
   sentence case, all in Core `SettingNames`; US spelling ("color") everywhere. Sections `General`,
-  `Hotbar Glyphs`, `Key Glyph Mapping` sort in that order alphabetically (both settings UIs sort by
-  name; unit-tested); `ConfigurationManagerAttributes.Order` keeps each section's order. Settings
-  and values as listed under F8. Notes from the review: "Force controller prompts" read as if it
-  switched Valheim's input mode, so `Override keyboard prompts`, whose description says input
-  isn't changed and prompts are vanilla without a gamepad; `Glyphs used by mod` says it only
+  `Hint Glyphs`, `Hotbar Glyphs`, `Key Glyph Mapping` sort in that order alphabetically (both
+  settings UIs sort by name; unit-tested); `ConfigurationManagerAttributes.Order` keeps each
+  section's order. Settings and values as listed under F8. Notes from the review: the Valheim-hints
+  switch was "Override keyboard prompts" for a while; in game it was unclear what it covered (the
+  hotbar has its own switch), so it moved with the mod-hints switch into `Hint Glyphs` (chosen
+  over "Crosshair Hint Glyphs", which sorts first and undersells hint bars and badges) as `Force
+  controller glyphs in Valheim hints` / `… in mod hints`: "Force" because off leaves Valheim's own
+  behavior rather than forcing keys, and mouse input doesn't switch them back. Descriptions say
+  what off does and that input isn't changed; `Glyphs used by mod` says it only
   changes glyphs this mod draws (Valheim's own prompts keep Valheim's art, see the
   `ModGlyphsForAll everywhere` item under F5). **No migration of old names:** this is a local
   mod, so renamed settings reset to defaults once and the old entries stay in the `.cfg` until
@@ -662,10 +667,10 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 - **Self-test:** mapping loaded, file watched, Localization cache reachable; INFO lines for the
   number of keybinding settings read, the mods patching the hovered object's hover text (look at a
   chest), and the missing keys.
-- **In game 2026-11-08: turning Override keyboard prompts off mid-game** left chest and fire hints
+- **In game 2026-11-08: turning the Valheim-hints switch off mid-game** left chest and fire hints
   on glyphs while others went to keys: Valheim's `Localize` cache kept text translated while it
-  was on. Every setting that changes which glyphs show (Enabled, Override keyboard prompts, Glyphs
-  in mod hints, Glyphs used by mod, Show hotbar controller glyphs), and a gamepad connecting or
+  was on. Every setting that changes which glyphs show (Enabled, both Hint Glyphs switches, Glyphs
+  used by mod, Show hotbar controller glyphs), and a gamepad connecting or
   disconnecting, now runs `RedrawGlyphs` (one `Config.SettingChanged` handler). Its description
   now says what it covers (crosshair hints, hint bars, menu badges) and that the hotbar has its own
   switch.

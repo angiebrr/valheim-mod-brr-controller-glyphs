@@ -24,7 +24,7 @@ namespace ControllerGlyphFixer
         /// <summary>Config "Enabled": master switch.</summary>
         private readonly ConfigEntry<bool> m_enabled;
 
-        /// <summary>Config "Override keyboard prompts": controller glyphs in $KEY_ prompts (F1 + F2).</summary>
+        /// <summary>Config "Force controller glyphs in Valheim hints": glyphs in $KEY_ prompts (F1, F2).</summary>
         private readonly ConfigEntry<bool> m_keyPrompts;
 
         /// <summary>Config "Show hotbar controller glyphs": mapped buttons on hotbar and quick slots (F3).</summary>
@@ -33,7 +33,7 @@ namespace ControllerGlyphFixer
         /// <summary>Config "Hotbar group colors": how group prefixes and lines are colored (F3).</summary>
         private readonly ConfigEntry<PrefixColorMode> m_prefixColors;
 
-        /// <summary>Config "Glyphs in mod hints": mapped buttons for key names in hover hints (F4).</summary>
+        /// <summary>Config "Force controller glyphs in mod hints": mapped buttons in hover hints (F4).</summary>
         private readonly ConfigEntry<bool> m_hoverText;
 
         /// <summary>Config "Glyphs used by mod": Valheim's art or the mod's tried first (F5).</summary>
@@ -115,7 +115,7 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Whether hover-text hints should show mapped buttons right now (F4): needs both the $KEY_
-        /// glyphs (Override keyboard prompts) and the "Glyphs in mod hints" switch, since it finishes what F1 starts there.
+        /// glyphs (Valheim hints) and the mod hints switch, since it finishes what F1 starts there.
         /// Computed on each read, like <see cref="ShowKeyPrompts"/>.
         /// </summary>
         internal bool ShowHoverText => ShowGlyphs(m_keyPrompts.Value && m_hoverText.Value);

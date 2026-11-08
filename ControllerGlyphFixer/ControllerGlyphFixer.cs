@@ -126,19 +126,21 @@ namespace ControllerGlyphFixer
         {
             // Order counts down so Mod Config lists each section's settings as written here
             ConfigEntry<bool> enabled = Config.Bind(SettingNames.General, SettingNames.Enabled, true, Describe(
-                "Turns the whole mod on or off.", order: 4));
-            ConfigEntry<bool> keyPrompts = Config.Bind(SettingNames.General, SettingNames.OverrideKeyboardPrompts, true,
-                Describe(
-                "With a gamepad connected, Valheim's hints (crosshair, hint bars, menu badges) keep controller " +
-                "glyphs after keyboard or trackpad input, with keyboard-only keys as your mapped buttons. The " +
-                "hotbar has its own switch. Input isn't changed.", order: 3));
-            ConfigEntry<bool> hoverText = Config.Bind(SettingNames.General, SettingNames.GlyphsInModHints, true, Describe(
-                "Shows keys in other mods' hover hints (e.g. [B] AutoFuel) as your mapped buttons. Needs " +
-                $"{SettingNames.OverrideKeyboardPrompts}.", order: 2));
+                "Turns the whole mod on or off.", order: 2));
             ConfigEntry<ButtonGlyphOrder> buttonGlyphs = Config.Bind(SettingNames.General, SettingNames.GlyphsUsedByMod,
                 ButtonGlyphOrder.Valheim, Describe(
                 "Art for the glyphs this mod draws. Valheim: Valheim's, with Steam Deck art for extra buttons (R4, " +
                 "L5, trackpads). SteamDeck: Steam Deck art for all. Valheim's own prompts aren't changed.", order: 1));
+
+            ConfigEntry<bool> keyPrompts = Config.Bind(SettingNames.HintGlyphs, SettingNames.ForceGlyphsInValheimHints,
+                true, Describe(
+                "With a gamepad connected, Valheim's hints (crosshair, hint bars, menu badges) stay controller " +
+                "glyphs after keyboard or mouse input, with keyboard-only keys as your mapped buttons. Off: " +
+                "Valheim's own behavior. Input isn't changed.", order: 2));
+            ConfigEntry<bool> hoverText = Config.Bind(SettingNames.HintGlyphs, SettingNames.ForceGlyphsInModHints, true,
+                Describe(
+                "Shows keys in other mods' hover hints (e.g. [B] AutoFuel) as your mapped buttons. Needs " +
+                $"{SettingNames.ForceGlyphsInValheimHints}. Off: the mods' key names.", order: 1));
 
             ConfigEntry<bool> hotbarLabels = Config.Bind(SettingNames.HotbarGlyphs, SettingNames.ShowHotbarGlyphs, true,
                 Describe(

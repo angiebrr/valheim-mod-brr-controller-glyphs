@@ -13,8 +13,11 @@ namespace ControllerGlyphFixer.Core
     /// </summary>
     public static class SettingNames
     {
-        /// <summary>Master switch and the glyph settings.</summary>
+        /// <summary>Master switch and the art the mod's glyphs use.</summary>
         public const string General = "General";
+
+        /// <summary>Glyphs in Valheim's hints and other mods' hover hints.</summary>
+        public const string HintGlyphs = "Hint Glyphs";
 
         /// <summary>Hotbar and quick-slot labels and their groups.</summary>
         public const string HotbarGlyphs = "Hotbar Glyphs";
@@ -25,11 +28,14 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Master switch.</summary>
         public const string Enabled = "Enabled";
 
-        /// <summary>Controller glyphs in Valheim's prompts after keyboard input (was KeyPrompts).</summary>
-        public const string OverrideKeyboardPrompts = "Override keyboard prompts";
+        /// <summary>
+        /// Controller glyphs in Valheim's hints even after keyboard or mouse input (was KeyPrompts).
+        /// "Force": off leaves Valheim's own choice, not keyboard keys.
+        /// </summary>
+        public const string ForceGlyphsInValheimHints = "Force controller glyphs in Valheim hints";
 
         /// <summary>Mapped buttons for keys in other mods' hover hints (was HoverText).</summary>
-        public const string GlyphsInModHints = "Glyphs in mod hints";
+        public const string ForceGlyphsInModHints = "Force controller glyphs in mod hints";
 
         /// <summary>Which art the mod's own glyphs use (was ButtonGlyphs).</summary>
         public const string GlyphsUsedByMod = "Glyphs used by mod";

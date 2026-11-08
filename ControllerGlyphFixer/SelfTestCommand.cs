@@ -344,7 +344,7 @@ namespace ControllerGlyphFixer
         {
             if (!m_glyphs.ShowHoverText)
             {
-                Info("Skipping hover text checks (glyphs, Override keyboard prompts or Glyphs in mod hints off)");
+                Info("Skipping hover text checks (glyphs or a Hint Glyphs setting off)");
                 return;
             }
 
