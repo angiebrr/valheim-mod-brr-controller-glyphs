@@ -424,20 +424,41 @@ outside your Steam layout and must match it"; the four setup steps (open the fil
 key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
 sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
 
-### F10. AutomaticFuel x MyLittleUI compat plugin (later, separate mod)
-- **Problem:** MyLittleUI's postfixes on `Smelter.OnHoverAddFuel` / `OnHoverAddOre` replace the
-  whole `__result`; when they run after AutomaticFuel's, its "[B] AutoFuel …" line is lost.
-  Fuelling still works; only the hint is missing.
-- **Plan:** a tiny separate BepInEx plugin (not part of ControllerGlyphFixer, whose rules forbid
-  touching other mods' patches). After all plugins load (`Chainloader` done), it finds
-  AutomaticFuel's two postfixes (`TastyChickenLegs.AutomaticFuel`, classes
+### F10. Mod compat plugin (later, separate mod)
+A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
+ControllerGlyphFixer, whose rules forbid changing other mods' patches or behaviour.
+
+- **Structure:** one class per fix, each with:
+  - a config switch (`[Fixes] AutomaticFuelSmelterHint`, `[Fixes] ChestRenameOnHold`, …), on by
+    default, so any fix can be turned off on its own;
+  - a list of required plugin IDs (and the member names it touches), checked through
+    `Chainloader.PluginInfos` after all plugins have loaded. If one is missing, or a member was
+    renamed, the fix logs why it's skipped and does nothing;
+  - a startup log line per fix: applied, skipped (switched off), or skipped (requirement missing);
+  - contract tests that read the target mods' DLLs in the Gale profile (as for AzuEPI), skipping
+    when a mod isn't installed.
+- **Fix 1, AutomaticFuel smelter hint** (needs `TastyChickenLegs.AutomaticFuel`,
+  `shudnal.MyLittleUI`): MyLittleUI's postfixes on `Smelter.OnHoverAddFuel` / `OnHoverAddOre`
+  replace the whole `__result`; when they run after AutomaticFuel's, its "[B] AutoFuel …" line is
+  lost (fuelling still works). The fix finds AutomaticFuel's two postfixes (classes
   `Smelter_GetHoverText_Patch` / `Smelter_GetHoverTextFuel_Patch`) via `Harmony.GetPatchInfo`,
-  unpatches them, and patches them again with `Priority.Last` (or `after: shudnal.MyLittleUI`),
-  so they append to MyLittleUI's text. If either mod is missing or renamed, it logs a warning
-  and does nothing. Contract test: the two patch classes still exist in AutomaticFuel's DLL.
-- **Alternatives:** turn off MyLittleUI's `hoverSmelterShowFuelAndItem` and
+  unpatches them, and patches them again with `Priority.Last`, so they append to MyLittleUI's
+  text. Alternatives: turn off MyLittleUI's `hoverSmelterShowFuelAndItem` and
   `hoverSmelterEstimatedTime`; or ask AutomaticFuel's author to add
-  `[HarmonyAfter("shudnal.MyLittleUI")]` to those two patches (no source repo or licence found).
+  `[HarmonyAfter("shudnal.MyLittleUI")]` (no source repo or licence found).
+- **Fix 2, chest rename on a held alternate Use** (needs `shudnal.MyLittleUI` with
+  *Hover - Chests → Enable custom names* on, `Azumatt.AzuCraftyBoxes`):
+  - **Conflict (found 2026-11-08):** both mods use a tap of Valheim's alternate Use on chests
+    (LT + X; Shift + E on keyboard). AzuCraftyBoxes' `Container.Interact` prefix runs first,
+    toggles the crafting chest and cancels; MyLittleUI's rename prefix (priority 0) then sees the
+    interaction cancelled and does nothing. So Rename never opens on chests AzuCraftyBoxes
+    manages, while its hint still shows. MyLittleUI's rename has only an on/off setting, and both
+    read the same game input, so neither settings nor the Steam layout can separate them.
+  - **Fix:** a tap keeps the crafting toggle; holding the alternate Use opens MyLittleUI's rename
+    (vanilla `Container.Interact` ignores held presses and both mods skip them, so the input is
+    free). Its rename hint reads "hold". First check that "Hold to stack" doesn't also fire
+    while the alternate key is held.
+  - **Current workaround (2026-11-08):** custom names turned off in MyLittleUI.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
@@ -555,7 +576,7 @@ thin patches → in-game self-test checks → manual checklist.
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
-6. **Later:** F10 compat plugin (separate mod).
+6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
