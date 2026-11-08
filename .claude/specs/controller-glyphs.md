@@ -113,7 +113,7 @@ My mapping (test fixture and profile config):
     `KeyMap.Color(button)`, `KeyMap.PrefixButtons`
   - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
   - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
-  - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
+  - `HintRewriter.Rewrite(string text, Func<string, string> translateKey, Func<string, bool> isKeyName) -> HintRewrite { Text, UnmappedKeys }` (F4; see rules below)
 - See **Testing strategy** for what the tests cover.
 
 ## Dependencies (reuse what the profile already has)
@@ -261,24 +261,75 @@ EpicLoot.
   send a spare key while the action set is active (e.g. F13 on layer activation).
 
 ### F4. Hover text with key names written directly by mods
-- **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
-  the single place all hover text (vanilla and mods) is assigned to `m_hoverName.text`.
-- **Behaviour:** if `ShowKeyPrompts`, run `HintRewriter.Rewrite` on `m_hoverName.text`:
-  - Replace a key name only inside a key-hint wrapper: `[...]`,
-    `[<color=yellow><b>...</b></color>]`, or `<b>...</b>`, and only if the whole inner
-    text is a mapped key name or alias. Never touch free text.
-  - Apply the same cleanup vanilla does in gamepad mode: strip `[<color=yellow><b>` /
-    `</b></color>]` around `<sprite=…>` glyphs (vanilla does this only when
-    `IsGamepadActive()`; with F1 sprites now appear in keyboard mode too).
-- **Risk:** medium (one private method; mod-agnostic).
-- **Cost:** runs every frame while hovering. Skip the rewrite if the text is unchanged since
-  last frame.
-- **In-game finding (2026-11-02):** AzuCraftyBoxes' chest hint shows `LT + X` in gamepad mode
-  but `[E + LeftShift] Crafting Chest` after keyboard/trackpad input. `E` isn't in my mapping:
-  it's Valheim's Use key, which I press as X. So F4 must also translate keys Valheim has bound
-  to an action (key -> Valheim binding -> its Joy glyph, e.g. E -> Use -> X), not only keys in
-  the mapping file. Vanilla chest hover text also differs by mode (yellow, no brackets around
-  glyphs in gamepad mode; white with `[ ]` otherwise); the bracket cleanup above covers part of it.
+- **Where:** Valheim rebuilds the hover text every frame (`hoverable.GetHoverText()`, which
+  mods extend with postfixes), then in gamepad mode only strips `[<color=yellow><b>` /
+  `</b></color>]` around a single `<sprite=…>`, and assigns it to `Hud.m_hoverName.text` in
+  `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`). One postfix there covers
+  vanilla and every mod.
+- **What mods write** (decompiled 2026-11-08):
+
+  | Mod | Hint | Written as |
+  |---|---|---|
+  | AzuCraftyBoxes chest toggle | `[E + LeftShift]` | `KeyboardShortcut.ToString()` |
+  | AzuCraftyBoxes fill all | `[LeftShift + $KEY_Use]` | shortcut text + `$KEY_Use` |
+  | AutomaticFuel | `[B] AutoFuel: …` | shortcut text (`{togglekey}` placeholder) |
+  | AzuAutoStore backpack | `Press [$KEY_Use] to open` | `$KEY_Use` (F1 already covers it) |
+
+- **Keys, not actions (decided 2026-11-08):** the mapping file maps keyboard keys to the buttons
+  Steam presses to send them; it knows nothing about actions. Valheim actions (`$KEY_Use`) are
+  F1's job: they resolve through Valheim's bindings (Joy glyph, else the bound key through the
+  mapping). Raw key names in mod text have lost their action, so they're translated only
+  through the mapping. The spec's earlier idea (E -> Use -> X) is dropped: AzuCraftyBoxes reads
+  its toggle with `Input.GetKey` (real keyboard keys only) and has no controller path, so
+  showing X would be wrong. If a key really is pressed with a button for some mod, the user
+  says so in the mapping (`E: X`); the mod never guesses.
+- **`HintRewriter.Rewrite` (Core, TDD):**
+  - Only looks inside `[ … ]` hints (outermost brackets; a nested `[R4]` badge counts as a
+    glyph). Inside, TMP tags (`<color>`, `<b>`, `<sprite>`) are kept; the text between tags is
+    split on `+`, and each trimmed piece is a token.
+  - Token kinds: mapped key (replaced with its buttons), unmapped key name (left as is,
+    reported), glyph (sprite tag or nested badge), other text.
+  - Any "other" token means it isn't a key hint: the whole `[ … ]` is left untouched
+    (`[Zebra]`, `[1/5]`, free text). Free text outside brackets is never touched.
+  - When every token is a mapped key or a glyph, the outer `[ ]` are dropped, like vanilla in
+    gamepad mode (also makes keyboard mode match gamepad mode for vanilla hints and avoids
+    `[[L5]]`). Partly translated hints keep their brackets.
+  - Idempotent: rewriting its own output changes nothing.
+  - **Leftover repair (2026-11-08):** an unclosed `[` whose opening `<color=…>`/`<b>` tags run
+    straight into a `<sprite=` is removed with those tags. That's what Valheim's gamepad cleanup
+    leaves of a hint coloured anything but `yellow` (it strips `"></b></color>]` but only matches
+    `[<color=yellow><b><sprite=`). Other unclosed brackets stay. TODO in code: report it to
+    MyLittleUI's author; once fixed upstream the repair finds nothing to do.
+  - Whether a piece is a key name is a predicate from the plugin (Unity `KeyCode` names, any
+    case), so Core stays free of Unity.
+- **Patch:** postfix on `Hud.UpdateCrosshair`, low priority; runs only when `ShowKeyPrompts` and
+  config `General.HoverText` are on. Caches the last input and output, so an unchanged hover
+  costs one string compare per frame. Known cost: while a hint is rewritten, Valheim sets the
+  original text every frame and we set ours back, so TMP re-lays out that one label each frame.
+  Avoiding it would need a prefix or transpiler, which the design rules rule out; it's small.
+- **Missing keys (2026-11-08):** each unmapped key name the rewriter meets is logged once per
+  session ("Hover hint uses key E, which isn't in your mapping file: no controller button
+  shows for it"), and `cgf_selftest` lists the ones seen so far. Later, F9's mapping status in
+  Mod Config can show them too, so users find gaps in their mapping without reading code.
+- **Expected results with my mapping:** `[B] AutoFuel: …` -> `[LPad Up] AutoFuel: …`;
+  `[LeftShift + (Use)]` -> `[LPad Down] + (Use glyph)`; `[E + LeftShift]` -> `[E + [LPad Down]]`
+  with `E` reported (no button in my layout sends E).
+- **In-game check (2026-11-08):** AutomaticFuel's `[LPad Up] AutoFuel` and AzuCraftyBoxes'
+  `[E + [LPad Down]]` show as designed; vanilla chest hints match in both modes in keyboard
+  mode. Two problems come from other mods, not ours:
+  - **Smelter:** no AutomaticFuel line. MyLittleUI's postfix on `Smelter.OnHoverAddFuel` /
+    `OnHoverAddOre` replaces the whole `__result`, dropping AutomaticFuel's appended line.
+  - **Chest in gamepad mode:** a stray `[` and yellow text to the end of the line. MyLittleUI
+    writes chest hints as `[<color=#ffff00ff><b>…`; vanilla's gamepad cleanup only matches
+    `<color=yellow>`, so it removes the closing `</b></color>]` but not the opening. The hint
+    has no closing bracket left, so the bracket rewrite can't see it; the leftover repair above
+    fixes it (added after this check).
+  - Missing-key reports first named the wrong line (substring match: "Chest ( EMPTY )" contains
+    `E`); `UnmappedKey.Line` now carries the hint's own line, tags removed.
+- **Out of scope:** ImpactfulSkills' crafting-panel hint (`m_recipeDecription`, not hover text);
+  `<b>KEY</b>` hints without brackets (none of my mods use them).
+- **Risk:** medium (one private method; mod-agnostic). Contract test for the method and
+  `Hud.m_hoverName : TMP_Text`.
 
 ### F5. Glyph appearance
 - No patch. Handled by mapping output (Valheim sprite tags where art exists, text badges
@@ -348,7 +399,9 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 1. **Mapping status in the config** (`[Mapping]` section, read-only): the file's path, and
    "Loaded 20 keys" or the parse error with its line number. Shows in both settings UIs, so a
    broken file isn't silent. (Read-only entries are still written to the `.cfg`; acceptable, or
-   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.)
+   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.) Also list the
+   **missing keys**: key names seen in hover hints this session that the mapping doesn't
+   cover (F4), e.g. "E (AzuCraftyBoxes chest toggle)", so users know what to add.
 2. **Reload without restarting** (the existing TODO in `ControllerGlyphFixer.LoadKeyMap`): watch
    the file (`FileSystemWatcher`), plus a *Reload mapping* button (`CustomDrawer`) and a
    `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
@@ -372,6 +425,46 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 outside your Steam layout and must match it"; the four setup steps (open the file, find each
 key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
 sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
+
+### F10. Mod compat plugin (later, separate mod)
+A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
+ControllerGlyphFixer, whose rules forbid changing other mods' patches or behaviour.
+
+- **Structure:** one class per fix, each with:
+  - a config switch (`[Fixes] AutomaticFuelSmelterHint`, `[Fixes] ChestRenameOnHold`, …), on by
+    default, so any fix can be turned off on its own;
+  - a list of required plugin IDs (and the member names it touches), checked through
+    `Chainloader.PluginInfos` after all plugins have loaded. If one is missing, or a member was
+    renamed, the fix logs why it's skipped and does nothing;
+  - a startup log line per fix: applied, skipped (switched off), or skipped (requirement missing);
+  - contract tests that read the target mods' DLLs in the Gale profile (as for AzuEPI), skipping
+    when a mod isn't installed.
+- **Fix 1, AutomaticFuel smelter hint** (needs `TastyChickenLegs.AutomaticFuel`,
+  `shudnal.MyLittleUI`): MyLittleUI's postfixes on `Smelter.OnHoverAddFuel` / `OnHoverAddOre`
+  replace the whole `__result`; when they run after AutomaticFuel's, its "[B] AutoFuel …" line is
+  lost (fuelling still works). The fix finds AutomaticFuel's two postfixes (classes
+  `Smelter_GetHoverText_Patch` / `Smelter_GetHoverTextFuel_Patch`) via `Harmony.GetPatchInfo`,
+  unpatches them, and patches them again with `Priority.Last`, so they append to MyLittleUI's
+  text. Alternatives: turn off MyLittleUI's `hoverSmelterShowFuelAndItem` and
+  `hoverSmelterEstimatedTime`; or ask AutomaticFuel's author to add
+  `[HarmonyAfter("shudnal.MyLittleUI")]` (no source repo or licence found).
+- **Fix 2, chest rename on a held alternate Use** (needs `shudnal.MyLittleUI` with
+  *Hover - Chests → Enable custom names* on, `Azumatt.AzuCraftyBoxes`):
+  - **Conflict (found 2026-11-08):** both mods use a tap of Valheim's alternate Use on chests
+    (LT + X; Shift + E on keyboard). AzuCraftyBoxes' `Container.Interact` prefix runs first,
+    toggles the crafting chest and cancels; MyLittleUI's rename prefix (priority 0) then sees the
+    interaction cancelled and does nothing. So Rename never opens on chests AzuCraftyBoxes
+    manages, while its hint still shows. MyLittleUI's rename has only an on/off setting, and both
+    read the same game input, so neither settings nor the Steam layout can separate them.
+  - **Fix:** a tap keeps the crafting toggle; holding the alternate Use opens MyLittleUI's rename
+    (vanilla `Container.Interact` ignores held presses and both mods skip them, so the input is
+    free). Its rename hint reads "hold". First check that "Hold to stack" doesn't also fire
+    while the alternate key is held.
+  - **Current workaround (2026-11-08):** custom names turned off in MyLittleUI.
+- **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
+  add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
+  lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
+  chest hints use a non-`yellow` colour (`#ffff00ff`).
 
 ## Testing strategy
 
@@ -408,9 +501,10 @@ Red → green → refactor for every Core function. Required cases:
 - `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
   same count (new first-slot ID), count changed, glyphs on/off (restore once, never again).
 - `ValheimButtons`: every button with Valheim art; Steam-only buttons have none.
-- `HintRewriter.Rewrite`: rewrites `[Z]`, `[<color=yellow><b>Z</b></color>]`, `<b>Z</b>`;
-  leaves free text and non-key brackets alone (`Zone [Zebra]`); strips sprite brackets
-  like vanilla gamepad mode; idempotent (rewriting twice = once).
+- `HintRewriter.Rewrite`: `[B]`, `[<color=yellow><b>B</b></color>]` and combos (`[LeftShift + sprite]`)
+  translated, brackets dropped when fully translated; partly translated hints keep brackets
+  and report unmapped keys; non-key brackets (`[Zebra]`, `[1/5]`) and free text untouched;
+  nested badges count as glyphs; idempotent.
 
 ### 2. Contract tests (`ControllerGlyphFixer.Contract.Tests`) — catch game updates, seconds
 Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadContext`
@@ -443,6 +537,9 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
   be read (if installed); slot 1 of the hotbar and the quick-slot bar shows its own button,
   and each bar shows one prefix per group of slots on screen
   (in a world).
+- F4: the `Hud.UpdateCrosshair` postfix is applied; a sample hint loses its brackets around a
+  glyph while `[Zebra]` stays; the keys hover hints used this session that the mapping lacks
+  are listed (INFO).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and
@@ -481,6 +578,7 @@ thin patches → in-game self-test checks → manual checklist.
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
+6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its

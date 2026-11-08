@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using BepInEx.Configuration;
 using ControllerGlyphFixer.Core;
 using UnityEngine.InputSystem;
+using KeyCode = UnityEngine.KeyCode;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -32,6 +33,15 @@ namespace ControllerGlyphFixer
         /// <summary>Config General.PrefixColors: how group prefixes and lines are coloured (F3).</summary>
         private readonly ConfigEntry<PrefixColorMode> m_prefixColors;
 
+        /// <summary>Config General.HoverText: mapped buttons for key names in hover hints (F4).</summary>
+        private readonly ConfigEntry<bool> m_hoverText;
+
+        /// <summary>Most answers <see cref="m_keyNames"/> keeps before starting over.</summary>
+        private const int MaxCachedKeyNames = 256;
+
+        /// <summary>Answers of <see cref="IsKeyName"/> so far; hover text repeats the same few words.</summary>
+        private readonly Dictionary<string, bool> m_keyNames = new (StringComparer.OrdinalIgnoreCase);
+
         /// <summary>
         /// Creates the service.
         /// </summary>
@@ -40,18 +50,21 @@ namespace ControllerGlyphFixer
         /// <param name="keyPrompts">Config switch for F1 + F2; read live.</param>
         /// <param name="hotbarLabels">Config switch for F3; read live.</param>
         /// <param name="prefixColors">Config colour mode for group prefixes; read live.</param>
+        /// <param name="hoverText">Config switch for F4; read live.</param>
         internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts,
-            ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors)
+            ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors, ConfigEntry<bool> hoverText)
         {
             m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
             m_enabled = enabled ?? throw new ArgumentNullException(nameof(enabled));
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
             m_hotbarLabels = hotbarLabels ?? throw new ArgumentNullException(nameof(hotbarLabels));
             m_prefixColors = prefixColors ?? throw new ArgumentNullException(nameof(prefixColors));
+            m_hoverText = hoverText ?? throw new ArgumentNullException(nameof(hoverText));
 
-            // Built once: the $KEY_ postfix passes these on every call, often every frame
+            // Built once: the $KEY_ and hover postfixes pass these on every call, often every frame
             KeyTranslator = TranslateKey;
             JoyLookup = LookupJoy;
+            KeyNameCheck = IsKeyName;
         }
 
         /// <summary>Number of keys in the loaded mapping.</summary>
@@ -62,6 +75,44 @@ namespace ControllerGlyphFixer
 
         /// <summary><see cref="LookupJoy"/> as a delegate, created once.</summary>
         internal Func<string, string> JoyLookup { get; }
+
+        /// <summary><see cref="IsKeyName"/> as a delegate, created once.</summary>
+        internal Func<string, bool> KeyNameCheck { get; }
+
+        /// <summary>
+        /// Whether hover-text hints should show mapped buttons right now (F4): needs both the $KEY_
+        /// glyphs (KeyPrompts) and the HoverText switch, since it finishes what F1 starts there.
+        /// Computed on each read, like <see cref="ShowKeyPrompts"/>.
+        /// </summary>
+        internal bool ShowHoverText => ShowGlyphs(m_keyPrompts.Value && m_hoverText.Value);
+
+        /// <summary>
+        /// Whether a word is a keyboard key name, as mods write them (Unity KeyCode names such as
+        /// "E", "LeftShift", "Keypad1"; any case). Plain numbers aren't: "[5]" is more often a count.
+        /// </summary>
+        /// <param name="word">A word from a hover hint.</param>
+        /// <returns>True for KeyCode names.</returns>
+        internal bool IsKeyName(string word)
+        {
+            if (string.IsNullOrEmpty(word) || char.IsDigit(word[0]))
+            {
+                return false;
+            }
+
+            if (!m_keyNames.TryGetValue(word, out bool isKey))
+            {
+                // Bounded: bracketed words in hover text are few, but nothing guarantees that
+                if (m_keyNames.Count >= MaxCachedKeyNames)
+                {
+                    m_keyNames.Clear();
+                }
+
+                isKey = Enum.TryParse(word, ignoreCase: true, out KeyCode key) && Enum.IsDefined(typeof(KeyCode), key);
+                m_keyNames[word] = isKey;
+            }
+
+            return isKey;
+        }
 
         /// <summary>
         /// Returns the display string of a controller binding (e.g. "JoyUse").

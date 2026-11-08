@@ -12,7 +12,6 @@ namespace ControllerGlyphFixer.Contract.Tests;
 /// Everything the plugin patches or calls in Valheim must still exist with the expected shape.
 /// Run after every Valheim update, before launching the game.
 /// </summary>
-// TODO(phase 2): add Hud.UpdateCrosshair(Player, float) and Hud.m_hoverName when the F4 patch is written.
 public class PatchTargetTests
 {
     /// <summary>Static members, public or not.</summary>
@@ -132,6 +131,19 @@ public class PatchTargetTests
         Assert.NotNull(elements);
         Assert.StartsWith("System.Collections.Generic.List`1[[InventoryElement", elements.FieldType.FullName);
         AssertField(grid, "m_width", "Int32");
+    }
+
+    /// <summary>The hover text patch target and the label it rewrites exist.</summary>
+    [GameFact]
+    public void Hud_members_used_by_the_F4_patch_exist()
+    {
+        Type hud = GameAssemblies.Type("assembly_valheim", "Hud");
+        Assert.NotNull(hud.GetMethod("UpdateCrosshair", Instance, null,
+            new[] { GameAssemblies.Type("assembly_valheim", "Player"), typeof(float).InGame() }, null));
+
+        FieldInfo hoverName = hud.GetField("m_hoverName", Instance);
+        Assert.NotNull(hoverName);
+        Assert.Equal("TextMeshProUGUI", hoverName.FieldType.Name);
     }
 
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
