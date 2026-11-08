@@ -199,6 +199,35 @@ public class PatchTargetTests
     }
 
     /// <summary>
+    /// Localize's text cache, which RedrawGlyphs empties after a mapping reload or ButtonGlyphs
+    /// change so cached $KEY_ text picks up the new glyphs (F9).
+    /// </summary>
+    [GameFact]
+    public void Localization_cache_can_be_emptied()
+    {
+        FieldInfo cache = GameAssemblies.Type("assembly_guiutils", "Localization").GetField("m_cache", Instance);
+
+        Assert.True(cache != null, "Localization.m_cache not found");
+        Assert.Equal("LRUCache`1", cache.FieldType.Name);
+        Assert.NotNull(cache.FieldType.GetMethod("EvictAll", Instance, null, Type.EmptyTypes, null));
+    }
+
+    /// <summary>The key finder (cgf_keylog) shows each key as a top-left message (F9).</summary>
+    [GameFact]
+    public void MessageHud_ShowMessage_takes_a_type_and_text()
+    {
+        Type messageHud = GameAssemblies.Type("assembly_valheim", "MessageHud");
+
+        Assert.Contains(messageHud.GetMethods(Instance), method =>
+            method.Name == "ShowMessage" &&
+            method.GetParameters() is { Length: >= 2 } parameters &&
+            parameters[0].ParameterType.Name == "MessageType" &&
+            parameters[1].ParameterType.FullName == "System.String" &&
+            parameters.Skip(2).All(parameter => parameter.IsOptional));
+        Assert.Contains("TopLeft", EnumNames(messageHud.GetNestedType("MessageType")));
+    }
+
+    /// <summary>
     /// Asserts a static property exists with the given type name.
     /// </summary>
     /// <param name="type">Type to inspect.</param>

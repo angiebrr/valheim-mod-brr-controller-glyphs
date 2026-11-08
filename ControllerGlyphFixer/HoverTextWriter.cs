@@ -46,6 +46,9 @@ namespace ControllerGlyphFixer
         /// </summary>
         internal IReadOnlyDictionary<string, string> MissingKeys => m_missingKeys;
 
+        /// <summary>Raised after a rewrite adds keys to <see cref="MissingKeys"/>.</summary>
+        internal event Action MissingKeysChanged;
+
         /// <summary>
         /// Forgets the cached rewrite, so the next frame rewrites the hover text again (after a
         /// setting that changes glyphs).
@@ -93,11 +96,23 @@ namespace ControllerGlyphFixer
         internal string Rewrite(string text)
         {
             HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.HintKeyTranslator, m_glyphs.KeyNameCheck);
-            foreach (UnmappedKey unmapped in result.UnmappedKeys.Where(unmapped => !m_missingKeys.ContainsKey(unmapped.Key)))
+            bool found = false;
+            foreach (UnmappedKey unmapped in result.UnmappedKeys)
             {
+                if (m_missingKeys.ContainsKey(unmapped.Key))
+                {
+                    continue;
+                }
+
                 m_missingKeys[unmapped.Key] = unmapped.Line;
+                found = true;
                 Jotunn.Logger.LogInfo($"Hover hint uses key {unmapped.Key}, which isn't in your mapping file, so no " +
                                       $"controller button shows for it: \"{unmapped.Line}\"");
+            }
+
+            if (found)
+            {
+                MissingKeysChanged?.Invoke();
             }
 
             return result.Text;

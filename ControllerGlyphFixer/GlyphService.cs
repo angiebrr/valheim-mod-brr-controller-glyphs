@@ -18,8 +18,8 @@ namespace ControllerGlyphFixer
     /// </summary>
     internal sealed class GlyphService
     {
-        /// <summary>The loaded key mapping.</summary>
-        private readonly KeyMap m_keyMap;
+        /// <summary>The loaded key mapping; replaced when the mapping file is reloaded.</summary>
+        private KeyMap m_keyMap;
 
         /// <summary>Config General.Enabled: master switch.</summary>
         private readonly ConfigEntry<bool> m_enabled;
@@ -86,6 +86,20 @@ namespace ControllerGlyphFixer
 
         /// <summary>Number of keys in the loaded mapping.</summary>
         internal int MappedKeyCount => m_keyMap.Count;
+
+        /// <summary>The loaded key mapping.</summary>
+        internal KeyMap KeyMap => m_keyMap;
+
+        /// <summary>
+        /// Swaps in a reloaded mapping and forgets the key-name answers based on the old one.
+        /// Callers redraw whatever shows buttons.
+        /// </summary>
+        /// <param name="keyMap">The new mapping.</param>
+        internal void ReplaceKeyMap(KeyMap keyMap)
+        {
+            m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
+            m_keyNames.Clear();
+        }
 
         /// <summary><see cref="TranslateKey"/> as a delegate, created once.</summary>
         internal Func<string, string> KeyTranslator { get; }

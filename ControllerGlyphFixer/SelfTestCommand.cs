@@ -49,6 +49,9 @@ namespace ControllerGlyphFixer
         /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
         private readonly ModSpriteAsset m_modSprites;
 
+        /// <summary>The mapping file handler (F9).</summary>
+        private readonly MappingFile m_mappingFile;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
@@ -59,9 +62,12 @@ namespace ControllerGlyphFixer
         /// <param name="prefixLabels">Draws the group prefixes, or null if it couldn't be set up.</param>
         /// <param name="hoverText">The hover text writer.</param>
         /// <param name="modSprites">The mod's glyph sprite asset, or null if it couldn't be built.</param>
+        /// <param name="mappingFile">The mapping file handler (status and watcher).</param>
         internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
-            QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText, ModSpriteAsset modSprites)
+            QuickSlotKeys quickSlots, PrefixLabels prefixLabels, HoverTextWriter hoverText, ModSpriteAsset modSprites,
+            MappingFile mappingFile)
         {
+            m_mappingFile = mappingFile ?? throw new ArgumentNullException(nameof(mappingFile));
             m_modSprites = modSprites;
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
@@ -103,6 +109,7 @@ namespace ControllerGlyphFixer
                 gamepad != null ? $"{gamepad.displayName} ({gamepad.layout})" : "Gamepad.current is null");
 
             Info($"Key mapping has {m_glyphs.MappedKeyCount} keys");
+            CheckMappingFile();
 
             CheckModGlyphs();
             CheckSlotLabels();
@@ -132,6 +139,28 @@ namespace ControllerGlyphFixer
 
             Check("$KEY_Hotbar1 shows the mapped buttons", hotbar1 == expectedHotbar1,
                 $"got {hotbar1}, expected {expectedHotbar1}");
+        }
+
+        /// <summary>
+        /// F9 checks: the mapping file loaded, saves are watched, and Localization's cache (emptied
+        /// on reload) can be reached.
+        /// </summary>
+        private void CheckMappingFile()
+        {
+            string status = m_mappingFile.Status;
+            Check("Mapping file loaded", !status.StartsWith("Error", StringComparison.Ordinal), status);
+            Check("Mapping file watched for saves", m_mappingFile.IsWatching,
+                m_mappingFile.IsWatching ? null : "use cgf_reloadmapping after editing; see the log");
+
+            try
+            {
+                Localization.instance.m_cache.EvictAll();
+                Check("Localization cache can be emptied (for reloads)", true);
+            }
+            catch (Exception ex)
+            {
+                Check("Localization cache can be emptied (for reloads)", false, ex.Message);
+            }
         }
 
         /// <summary>
