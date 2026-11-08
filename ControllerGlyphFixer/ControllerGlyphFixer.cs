@@ -12,6 +12,8 @@ using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Managers;
 using UnityEngine.InputSystem;
+using Color = UnityEngine.Color;
+using Sprite = UnityEngine.Sprite;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,18 +41,30 @@ namespace ControllerGlyphFixer
         /// <summary>Plugin version; also used for the assembly version.</summary>
         public const string PluginVersion = "0.0.1";
 
+        /// <summary>Corner radius of the group prefix backings, in UI units (pixels of the sprite).</summary>
+        private const int BackingCornerRadius = 7;
+
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
+        /// <summary>Config General.PrefixColors; kept to unsubscribe on destroy.</summary>
+        private ConfigEntry<PrefixColorMode> m_prefixColors;
+
+        /// <summary>Config General.PrefixBackground; kept to unsubscribe on destroy.</summary>
+        private ConfigEntry<Color> m_prefixBackground;
+
+        /// <summary>The rounded prefix backing, created in Awake and destroyed with the plugin.</summary>
+        private Sprite m_backingSprite;
+
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
-        private static string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
+        private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
         /// <summary>
         /// Called by Unity when BepInEx loads the plugin: builds every object with its
         /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
-        // TODO(phase 2): bind HotbarLabels (F3) and HoverText (F4) toggles and apply their patches.
-        // TODO: give config entries ConfigurationManagerAttributes (order, sections) for the in-game UI.
+        // TODO(phase 2): bind a HoverText (F4) toggle and apply its patch.
+        // TODO(before sharing): sections and ConfigurationManagerAttributes.Order for Mod Config (spec: Phases).
         private void Awake()
         {
             ConfigEntry<bool> enabled = Config.Bind("General", "Enabled", true,
@@ -58,14 +72,50 @@ namespace ControllerGlyphFixer
             ConfigEntry<bool> keyPrompts = Config.Bind("General", "KeyPrompts", true,
                 "While a gamepad is connected, show controller glyphs in $KEY_ prompts and hint panels even after " +
                 "keyboard input, and show keyboard-only keys as the Steam Input buttons from the mapping file.");
+            ConfigEntry<bool> hotbarLabels = Config.Bind("General", "HotbarLabels", true,
+                "While a gamepad is connected, label hotbar and AzuExtendedPlayerInventory quick slots with the " +
+                "Steam Input buttons from the mapping file instead of keyboard keys or nothing.");
+            ConfigEntry<PrefixColorMode> prefixColors = Config.Bind("General", "PrefixColors", PrefixColorMode.Neutral,
+                "Colour of the prefix and line beside each group of slots. Neutral: the slot-label " +
+                "colour. Palette: a built-in colour per prefix button. Custom: the mapping file's colors section.");
+            ConfigEntry<Color> prefixBackground = Config.Bind("General", "PrefixBackground", new Color(0f, 0f, 0f, 0.7f),
+                "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
+                "Set the alpha to 0 to hide it.");
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts);
+            m_prefixColors = prefixColors;
+            m_prefixBackground = prefixBackground;
+
+            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
             InputHintPatch.Glyphs = glyphs;
             ApplyPatch(typeof(InputHintPatch));
-            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs));
+
+            // Hotbar labels need the raw key lookup, so only patch them if the reverse patch applied
+            var quickSlots = new QuickSlotKeys();
+            HotbarLabelWriter labels = null;
+            InventoryLabelWriter inventoryLabels = null;
+            PrefixLabels prefixLabels = null;
+            if (ApplyPatch(typeof(OriginalBoundKeyString)))
+            {
+                m_backingSprite = RoundedSprite.Create(BackingCornerRadius);
+                prefixLabels = new PrefixLabels(m_backingSprite, prefixBackground);
+
+                labels = new HotbarLabelWriter(glyphs, quickSlots, prefixLabels);
+                HotbarLabelsPatch.Writer = labels;
+                ApplyPatch(typeof(HotbarLabelsPatch));
+
+                inventoryLabels = new InventoryLabelWriter(glyphs, labels, quickSlots, prefixLabels);
+                InventoryLabelsPatch.Writer = inventoryLabels;
+                ApplyPatch(typeof(InventoryLabelsPatch));
+
+                prefixColors.SettingChanged += RedrawPrefixes;
+                prefixBackground.SettingChanged += RedrawPrefixes;
+            }
+
+            CommandManager.Instance.AddConsoleCommand(
+                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels));
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
@@ -73,11 +123,40 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Called by Unity when the plugin is destroyed: stops listening for device changes.
+        /// Called by Unity when the plugin is destroyed (e.g. a hot reload): undoes everything Awake
+        /// hooked up, so a reloaded copy starts clean.
         /// </summary>
         private void OnDestroy()
         {
             InputSystem.onDeviceChange -= OnDeviceChange;
+            if (m_prefixColors != null)
+            {
+                m_prefixColors.SettingChanged -= RedrawPrefixes;
+            }
+
+            if (m_prefixBackground != null)
+            {
+                m_prefixBackground.SettingChanged -= RedrawPrefixes;
+            }
+
+            m_harmony.UnpatchSelf();
+            BoundKeyStringPatch.Glyphs = null;
+            InputHintPatch.Glyphs = null;
+            HotbarLabelsPatch.Writer = null;
+            InventoryLabelsPatch.Writer = null;
+            RoundedSprite.Destroy(m_backingSprite);
+        }
+
+        /// <summary>
+        /// Redraws the prefixes after a prefix setting changes; they're otherwise only redrawn when
+        /// the slots or glyph state change.
+        /// </summary>
+        /// <param name="sender">The setting.</param>
+        /// <param name="args">Unused.</param>
+        private void RedrawPrefixes(object sender, EventArgs args)
+        {
+            HotbarLabelsPatch.Writer?.Invalidate();
+            InventoryLabelsPatch.Writer?.Invalidate();
         }
 
         /// <summary>
@@ -86,7 +165,7 @@ namespace ControllerGlyphFixer
         /// <returns>The parsed map, or an empty map if the file can't be read or parsed.</returns>
         // TODO: reload the mapping when the file changes (FileSystemWatcher) or via a console
         // command, so edits don't need a game restart. Localization caches text, so clear it too.
-        private static KeyMap LoadKeyMap()
+        private KeyMap LoadKeyMap()
         {
             try
             {
@@ -113,15 +192,18 @@ namespace ControllerGlyphFixer
         /// that feature, with a warning, instead of the whole mod.
         /// </summary>
         /// <param name="patchClass">A class with [HarmonyPatch] attributes.</param>
-        private void ApplyPatch(Type patchClass)
+        /// <returns>True if the patch applied.</returns>
+        private bool ApplyPatch(Type patchClass)
         {
             try
             {
                 m_harmony.CreateClassProcessor(patchClass).Patch();
+                return true;
             }
             catch (Exception ex)
             {
                 Jotunn.Logger.LogWarning($"{patchClass.Name} not applied, feature disabled: {ex.Message}");
+                return false;
             }
         }
 
@@ -129,7 +211,7 @@ namespace ControllerGlyphFixer
         /// Logs gamepads already connected when the plugin loads. Steam Input's virtual controller
         /// usually connects later (around character selection); <see cref="OnDeviceChange"/> logs that.
         /// </summary>
-        private static void LogGamepads()
+        private void LogGamepads()
         {
             var gamepads = InputSystem.devices.OfType<Gamepad>().ToList();
             if (gamepads.Count == 0)
@@ -149,7 +231,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="device">The device that changed.</param>
         /// <param name="change">What happened to it.</param>
-        private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
+        private void OnDeviceChange(InputDevice device, InputDeviceChange change)
         {
             if (device is not Gamepad)
             {

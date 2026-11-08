@@ -25,18 +25,17 @@ namespace ControllerGlyphFixer.Patches
         /// </summary>
         internal static GlyphService Glyphs;
 
-        /// <summary>Set after the first error so a broken patch doesn't flood the log.</summary>
-        private static bool s_loggedError;
+        /// <summary>Logs the first error only.</summary>
+        private static readonly PatchErrorLog s_errors = new ($"{nameof(BoundKeyStringPatch)} failed, leaving key text unchanged");
 
         /// <summary>
         /// Replaces the key text Valheim returned with a controller glyph or mapped button.
         /// Runs at low priority so other mods' postfixes see Valheim's original text.
         /// </summary>
-        /// <param name="__instance">The ZInput instance, used to look up Joy bindings.</param>
         /// <param name="name">Binding name Valheim was asked for (e.g. "Use").</param>
         /// <param name="__result">Valheim's result; replaced in place.</param>
         [HarmonyPriority(Priority.Low)]
-        private static void Postfix(ZInput __instance, string name, ref string __result)
+        private static void Postfix(string name, ref string __result)
         {
             GlyphService glyphs = Glyphs;
             if (glyphs == null)
@@ -46,20 +45,12 @@ namespace ControllerGlyphFixer.Patches
 
             try
             {
-                __result = BoundKeyResolver.Resolve(
-                    name,
-                    __result,
-                    glyphs.ShowKeyPrompts,
-                    joyName => __instance.GetBoundKeyString(joyName, emptyStringOnMissing: true),
-                    glyphs.TranslateKey);
+                // Cached delegates: this runs whenever $KEY_ text is localized, often every frame
+                __result = BoundKeyResolver.Resolve(name, __result, glyphs.ShowKeyPrompts, glyphs.JoyLookup, glyphs.KeyTranslator);
             }
             catch (Exception ex)
             {
-                if (!s_loggedError)
-                {
-                    s_loggedError = true;
-                    Jotunn.Logger.LogError($"{nameof(BoundKeyStringPatch)} failed, leaving key text unchanged: {ex}");
-                }
+                s_errors.LogOnce(ex);
             }
         }
     }

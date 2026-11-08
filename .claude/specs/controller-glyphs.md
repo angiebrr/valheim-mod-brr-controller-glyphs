@@ -106,7 +106,13 @@ My mapping (test fixture and profile config):
     (mirrors ZInput's xbox/ps5/switch2 choice)
   - `GlyphMode.Decide(bool enabled, bool gamepadEnabled, bool gamepadPresent, bool settingsOpen) -> bool`
   - `BoundKeyResolver.Resolve(string name, string originalResult, bool showGlyphs, Func<string, string> lookupJoy, Func<string, string> translateKey) -> string` (F1/F2)
-  - `HotbarLabels.For(int slotIndex, string currentText, bool showGlyphs, KeyMap map) -> string` (F3)
+  - `KeyMap.Buttons(string keyName) -> IReadOnlyList<string>`, `KeyMap.Format(buttons, valheimGlyph) -> string`
+  - `SlotLabel.Buttons(string mainKey, IReadOnlyList<string> modifiers, Func<string, IReadOnlyList<string>> buttonsFor) -> IReadOnlyList<string>` (F3)
+  - `BarLabels.Split(IReadOnlyList<IReadOnlyList<string>> slots) -> BarLabels { Groups, Slots }` (F3)
+  - `PrefixColors.For(PrefixColorMode mode, IReadOnlyList<string> prefix, KeyMap map) -> string` (F3);
+    `KeyMap.Color(button)`, `KeyMap.PrefixButtons`
+  - `SlotLabelRefresh.Decide(SlotBarState? last, SlotBarState current, bool force) -> Skip | Write | Restore` (F3)
+  - `AzuEpiQuickSlots` (AzuEPI's plugin ID and quick-slot config names; checked by contract tests)
   - `HintRewriter.Rewrite(string text, KeyMap map) -> string` (F4; see rules below)
 - See **Testing strategy** for what the tests cover.
 
@@ -157,21 +163,102 @@ EpicLoot.
 - **Risk:** low.
 
 ### F3. Hotbar slot labels
-- **Patch:** postfix on `HotkeyBar.UpdateIcons(Player)` (private, `assembly_valheim`).
-- **Behaviour:** for each element's `binding` `TMP_Text`, if `ShowKeyPrompts` and the
-  text is a mapped key (`1`–`8`), replace it. Only rewrite text; never add or remove objects.
-- **Note:** vanilla sets the label once when elements are created: empty in gamepad mode,
-  `1`–`8` otherwise. In gamepad mode we need to write the label ourselves (slot index + 1
-  → mapping), since the text is empty.
+- **Covers:** Valheim's hotbar, AzuExtendedPlayerInventory's quick-slot bar, and in the
+  inventory the top row and AzuEPI's quick-slot cells. Config `General.HotbarLabels`; prefix
+  colours `General.PrefixColors`.
+- **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
+  `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
+  objects added are the group prefixes and lines under one container per bar (`cgf_PrefixLabels`,
+  a child of the bar), rebuilt on each write and removed when glyphs turn off.
+- **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
+  written only when the slots were rebuilt (count or first slot object changed), glyphs
+  toggled, or Valheim just reset them; when glyphs turn off, Valheim's labels are restored
+  once with `ToggleBindingHint` (checked in game 2026-11-07: Settings shows `1`, `2`, ...).
 - **Risk:** medium (private but long-stable).
-- **Compat:** AzuExtendedPlayerInventory quick slots draw their own labels. Check whether F4
-  or a small dedicated postfix is needed.
+- **Compat:** AzuEPI's quick-slot bar is a second `HotkeyBar`; AzuEPI rebuilds its slots with
+  the same count after Settings closes, which is why rebuilds are detected by the first slot
+  object, not only the count. AzuEPI keeps shortcuts for 8 quick slots whatever its
+  `[3 - Quick Slots] Number of Quick Slots` is; unused ones keep defaults (`Alt + 7`, ...), so
+  only the first "Number of Quick Slots" count when finding the shared prefix.
+- **Inventory (2026-11-07):** first tried full-size glyphs on the top row and dropped them;
+  now smaller glyphs (`<size=70%>`) with the same prefix groups. `InventoryLabelsPatch` postfixes
+  `InventoryGui.UpdateInventory(Player)` at low priority, after AzuEPI's postfix there.
+  `InventoryLabelWriter` labels the player grid's first row (vanilla writes `1`–`8` once when
+  the grid is built, both input modes) and AzuEPI's quick-slot cells, found by the name AzuEPI
+  writes on them (`QuickSlotCells.Find`; `AzuEpiQuickSlots.CellName`: its "Hotkey N Display
+  Text", or the shortcut when blank) and remembered until the grid is rebuilt (AzuEPI only
+  rewrites a cell's text when its name or cell changes). Prefixes sit above each group: a line
+  across a row, down a column's left side, or an outline when a group spans rows and columns
+  (`GroupShapes`). Glyphs off: top row back to `1`–`8`, quick-slot cells back to AzuEPI's text.
 - **In-game finding (2026-11-02):** after v1, hotbar and AzuExtendedPlayerInventory extra-slot
   labels still show keyboard keys (expected: not covered by F1). Wanted: both show the mapped
   buttons (e.g. `[R4] + D-pad up` on slot 1, `[R5] + ...` on extra slots).
 - **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
   Steam; the game only sees the key sent by the second button). Labels can always show the
   combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
+- **Found with a `cgf_dumphotbars` dev command (2026-11-02; removed once F3 settled):** labels are written in two places, and both
+  apply to AzuEPI's quick-slot bar too (it's a second `HotkeyBar` named `AzuEPI_QuickAccessBar`):
+  `UpdateIcons` when slots are created (AzuEPI sets its "Display Text" there), and
+  `HotkeyBar.ToggleBindingHint`, which Valheim calls on every keyboard/gamepad switch and which
+  overwrites every label with `1`.. or blank. That's why AzuEPI's names (`R5 Up`) disappear.
+  Mods patching `HotkeyBar.UpdateIcons`: MyLittleUI (prefix 800, 2 postfixes), AzuEPI (prefix
+  and postfix, priority 0), EpicLoot (transpiler); none of their postfixes write labels.
+- **Implemented:** `SlotLabel.Buttons` (Core, tested) finds a slot's buttons from its keyboard
+  shortcut (modifiers + main key) through the mapping; null leaves the slot alone (no key,
+  unmapped). `BarLabels.Split` (Core, tested) groups runs of neighbouring slots that start with
+  the same button (the R4/R5 hold) and moves their shared leading buttons into the group;
+  unmapped slots split groups, one-button slots aren't grouped, every slot keeps a button.
+  `HotbarLabelsPatch` postfixes `UpdateIcons`, `ToggleBindingHint` and
+  `OnEnable` and calls `HotbarLabelWriter`, which only rewrites when slots were rebuilt, glyphs
+  toggled, or Valheim just reset the labels, and restores Valheim's labels when glyphs turn off.
+  Keys: Valheim's bar asks the original `GetBoundKeyString("HotbarN")` through a Harmony reverse
+  patch (`OriginalBoundKeyString`, raw key, respects rebinding); AzuEPI's bar reads AzuEPI's
+  `[8 - Quick Slot Hotkeys] Hotkey N` config at runtime (`QuickSlotKeys`, no compile reference).
+  Config `General.HotbarLabels`. AzuEPI's own display names are ignored.
+- **Size / presentation (in-game look 2026-11-07):** the full `[R4] + (glyph)` label wrapped a
+  character per line in the hotbar's one-digit label box (`[` and `R` above the slot) and put
+  the glyph over the item icon on AzuEPI's bar. Each slot now shows only its own button (one
+  glyph, like vanilla's digit); a prefix right of the last slot looked good (2026-11-07).
+- **Groups (2026-11-07):** each prefix group gets its prefix at its left end with a thin line
+  to its last slot (`PrefixLabels`): above the hotbar (8 UI units of space; 2 looked cramped),
+  below AzuEPI's bar (the hotbar is right above it). The bars start ~20 px from the screen
+  edge, so nothing fits directly to their left. Mixed prefix buttons in one bar give one
+  prefix per run.
+- **Naming:** "prefix", not "hold": the shared leading buttons are an action-set hold in my
+  layout, but Steam Input also has chords and mode shifts, so the mod doesn't assume how
+  they're pressed. A *prefix group* is a run of slots; its *prefix* is the label beside it.
+  ("Badge" still means the `[R4]` text shown for buttons Valheim has no art for.)
+- **Colours:** `General.PrefixColors` = `Neutral` (default; slot-label colour), `Palette`
+  (built-in colour per prefix button, numbered in prefix-button name order) or `Custom` (mapping
+  file `colors:` section, `"#RRGGBB"`/`"#RRGGBBAA"`; unlisted buttons stay neutral). Keyed by
+  the group's first prefix button, so R4 looks the same everywhere. Changing the setting
+  rewrites the bars (`HotbarLabelWriter.Invalidate`).
+- **Backings (2026-11-07):** the inventory panel's gamepad highlight ran through `[R4]`. Each
+  prefix now sits on a rounded, translucent backing (`General.PrefixBackground`, default black
+  at 70% (was 55%), alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
+  for a column or outlined group, the prefix only. Corners: a 7-unit radius from a small sprite
+  built once at startup (`RoundedSprite`, pixels from `RoundedCorners.Coverage` in Core) and
+  stretched with fixed corners; Unity has no rounded shape mods can use at runtime. The
+  texture and sprite are marked `DontUnloadUnusedAsset`: in game the corners first showed
+  square, most likely because Valheim's unused-asset sweep on world load freed the texture made
+  at the main menu. The self-test checks the sprite is still loaded.
+- **Attached look (2026-11-07):** with backings, the hotbar's prefix sits 2 units above the
+  slots (like the quick-slot bar's below), so the backing meets the bar.
+- **Alignment (2026-11-07):** backings started a few units right of the first slot: the slot's
+  layout box differs from what's drawn. Bounds now come from each slot's visible background
+  (the largest active image on the slot or its direct children, ignoring the selected,
+  equipped and queued overlays), measured in world space.
+- **Inventory spacing (2026-11-07):** tried 24 units above the slots to clear the panel border:
+  far too high, and it showed the HUD hotbar's own prefix peeking out from under the inventory
+  panel. Back to the attached 2 units, with the default backing darker (70%) to read over the
+  highlight. Revisit once F5's Steam glyph images replace the `[R4]` text.
+- **Edges flush (2026-11-07):** the backing's left edge sits on the first slot's and, for rows,
+  its right edge on the last slot's; padding goes inside, around the text and line. Outside
+  padding showed on one side only wherever the measured and drawn edges differed slightly.
+- **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
+  whether the grid clips anything drawn above its first row.
+- **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
+  send a spare key while the action set is active (e.g. F13 on layer activation).
 
 ### F4. Hover text with key names written directly by mods
 - **Patch:** postfix on `Hud.UpdateCrosshair(Player, float)` (private, `assembly_valheim`),
@@ -231,7 +318,60 @@ EpicLoot.
 - BepInEx config, `[General]` section:
   - `Enabled` (bool, default true): master switch.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
+  - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
+  - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
+
+### F9. Helping other users set up their mapping
+Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
+`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`, written from
+`KeyMapTemplate` on first run with every example commented out, read once at startup. A new
+user has to find the file, learn the format, edit it in a text editor and restart the game.
+
+**What can't move into the game.** The *button* half of each entry can't be detected: Steam
+Input turns the button press into a key before Valheim sees anything, and action-set holds,
+chords and mode shifts are invisible to the game. The game only ever sees the resulting key.
+So users must write the buttons themselves, reading them from their own Steam layout (Steam's
+controller configurator, outside the game; or Big Picture's overlay while in game). The spec
+and the mod's README must say this plainly. The *key* half can be confirmed in game (below).
+
+**Settings UIs in my profile** (both read the BepInEx config):
+- Jotunn's *Mod Settings* (main menu and pause menu): lists config entries. To check: which
+  `ConfigurationManagerAttributes` it honours (probably `Order`, `ReadOnly`, `Browsable`; not
+  `CustomDrawer`).
+- shudnal's ConfigurationManager 1.1.27 (`F1`, or the pause menu's *Mod Config* button): honours
+  `ConfigurationManagerAttributes` including `CustomDrawer`, `ReadOnly`, `HideDefaultButton`
+  (seen in its DLL), and has an in-game **File Editor** for `.cfg`, `.yaml` and `.json` files
+  (its changelog). So users with it can edit the mapping file without leaving the game.
+
+**Proposed pieces** (smallest first; each optional):
+1. **Mapping status in the config** (`[Mapping]` section, read-only): the file's path, and
+   "Loaded 20 keys" or the parse error with its line number. Shows in both settings UIs, so a
+   broken file isn't silent. (Read-only entries are still written to the `.cfg`; acceptable, or
+   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.)
+2. **Reload without restarting** (the existing TODO in `ControllerGlyphFixer.LoadKeyMap`): watch
+   the file (`FileSystemWatcher`), plus a *Reload mapping* button (`CustomDrawer`) and a
+   `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
+   Localization's cache, call `HotbarLabelWriter.Invalidate()`. With ConfigurationManager's File
+   Editor this gives a full in-game loop: edit, save, see the labels change.
+3. **Key finder** (`cgf_keylog` console command, toggles on/off): logs each keyboard key the game
+   receives, by the name the mapping file uses (e.g. `Keypad1`, `LeftShift`), and whether the
+   mapping has it. Press a button combo on the controller, read which key Steam sent, write
+   `Keypad1: [R5, DPadUp]`. Answers "what key does this button send?" in game.
+4. **Starter mappings:** a few commented example blocks in the template (Steam Controller back
+   buttons + action set, Steam Deck back grips, a DualSense touchpad layout) so users copy the
+   closest one instead of starting from nothing.
+5. **Open file / write template buttons** (`CustomDrawer`, ConfigurationManager only): *Open
+   mapping file* (opens it in the system's default editor, outside the game) and *Reset to
+   template* (with confirmation; backs up the old file first).
+6. **Later:** generate the mapping from the Steam layout VDF (see above), so most users never
+   type buttons at all. Needs research: where Steam stores the active layout for Valheim
+   (app 892970) and how action sets, chords and mode shifts appear in it.
+
+**User-facing doc** (README / Thunderstore page): what the mod does; "the mapping lives
+outside your Steam layout and must match it"; the four setup steps (open the file, find each
+key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
+sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
 
 ## Testing strategy
 
@@ -243,7 +383,9 @@ Red → green → refactor for every Core function. Required cases:
 - `KeyMap`: every row of the fixture mapping (tests supply the mapping; Core has none);
   aliases (`Alpha1`, `KeypadNumber1`, `Left Shift`, `$button_lshift`); case-insensitivity;
   unknown keys pass through; combos; invalid YAML gives a clear error; the template maps
-  nothing, and uncommenting its examples yields a valid map; empty sections are allowed.
+  nothing, and uncommenting its examples yields a valid map; empty sections are allowed;
+  keys written in the file in any spelling (`Numpad1`, `Alpha1`) match every spelling; two
+  entries for the same key (`Q` and `q`, `"1"` and `Alpha1`) are an error naming both lines.
 - `GlyphMode.Decide`: truth table of the four inputs.
 - `BoundKeyResolver.Resolve`:
   - `("Use", "E", showGlyphs: true, joy → A sprite)` → A sprite.
@@ -251,8 +393,21 @@ Red → green → refactor for every Core function. Required cases:
   - `showGlyphs: false` → original result unchanged.
   - `name` starting with `Joy` → never looks up `JoyJoy…` (recursion guard).
   - unmapped key with no Joy binding → original result.
-- `HotbarLabels.For`: gamepad mode (empty current text) writes the label from slot index;
-  keyboard mode rewrites `1`–`8`; unmapped/other text untouched.
+- `SlotLabel.Buttons`: hotbar and quick-slot keys give the mapped buttons; modifiers first
+  (unmapped ones keep their name); null modifiers mean none; unmapped main key or no key →
+  null (leave the label).
+- `BarLabels.Split`: one prefix button → one group; mixed → a group per run; a returning prefix
+  button starts a new group; a lone slot still gets a group; unmapped slots split groups;
+  one-button slots aren't grouped; multi-button prefixes; names match like the mapping file;
+  no mapped slots.
+- `PrefixColors.For`: neutral → none; palette in prefix-button name order, unknown buttons none,
+  wraps around; custom from `colors:`, unlisted none; multi-button prefixes use the first.
+- `KeyMap` colors section: values matched like button names; invalid colours name the line;
+  `PrefixButtons` sorted and distinct.
+- `KeyMap.Buttons` / `KeyMap.Format`: raw button names; formatting matches `Translate`.
+- `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
+  same count (new first-slot ID), count changed, glyphs on/off (restore once, never again).
+- `ValheimButtons`: every button with Valheim art; Steam-only buttons have none.
 - `HintRewriter.Rewrite`: rewrites `[Z]`, `[<color=yellow><b>Z</b></color>]`, `<b>Z</b>`;
   leaves free text and non-key brackets alone (`Zone [Zebra]`); strips sprite brackets
   like vanilla gamepad mode; idempotent (rewriting twice = once).
@@ -262,11 +417,20 @@ Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadCon
 (no game code runs). Paths come from `Environment.props` (`VALHEIM_INSTALL`); tests skip
 when the game isn't installed. Assert each patch target and touched member exists with the
 expected signature:
-- `ZInput.GetBoundKeyString(string, bool) : string` (assembly_utils)
-- `HotkeyBar.UpdateIcons(Player)`, `Hud.UpdateCrosshair(Player, float)`,
-  `Hud.m_hoverName : TMP_Text` (assembly_valheim)
-- `Settings.instance`, `ZInput.IsGamepadEnabled()`
-Run after every Valheim update before launching the game.
+- `ZInput.GetBoundKeyString(string, bool) : string`, `ZInput.instance`, `IsGamepadEnabled()`,
+  `IsGamepadActive()`, `IsMouseActive()`, `CurrentGlyph`, `ConnectedGamepadType`,
+  `s_gamepadSpriteMap`, glyph enum names (assembly_utils)
+- `UIInputHint` members used by the F6 patch
+- `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)`, `OnEnable()`, `m_elements`,
+  `ElementData.m_go` (F3)
+- `Settings.instance`, `Localization.instance.Localize(string)`
+- To do with F4: `Hud.UpdateCrosshair(Player, float)`, `Hud.m_hoverName : TMP_Text`
+
+Other mods' names we copy are checked against their DLLs in the Gale profile
+(`GALE_PROFILE`), by reading the string literals in their code; tests skip when the mod isn't
+installed. AzuExtendedPlayerInventory: plugin ID, `8 - Quick Slot Hotkeys`, `Hotkey N`,
+`3 - Quick Slots`, `Number of Quick Slots`.
+Run after every Valheim or mod update before launching the game.
 
 ### 3. In-game self-test (Jotunn console command `cgf_selftest`) — real game
 Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` prefix:
@@ -274,7 +438,11 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
 - `ZInput.IsGamepadActive()` still reports the real input mode (behaviour untouched);
 - a gamepad device is present (open question 1);
 - `Localization.instance.Localize("$KEY_Use")` returns a controller sprite while in
-  keyboard mode; `"$KEY_Hotbar1"` returns the mapped string.
+  keyboard mode; `"$KEY_Hotbar1"` returns the mapped string;
+- F3: the raw `Hotbar1` key can be read (reverse patch); AzuEPI's quick slot 1 shortcut can
+  be read (if installed); slot 1 of the hotbar and the quick-slot bar shows its own button,
+  and each bar shows one prefix per group of slots on screen
+  (in a world).
 Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
 Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and
@@ -291,7 +459,8 @@ types without the native engine is fragile and tests less than the in-game self-
 ### Solution layout
 - `ControllerGlyphFixer.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
 - `ControllerGlyphFixer.Core.Tests/` (net10.0, xUnit, references Core)
-- `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext)
+- `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext; references
+  Core for the mod names it checks)
 - `ControllerGlyphFixer/` (plugin; compiles Core sources in; YamlDotNet NuGet with
   `ExcludeAssets="runtime"` so YamlDotNet.dll is not deployed)
 - `dotnet test ControllerGlyphFixer.sln` runs layers 1 and 2. Build through the solution:
@@ -311,6 +480,11 @@ thin patches → in-game self-test checks → manual checklist.
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
+5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
+   Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
+   `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
+   so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
+   default once, so do it before others install the mod.
 
 ## In-game test checklist (per phase)
 

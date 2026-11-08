@@ -50,8 +50,14 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Normalized alias to normalized key name, from the file's aliases section.</summary>
         private readonly Dictionary<string, string> m_aliases;
 
+        /// <summary>Colours the colors section accepts: #RRGGBB or #RRGGBBAA.</summary>
+        private static readonly Regex ColorPattern = new (@"^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$");
+
         /// <summary>Normalized button name to badge text, from the file's labels section.</summary>
         private readonly Dictionary<string, string> m_labels;
+
+        /// <summary>Normalized button name to colour, from the file's colors section.</summary>
+        private readonly Dictionary<string, string> m_colors;
 
         /// <summary>
         /// Creates a map from parsed sections; use <see cref="Parse"/>.
@@ -59,24 +65,51 @@ namespace ControllerGlyphFixer.Core
         /// <param name="keys">Normalized key name to buttons.</param>
         /// <param name="aliases">Normalized alias to normalized key name.</param>
         /// <param name="labels">Normalized button name to badge text.</param>
+        /// <param name="colors">Normalized button name to colour.</param>
         private KeyMap(
             Dictionary<string, IReadOnlyList<string>> keys,
             Dictionary<string, string> aliases,
-            Dictionary<string, string> labels)
+            Dictionary<string, string> labels,
+            Dictionary<string, string> colors)
         {
             m_keys = keys;
             m_aliases = aliases;
             m_labels = labels;
+            m_colors = colors;
+
+            // Buttons held while pressing another one (the action-set buttons), for palette colours
+            PrefixButtons = keys.Values
+                .SelectMany(buttons => buttons.Take(buttons.Count - 1))
+                .Select(Normalize)
+                .Distinct()
+                .OrderBy(button => button, StringComparer.Ordinal)
+                .ToArray();
         }
 
         /// <summary>A map with no keys; every key translates to null. Safe to share (maps are immutable).</summary>
-        public static KeyMap Empty { get; } = new (new (), new (), new ());
+        public static KeyMap Empty { get; } = new (new (), new (), new (), new ());
 
         /// <summary>Number of mapped keys.</summary>
         public int Count => m_keys.Count;
 
         /// <summary>
-        /// Parses a mapping file with optional "labels", "aliases" and "keys" sections.
+        /// Normalized names of buttons pressed before another button in any key (e.g. "r4"),
+        /// sorted by name. <see cref="PrefixColors"/> numbers palette colours in this order.
+        /// </summary>
+        public IReadOnlyList<string> PrefixButtons { get; }
+
+        /// <summary>
+        /// Returns a button's colour from the colors section.
+        /// </summary>
+        /// <param name="button">Button name in any spelling the mapping file accepts.</param>
+        /// <returns>The colour (#RRGGBB or #RRGGBBAA), or null if none is set.</returns>
+        public string Color(string button)
+        {
+            return m_colors.TryGetValue(Normalize(button), out string color) ? color : null;
+        }
+
+        /// <summary>
+        /// Parses a mapping file with optional "labels", "colors", "aliases" and "keys" sections.
         /// </summary>
         /// <param name="yaml">File contents; null or empty gives an empty map.</param>
         /// <returns>The parsed map.</returns>
@@ -84,8 +117,10 @@ namespace ControllerGlyphFixer.Core
         public static KeyMap Parse(string yaml)
         {
             var keys = new Dictionary<string, IReadOnlyList<string>>();
+            var keyLines = new Dictionary<string, (string Key, int Line)>();
             var aliases = new Dictionary<string, string>();
             var labels = new Dictionary<string, string>();
+            var colors = new Dictionary<string, string>();
 
             // The representation model keeps every scalar a string, so Y/N/yes/no stay key names
             var stream = new YamlStream();
@@ -100,12 +135,12 @@ namespace ControllerGlyphFixer.Core
 
             if (stream.Documents.Count == 0)
             {
-                return new KeyMap(keys, aliases, labels);
+                return new KeyMap(keys, aliases, labels, colors);
             }
 
             if (!(stream.Documents[0].RootNode is YamlMappingNode root))
             {
-                throw new KeyMapException("The mapping file must be a set of sections (aliases, labels, keys)");
+                throw new KeyMapException("The mapping file must be a set of sections (labels, colors, aliases, keys)");
             }
 
             foreach (var section in root.Children)
@@ -117,7 +152,18 @@ namespace ControllerGlyphFixer.Core
                         foreach (var entry in Mapping(section.Value, sectionName).Children)
                         {
                             string key = ScalarText(entry.Key, "key name");
-                            keys[Normalize(key)] = Buttons(entry.Value, key);
+                            int line = (int)entry.Key.Start.Line;
+
+                            // Stored under the same standard name lookups use ("Numpad1" -> "keypad1")
+                            string canonical = Canonical(Normalize(key));
+                            if (keyLines.TryGetValue(canonical, out var first))
+                            {
+                                throw new KeyMapException(
+                                    $"'{key}' (line {line}) is the same key as '{first.Key}' (line {first.Line})");
+                            }
+
+                            keyLines[canonical] = (key, line);
+                            keys[canonical] = Buttons(entry.Value, key);
                         }
                         break;
                     case "aliases":
@@ -132,12 +178,25 @@ namespace ControllerGlyphFixer.Core
                             labels[Normalize(ScalarText(entry.Key, "button name"))] = ScalarText(entry.Value, "label");
                         }
                         break;
+                    case "colors":
+                        foreach (var entry in Mapping(section.Value, sectionName).Children)
+                        {
+                            string color = ScalarText(entry.Value, "colour");
+                            if (!ColorPattern.IsMatch(color))
+                            {
+                                throw new KeyMapException(
+                                    $"Colour '{color}' at line {entry.Value.Start.Line} must be \"#RRGGBB\" or \"#RRGGBBAA\" (in quotes)");
+                            }
+
+                            colors[Normalize(ScalarText(entry.Key, "button name"))] = color;
+                        }
+                        break;
                     default:
-                        throw new KeyMapException($"Unknown section '{sectionName}' (expected aliases, labels or keys)");
+                        throw new KeyMapException($"Unknown section '{sectionName}' (expected labels, colors, aliases or keys)");
                 }
             }
 
-            return new KeyMap(keys, aliases, labels);
+            return new KeyMap(keys, aliases, labels, colors);
         }
 
         /// <summary>
@@ -149,7 +208,30 @@ namespace ControllerGlyphFixer.Core
         /// <returns>The buttons joined with " + ", each as a sprite tag or a [badge]; null if unmapped.</returns>
         public string Translate(string keyName, Func<string, string> valheimGlyph)
         {
-            if (string.IsNullOrEmpty(keyName) || !m_keys.TryGetValue(Resolve(keyName), out var buttons))
+            return Format(Buttons(keyName), valheimGlyph);
+        }
+
+        /// <summary>
+        /// Returns the buttons pressed for a key, as written in the mapping file.
+        /// </summary>
+        /// <param name="keyName">Key name in any supported spelling.</param>
+        /// <returns>The button names in order, or null if the key isn't mapped.</returns>
+        public IReadOnlyList<string> Buttons(string keyName)
+        {
+            return !string.IsNullOrEmpty(keyName) && m_keys.TryGetValue(Resolve(keyName), out var buttons)
+                ? buttons
+                : null;
+        }
+
+        /// <summary>
+        /// Renders a list of buttons, each as Valheim's glyph or a [badge], joined with " + ".
+        /// </summary>
+        /// <param name="buttons">Button names as written in the mapping file.</param>
+        /// <param name="valheimGlyph">See <see cref="Translate"/>.</param>
+        /// <returns>The display string, or null for a null or empty list.</returns>
+        public string Format(IReadOnlyList<string> buttons, Func<string, string> valheimGlyph)
+        {
+            if (buttons == null || buttons.Count == 0)
             {
                 return null;
             }
@@ -194,6 +276,17 @@ namespace ControllerGlyphFixer.Core
                 normalized = target;
             }
 
+            return Canonical(normalized);
+        }
+
+        /// <summary>
+        /// Turns a normalized key name into its standard form with the built-in aliases and patterns
+        /// ("$buttonlshift" -> "leftshift", "alpha1" -> "1", "numpad1" -> "keypad1").
+        /// </summary>
+        /// <param name="normalized">A name from <see cref="Normalize"/>.</param>
+        /// <returns>The standard key name.</returns>
+        private static string Canonical(string normalized)
+        {
             if (BuiltInAliases.TryGetValue(normalized, out string builtIn))
             {
                 return builtIn;

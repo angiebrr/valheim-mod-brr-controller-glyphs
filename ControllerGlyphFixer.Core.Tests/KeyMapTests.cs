@@ -85,6 +85,88 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
+    /// <summary>The colors section sets a button's colour, matched like other button names.</summary>
+    [Fact]
+    public void Colors_section_sets_button_colours()
+    {
+        var map = KeyMap.Parse("colors:\n  R4: \"#9B8CFF\"\n  L 5: \"#5DCAA580\"\nkeys:\n  Q: L5\n");
+
+        Assert.Equal("#9B8CFF", map.Color("r4"));
+        Assert.Equal("#5DCAA580", map.Color("L5"));
+        Assert.Null(map.Color("R5"));
+    }
+
+    /// <summary>A colour that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
+    /// <param name="color">An invalid colour.</param>
+    [Theory]
+    [InlineData("purple")]
+    [InlineData("\"#12345\"")]
+    [InlineData("\"#GGGGGG\"")]
+    public void Invalid_colours_are_an_error(string color)
+    {
+        var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"colors:\n  R4: {color}\n"));
+
+        Assert.Contains("line 2", ex.Message);
+    }
+
+    /// <summary>Prefix buttons are those pressed before another button in any key, sorted by name.</summary>
+    [Fact]
+    public void Prefix_buttons_are_sorted_and_distinct()
+    {
+        Assert.Equal(new[] { "r4", "r5" }, SteamController.PrefixButtons);
+        Assert.Empty(KeyMap.Parse("keys:\n  Q: L5\n").PrefixButtons);
+    }
+
+    /// <summary>Buttons returns a key's buttons as written in the file; null if unmapped.</summary>
+    [Fact]
+    public void Buttons_returns_the_raw_button_names()
+    {
+        Assert.Equal(new[] { "R4", "DPadUp" }, SteamController.Buttons("Alpha1"));
+        Assert.Equal(new[] { "L5" }, SteamController.Buttons("Q"));
+        Assert.Null(SteamController.Buttons("E"));
+    }
+
+    /// <summary>Format renders any button list the way Translate does; empty or null gives null.</summary>
+    [Fact]
+    public void Format_renders_buttons_like_translate()
+    {
+        Assert.Equal("<dpad_up>", SteamController.Format(new[] { "DPadUp" }, FakeGlyph));
+        Assert.Equal("[LPad Up] + <buttonSouth>", SteamController.Format(new[] { "LPadUp", "A" }, FakeGlyph));
+        Assert.Null(SteamController.Format(Array.Empty<string>(), FakeGlyph));
+        Assert.Null(SteamController.Format(null, FakeGlyph));
+    }
+
+    /// <summary>Keys written in the file with any supported spelling match every spelling.</summary>
+    /// <param name="fileKey">How the key is written in the mapping file.</param>
+    /// <param name="lookup">How Valheim or a mod asks for it.</param>
+    [Theory]
+    [InlineData("Numpad1", "Keypad1")]
+    [InlineData("Numpad1", "Numpad1")]
+    [InlineData("Alpha1", "1")]
+    [InlineData("\"$button_lshift\"", "LeftShift")]
+    [InlineData("Left Shift", "$button_lshift")]
+    public void File_keys_in_any_spelling_match(string fileKey, string lookup)
+    {
+        var map = KeyMap.Parse($"keys:\n  {fileKey}: L5\n");
+
+        Assert.Equal("[L5]", map.Translate(lookup, FakeGlyph));
+    }
+
+    /// <summary>Two entries for the same key (in any spelling) are an error naming both.</summary>
+    /// <param name="first">First spelling.</param>
+    /// <param name="second">Second spelling of the same key.</param>
+    [Theory]
+    [InlineData("Q", "q")]
+    [InlineData("\"1\"", "Alpha1")]
+    [InlineData("Keypad1", "Num 1")]
+    public void Same_key_twice_is_an_error(string first, string second)
+    {
+        var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"keys:\n  {first}: L5\n  {second}: L4\n"));
+
+        Assert.Contains("line 2", ex.Message);
+        Assert.Contains("line 3", ex.Message);
+    }
+
     /// <summary>A key's value can be one button or a list of buttons.</summary>
     [Fact]
     public void Scalar_and_list_button_values_are_both_accepted()
@@ -148,6 +230,8 @@ public class KeyMapTests
     [InlineData("keys:\n  Q: { a: b }\n")]
     [InlineData("keys:\n  Q: []\n")]
     [InlineData("- just\n- a list\n")]
+    [InlineData("keys:\n  Q: L5\n  Q: L4\n")] // duplicate key
+    [InlineData("buttons:\n  Q: L5\n")]      // unknown section
     public void Invalid_yaml_throws_with_a_clear_message(string yaml)
     {
         var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse(yaml));
@@ -202,6 +286,7 @@ public class KeyMapTests
         Assert.Equal("[R4] + <dpad_up>", map.Translate("1", FakeGlyph));
         Assert.Equal("[L5]", map.Translate("Pickup", FakeGlyph));
         Assert.Equal("[LPad Up]", map.Translate("LeftShift", FakeGlyph));
+        Assert.Equal("#9B8CFF", map.Color("R4"));
     }
 
     /// <summary>A section header with nothing under it ("keys:") is allowed.</summary>

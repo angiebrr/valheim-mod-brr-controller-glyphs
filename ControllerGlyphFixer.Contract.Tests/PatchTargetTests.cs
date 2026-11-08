@@ -12,8 +12,7 @@ namespace ControllerGlyphFixer.Contract.Tests;
 /// Everything the plugin patches or calls in Valheim must still exist with the expected shape.
 /// Run after every Valheim update, before launching the game.
 /// </summary>
-// TODO(phase 2): add HotkeyBar.UpdateIcons(Player), Hud.UpdateCrosshair(Player, float) and
-// Hud.m_hoverName when the F3/F4 patches are written.
+// TODO(phase 2): add Hud.UpdateCrosshair(Player, float) and Hud.m_hoverName when the F4 patch is written.
 public class PatchTargetTests
 {
     /// <summary>Static members, public or not.</summary>
@@ -37,13 +36,14 @@ public class PatchTargetTests
         Assert.Equal("System.String", method.ReturnType.FullName);
     }
 
-    /// <summary>Members read by Glyphs.ShowKeyPrompts and the self-test exist.</summary>
+    /// <summary>Members read by GlyphService, the patches and the self-test exist.</summary>
     [GameFact]
     public void ZInput_members_used_for_glyph_mode_exist()
     {
         AssertStaticProperty(ZInput, "instance", "ZInput");
         AssertStaticMethod(ZInput, "IsGamepadEnabled", "System.Boolean");
         AssertStaticMethod(ZInput, "IsGamepadActive", "System.Boolean");
+        AssertStaticMethod(ZInput, "IsMouseActive", "System.Boolean");
     }
 
     /// <summary>Members read by Glyphs.ValheimGlyph exist with the expected types.</summary>
@@ -97,6 +97,41 @@ public class PatchTargetTests
         PropertyInfo isActive = GameAssemblies.Type("assembly_guiutils", "UIGroupHandler").GetProperty("IsActive", Instance);
         Assert.NotNull(isActive);
         Assert.Equal("System.Boolean", isActive.PropertyType.FullName);
+    }
+
+    /// <summary>The F3 patch targets on HotkeyBar and the slot fields the postfix reads exist.</summary>
+    [GameFact]
+    public void HotkeyBar_members_used_by_the_F3_patch_exist()
+    {
+        Type bar = GameAssemblies.Type("assembly_valheim", "HotkeyBar");
+
+        Assert.NotNull(bar.GetMethod("UpdateIcons", Instance, null,
+            new[] { GameAssemblies.Type("assembly_valheim", "Player") }, null));
+        Assert.NotNull(bar.GetMethod("ToggleBindingHint", Instance, null, new[] { typeof(bool).InGame() }, null));
+        Assert.NotNull(bar.GetMethod("OnEnable", Instance, null, Type.EmptyTypes, null));
+
+        FieldInfo elements = bar.GetField("m_elements", Instance);
+        Assert.NotNull(elements);
+        Assert.StartsWith("System.Collections.Generic.List`1[[HotkeyBar+ElementData", elements.FieldType.FullName);
+
+        AssertField(GameAssemblies.Type("assembly_valheim", "HotkeyBar+ElementData"), "m_go", "GameObject");
+    }
+
+    /// <summary>The inventory label patch target and the grid members the writer reads exist.</summary>
+    [GameFact]
+    public void Inventory_members_used_by_the_F3_patch_exist()
+    {
+        Type gui = GameAssemblies.Type("assembly_valheim", "InventoryGui");
+        Assert.NotNull(gui.GetMethod("UpdateInventory", Instance, null,
+            new[] { GameAssemblies.Type("assembly_valheim", "Player") }, null));
+        AssertStaticProperty(gui, "instance", "InventoryGui");
+        AssertField(gui, "m_playerGrid", "InventoryGrid");
+
+        Type grid = GameAssemblies.Type("assembly_valheim", "InventoryGrid");
+        FieldInfo elements = grid.GetField("m_elements", Instance);
+        Assert.NotNull(elements);
+        Assert.StartsWith("System.Collections.Generic.List`1[[InventoryElement", elements.FieldType.FullName);
+        AssertField(grid, "m_width", "Int32");
     }
 
     /// <summary>Settings.instance exists for the "Settings screen open" check.</summary>
