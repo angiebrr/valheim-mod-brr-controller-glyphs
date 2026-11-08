@@ -268,6 +268,17 @@ EpicLoot.
   group bounds pick the cells' parent and positions when the cells live in a separate panel; and
   each layout's look (outline vs a row prefix). Add the setting's name to `AzuEpiQuickSlots` with
   a contract test.
+  - The setting: `[5 - UI Features] Inventory Layout` (type `InventoryLayout`, default `Default`;
+    mine is `Legacy`). Values, from its config description:
+    - `Default`: player preview and slots in their own panel beside the crafting panel.
+    - `Tabbed`: preview and slots on top of the crafting panel, like the vanity, loadout and stats
+      panels (needs `Display Equipment in Separate Panel` on).
+    - `Legacy`: the original slot panel next to the inventory, no preview (what F3 was built for).
+    - `LegacyDetached`: as Legacy, in its own panel set apart from the inventory.
+    - `ExtraSlots`: slots next to the inventory in a 3-row grid with quick slots underneath.
+    - `EquipmentAndQuickSlots`: staggered equipment block with quick slots underneath (the
+      screenshot above).
+  - Screenshots of each layout: ask the user when fixing this.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
   send a spare key while the action set is active (e.g. F13 on layer activation).
 
