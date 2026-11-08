@@ -526,6 +526,9 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
   declare gamepad buttons in their `ButtonConfig`; otherwise postfix Jotunn's hint update.
+- **No target in my profile (checked 2026-11-08):** no plugin DLL in "QoL Valheim" except Jotunn
+  references `KeyHintManager`, `KeyHintConfig` or `AddKeyHint`. AzuEPI and XPortal use
+  `ButtonConfig` only to register inputs. Revisit if a mod I add registers key hints.
 
 ### F8. Config and mapping generation
 - BepInEx config, `[General]` section:
@@ -535,6 +538,8 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
   - `ButtonGlyphs` (`ValheimFirst` / `ModGlyphsForAll`, default `ValheimFirst`) (F5).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
+- **Status (2026-11-08):** every entry above is bound. The generator is the same item as F9
+  piece 6 and is tracked there.
 
 ### F9. Helping other users set up their mapping
 Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
@@ -584,10 +589,38 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    type buttons at all. Needs research: where Steam stores the active layout for Valheim
    (app 892970) and how action sets, chords and mode shifts appear in it.
 
-**User-facing doc** (README / Thunderstore page): what the mod does; "the mapping lives
-outside your Steam layout and must match it"; the four setup steps (open the file, find each
-key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
-sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
+**READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
+documents for two readers:
+
+- **Development README** (repo root `README.md`): for me or a contributor. What the mod is in two
+  lines and a link to the mod-page README; repo layout (Core, plugin, the two test projects,
+  `scripts/`); setup (`Environment.props` and its four paths, the Gale profile, ilspycmd);
+  build/test/deploy commands and the locked-DLL gotcha; `cgf_selftest` and contract tests after a
+  game update; the design rules in short, pointing to `CLAUDE.md` and the spec for the rest;
+  how the glyph PNGs are made (`scripts/make-glyphs.ps1`, Kenney credit). Drop the template's
+  Unity sections unless the Unity project is used.
+- **Mod-page README** (`ControllerGlyphFixer/README.md`, packaged for Thunderstore): for players.
+  - **Style I like:** ImpactfulSkills (Thunderstore): short tagline and intro, then one section
+    per feature with its settings named right there in the text, a screenshot per feature,
+    console commands, suggested mods to pair with. RimWorld Workshop pages (Vanilla
+    Temperature Expanded, Reel's Facial Animation Textures): friendly first-person prose
+    intro that says the problem the mod solves, requirements at the top, a Q&A FAQ ("Can I add
+    it to an existing save?"), an honest compatibility list and plain disclaimers about what
+    it doesn't do, how to report issues, and credits.
+  - **Contents:** tagline; the problem (Steam Input layouts that mix gamepad buttons and
+    keyboard keys flip Valheim to keyboard prompts) and what the mod does about it, with
+    before/after screenshots; requirements (BepInEx, Jotunn, a controller through Steam Input);
+    features, each with a screenshot and its settings (prompts stay controller glyphs, hotbar
+    and quick-slot labels with group prefixes, hover hints from other mods, glyph art,
+    inventory badges); **setting up your mapping**: "the mapping lives outside your Steam
+    layout and must match it", then the steps (open the file, find each key with `cgf_keylog`,
+    write the buttons, save and see it reload) and the `labels`/`colors`/`aliases` sections;
+    console commands; FAQ (does it change my input mode? does the trackpad cursor still
+    work? why does a hint still show a key? can I use it without a Steam Controller?);
+    compatibility (AzuEPI, MyLittleUI, ConfigurationManager, mods whose hints it rewrites);
+    limits (only keys Steam sends are seen; holds and chords aren't; Valheim-art vs mod-art
+    mix); reporting issues; credits (Kenney's Input Prompts, CC0); changelog link.
+  - Screenshots need to be taken in game; list the shots needed when writing it.
 
 ### F10. Mod compat plugin (later, separate mod)
 A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
@@ -764,10 +797,11 @@ thin patches → in-game self-test checks → manual checklist.
    `HotbarLabels` and `HintRewriter`).
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
    2026-11-02). F5 glyph images (branch `phase-f5-glyphs`, started 2026-11-08).
-4. **v4:** F7, VDF → YAML generator.
-5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
+4. **v4 (branch `phase-4-mapping-setup`, started 2026-11-08):** F9 pieces 1–3 (mapping status,
+   reload, key finder) and the settings reorganisation below. F7 has no target (see F7).
+5. **Before sharing the mod:** F9 piece 4, both READMEs, then the VDF → YAML generator (F9 piece 6).
 6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
-   Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
+   Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
    default once, so do it before others install the mod.
