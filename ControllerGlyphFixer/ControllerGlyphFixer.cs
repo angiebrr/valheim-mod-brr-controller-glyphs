@@ -12,6 +12,7 @@ using ControllerGlyphFixer.Patches;
 using HarmonyLib;
 using Jotunn.Managers;
 using UnityEngine.InputSystem;
+using Color = UnityEngine.Color;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -39,6 +40,9 @@ namespace ControllerGlyphFixer
         /// <summary>Plugin version; also used for the assembly version.</summary>
         public const string PluginVersion = "0.0.1";
 
+        /// <summary>Corner radius of the group prefix backings, in UI units (pixels of the sprite).</summary>
+        private const int BackingCornerRadius = 4;
+
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
@@ -64,6 +68,9 @@ namespace ControllerGlyphFixer
             ConfigEntry<PrefixColorMode> prefixColors = Config.Bind("General", "PrefixColors", PrefixColorMode.Neutral,
                 "Colour of the prefix and line beside each group of slots. Neutral: the slot-label " +
                 "colour. Palette: a built-in colour per prefix button. Custom: the mapping file's colors section.");
+            ConfigEntry<Color> prefixBackground = Config.Bind("General", "PrefixBackground", new Color(0f, 0f, 0f, 0.55f),
+                "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
+                "Set the alpha to 0 to hide it.");
 
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors);
 
@@ -78,19 +85,25 @@ namespace ControllerGlyphFixer
             InventoryLabelWriter inventoryLabels = null;
             if (ApplyPatch(typeof(OriginalBoundKeyString)))
             {
-                labels = new HotbarLabelWriter(glyphs, quickSlots);
+                var prefixLabels = new PrefixLabels(RoundedSprite.Create(BackingCornerRadius), prefixBackground);
+
+                labels = new HotbarLabelWriter(glyphs, quickSlots, prefixLabels);
                 HotbarLabelsPatch.Writer = labels;
                 ApplyPatch(typeof(HotbarLabelsPatch));
 
-                inventoryLabels = new InventoryLabelWriter(glyphs, labels);
+                inventoryLabels = new InventoryLabelWriter(glyphs, labels, prefixLabels);
                 InventoryLabelsPatch.Writer = inventoryLabels;
                 ApplyPatch(typeof(InventoryLabelsPatch));
 
-                prefixColors.SettingChanged += (_, _) =>
+                // Prefixes are only redrawn when something changes, so redraw them for these settings
+                void Redraw(object sender, EventArgs args)
                 {
                     HotbarLabelsPatch.Writer?.Invalidate();
                     InventoryLabelsPatch.Writer?.Invalidate();
-                };
+                }
+
+                prefixColors.SettingChanged += Redraw;
+                prefixBackground.SettingChanged += Redraw;
             }
 
             CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots));

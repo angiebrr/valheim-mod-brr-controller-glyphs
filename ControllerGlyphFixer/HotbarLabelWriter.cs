@@ -38,6 +38,9 @@ namespace ControllerGlyphFixer
         /// <summary>AzuEPI's quick-slot shortcuts.</summary>
         private readonly QuickSlotKeys m_quickSlots;
 
+        /// <summary>Draws the group prefixes beside the bars.</summary>
+        private readonly PrefixLabels m_prefixLabels;
+
         /// <summary>
         /// Per bar name: state when its labels were last handled. Keyed by name, not instance, so it
         /// holds at most two entries even though bars are recreated on every world load.
@@ -49,10 +52,12 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="glyphs">Glyph mode, mapping lookups and glyph formatting.</param>
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
-        internal HotbarLabelWriter(GlyphService glyphs, QuickSlotKeys quickSlots)
+        /// <param name="prefixLabels">Draws the group prefixes beside the bars.</param>
+        internal HotbarLabelWriter(GlyphService glyphs, QuickSlotKeys quickSlots, PrefixLabels prefixLabels)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
+            m_prefixLabels = prefixLabels ?? throw new ArgumentNullException(nameof(prefixLabels));
         }
 
         /// <summary>
@@ -225,7 +230,7 @@ namespace ControllerGlyphFixer
 
             // Below for AzuEPI's bar: it sits right under the hotbar
             PrefixSide side = barName == QuickSlotBarName ? PrefixSide.Below : PrefixSide.Above;
-            PrefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
+            m_prefixLabels.Show(bar.transform, PrefixLabelsFor(bar, labels), style, side);
         }
 
         /// <summary>

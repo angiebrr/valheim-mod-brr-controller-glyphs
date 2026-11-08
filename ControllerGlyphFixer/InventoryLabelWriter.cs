@@ -37,6 +37,9 @@ namespace ControllerGlyphFixer
         /// <summary>Builds the hotbar and quick-slot labels the inventory shares with the HUD.</summary>
         private readonly HotbarLabelWriter m_hotbar;
 
+        /// <summary>Draws the group prefixes above the top row and the quick-slot cells.</summary>
+        private readonly PrefixLabels m_prefixLabels;
+
         /// <summary>Quick-slot cells found so far, to their quick-slot index. Found by AzuEPI's text,
         /// which is gone once replaced, so remembered until the cells are rebuilt.</summary>
         private readonly Dictionary<InventoryElement, int> m_quickSlotCells = new ();
@@ -49,10 +52,12 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="glyphs">Glyph mode, mapping lookups and glyph formatting.</param>
         /// <param name="hotbar">Builds the hotbar and quick-slot labels.</param>
-        internal InventoryLabelWriter(GlyphService glyphs, HotbarLabelWriter hotbar)
+        /// <param name="prefixLabels">Draws the group prefixes.</param>
+        internal InventoryLabelWriter(GlyphService glyphs, HotbarLabelWriter hotbar, PrefixLabels prefixLabels)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_hotbar = hotbar ?? throw new ArgumentNullException(nameof(hotbar));
+            m_prefixLabels = prefixLabels ?? throw new ArgumentNullException(nameof(prefixLabels));
         }
 
         /// <summary>
@@ -180,7 +185,7 @@ namespace ControllerGlyphFixer
 
             List<PrefixLabel> prefixes = m_hotbar.PrefixLabelsFor(labels,
                 slot => slot < topRow.Count ? (RectTransform)topRow[slot].transform : null);
-            PrefixLabels.Show(topRow[0].transform.parent, prefixes, BindingText(topRow[0]), PrefixSide.Above, TopRowContainer);
+            m_prefixLabels.Show(topRow[0].transform.parent, prefixes, BindingText(topRow[0]), PrefixSide.Above, TopRowContainer);
         }
 
         /// <summary>
@@ -206,7 +211,7 @@ namespace ControllerGlyphFixer
                 InventoryElement cell = QuickSlotCell(slot);
                 return cell && cell.transform.parent == parent ? (RectTransform)cell.transform : null;
             });
-            PrefixLabels.Show(parent, prefixes, BindingText(first), PrefixSide.Above, QuickSlotContainer);
+            m_prefixLabels.Show(parent, prefixes, BindingText(first), PrefixSide.Above, QuickSlotContainer);
         }
 
         /// <summary>

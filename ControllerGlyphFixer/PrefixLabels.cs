@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using BepInEx.Configuration;
 using ControllerGlyphFixer.Core;
 using TMPro;
 using UnityEngine;
@@ -57,11 +58,13 @@ namespace ControllerGlyphFixer
     /// <summary>
     /// Draws each group's prefix at the group's top-left (or bottom-left, below the slots) and a line
     /// that shows which slots it covers: across a row, down a column's left side, or an outline
-    /// around anything else (<see cref="GroupShapes"/>). Everything lives under one container object
-    /// per set of slots, rebuilt on every write and removed when glyphs turn off.
+    /// around anything else (<see cref="GroupShapes"/>). Each prefix sits on a rounded, translucent
+    /// backing (config General.PrefixBackground); for a row it spans the prefix and its line.
+    /// Everything lives under one container object per set of slots, rebuilt on every write and
+    /// removed when glyphs turn off.
     /// </summary>
     // TODO(F3): make the side configurable if it collides with other HUD mods.
-    internal static class PrefixLabels
+    internal sealed class PrefixLabels
     {
         /// <summary>Default name of the container object added next to the slots.</summary>
         internal const string ContainerName = "cgf_PrefixLabels";
@@ -81,14 +84,28 @@ namespace ControllerGlyphFixer
         /// <summary>Shortest line worth drawing; a lone slot's prefix may already cover it.</summary>
         private const float MinLineLength = 6f;
 
-        /// <summary>Space between a prefix's text and the edge of its backing, in UI units.</summary>
+        /// <summary>Space between a backing's edge and what it holds, in UI units.</summary>
         private const float BackingPadding = 2f;
 
+        /// <summary>Rounded-square sprite stretched behind each prefix (<see cref="RoundedSprite"/>).</summary>
+        private readonly Sprite m_backingSprite;
+
         /// <summary>
-        /// Translucent black behind each prefix, so it stays readable over borders and highlights
-        /// (the inventory panel's gamepad highlight ran through it; checked in game 2026-11-07).
+        /// Config General.PrefixBackground: the backing's colour and transparency. Read on each draw;
+        /// the plugin redraws the bars when it changes.
         /// </summary>
-        private static readonly Color BackingColor = new (0f, 0f, 0f, 0.55f);
+        private readonly ConfigEntry<Color> m_backingColor;
+
+        /// <summary>
+        /// Creates the drawer.
+        /// </summary>
+        /// <param name="backingSprite">The rounded backing sprite, made once at startup.</param>
+        /// <param name="backingColor">Config backing colour; read live.</param>
+        internal PrefixLabels(Sprite backingSprite, ConfigEntry<Color> backingColor)
+        {
+            m_backingSprite = backingSprite ? backingSprite : throw new System.ArgumentNullException(nameof(backingSprite));
+            m_backingColor = backingColor ?? throw new System.ArgumentNullException(nameof(backingColor));
+        }
 
         /// <summary>
         /// Replaces the prefixes beside a set of slots.
@@ -98,7 +115,7 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
-        internal static void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
+        internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
             string containerName = ContainerName)
         {
             Clear(parent, containerName);
@@ -118,19 +135,18 @@ namespace ControllerGlyphFixer
                     ? parsed
                     : style.color;
 
+                // Backing first, so it's drawn behind; sized once the text is measured
+                Image backing = CreateImage(container, "Backing", m_backingColor.Value);
+                backing.sprite = m_backingSprite;
+                backing.type = Image.Type.Sliced;
+
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 Vector2 size = text.GetPreferredValues(prefix.Text);
                 float y = side == PrefixSide.Above ? bounds.yMax + AboveGap : bounds.yMin - Gap;
                 Place(text.rectTransform, new Vector2(0f, side == PrefixSide.Above ? 0f : 1f), size,
                     new Vector2(bounds.xMin, y));
-
-                // Backing behind the text: created after it (to know its size), then moved before it
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
-                RectTransform backing = CreateRect(container, BackingColor, Rect.MinMaxRect(
-                    bounds.xMin - BackingPadding, textBottom - BackingPadding,
-                    bounds.xMin + size.x + BackingPadding, textBottom + size.y + BackingPadding));
-                backing.name = "Backing";
-                backing.SetSiblingIndex(text.transform.GetSiblingIndex());
+                float backingRight = bounds.xMin + size.x;
 
                 GroupShape shape = GroupShapes.Of(prefix.Slots.Select(slot => (slot.localPosition.x, slot.localPosition.y)).ToList());
                 switch (shape)
@@ -144,17 +160,22 @@ namespace ControllerGlyphFixer
                         CreateOutline(container, color, bounds);
                         break;
                     default:
-                        // Across, from the prefix to the last slot
-                        float lineStart = bounds.xMin + size.x + BackingPadding + Gap * 2f;
+                        // Across, from the prefix to the last slot, on the same backing
+                        float lineStart = bounds.xMin + size.x + Gap * 2f;
                         if (bounds.xMax - lineStart >= MinLineLength)
                         {
-                            float lineY = side == PrefixSide.Above ? y + size.y / 2f : y - size.y / 2f;
+                            float lineY = textBottom + size.y / 2f;
                             CreateRect(container, color, Rect.MinMaxRect(lineStart, lineY - LineThickness / 2f,
                                 bounds.xMax, lineY + LineThickness / 2f));
+                            backingRight = bounds.xMax;
                         }
 
                         break;
                 }
+
+                Place(backing.rectTransform, Vector2.zero,
+                    new Vector2(backingRight - bounds.xMin + BackingPadding * 2f, size.y + BackingPadding * 2f),
+                    new Vector2(bounds.xMin - BackingPadding, textBottom - BackingPadding));
             }
         }
 
@@ -252,22 +273,33 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Adds a solid rectangle (a line segment or a backing).
+        /// Adds a solid rectangle (a line segment).
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The colour.</param>
         /// <param name="area">Where it goes, in the parent's local space.</param>
-        /// <returns>The rectangle's rect.</returns>
-        private static RectTransform CreateRect(Transform container, Color color, Rect area)
+        private static void CreateRect(Transform container, Color color, Rect area)
         {
-            var lineObject = new GameObject("Line", typeof(RectTransform));
-            lineObject.transform.SetParent(container, worldPositionStays: false);
-
-            Image line = lineObject.AddComponent<Image>();
-            line.color = color;
-            line.raycastTarget = false;
+            Image line = CreateImage(container, "Line", color);
             Place(line.rectTransform, Vector2.zero, area.size, area.min);
-            return line.rectTransform;
+        }
+
+        /// <summary>
+        /// Adds an unplaced image that ignores clicks.
+        /// </summary>
+        /// <param name="container">The prefixes' container.</param>
+        /// <param name="name">Object name, for UnityExplorer.</param>
+        /// <param name="color">The image colour (tints its sprite, if any).</param>
+        /// <returns>The new image.</returns>
+        private static Image CreateImage(Transform container, string name, Color color)
+        {
+            var imageObject = new GameObject(name, typeof(RectTransform));
+            imageObject.transform.SetParent(container, worldPositionStays: false);
+
+            Image image = imageObject.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            return image;
         }
 
         /// <summary>

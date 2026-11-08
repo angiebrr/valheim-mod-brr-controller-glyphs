@@ -233,6 +233,12 @@ EpicLoot.
   file `colors:` section, `"#RRGGBB"`/`"#RRGGBBAA"`; unlisted buttons stay neutral). Keyed by
   the group's first prefix button, so R4 looks the same everywhere. Changing the setting
   rewrites the bars (`HotbarLabelWriter.Invalidate`).
+- **Backings (2026-11-07):** the inventory panel's gamepad highlight ran through `[R4]`. Each
+  prefix now sits on a rounded, translucent backing (`General.PrefixBackground`, default black
+  at 55%, alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
+  for a column or outlined group, the prefix only. Corners: a 4-unit radius from a small sprite
+  built once at startup (`RoundedSprite`, pixels from `RoundedCorners.Coverage` in Core) and
+  stretched with fixed corners; Unity has no rounded shape mods can use at runtime.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
   whether the grid clips anything drawn above its first row.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
@@ -297,6 +303,7 @@ EpicLoot.
   - `Enabled` (bool, default true): master switch.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
   - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
+  - `PrefixBackground` (colour with alpha, default black at 55%) (F3).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
 
 ### F9. Helping other users set up their mapping
