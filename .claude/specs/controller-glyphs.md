@@ -589,6 +589,28 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    type buttons at all. Needs research: where Steam stores the active layout for Valheim
    (app 892970) and how action sets, chords and mode shifts appear in it.
 
+**Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`), not yet tested in game:**
+- **Settings sections:** `General` (Enabled, KeyPrompts, HoverText, ButtonGlyphs), `Hotbar labels`
+  (HotbarLabels, PrefixColors, PrefixBackground), `Mapping` (File, Status, MissingKeys, read-only).
+  Plain names: both settings UIs sort sections alphabetically, which gives this order without
+  numbers. `ConfigurationManagerAttributes.Order` keeps each section's order. Moved settings keep
+  their values: `CarryOverMovedSettings` copies BepInEx's orphaned `[General]` entries (private
+  `ConfigFile.OrphanedEntries`, contract-tested) into the new section once, then drops them.
+- **Status:** Core `MappingStatus` ("Loaded 20 keys", the error plus "Still using the last good
+  mapping", missing keys as "E (Fill all)"). A failed reload keeps the last good mapping; a failed
+  first load maps nothing, as before. In shudnal's ConfigurationManager Status has a *Reload
+  mapping* button (`CustomDrawer`); Jotunn's Mod Settings shows the plain text.
+- **Reload:** `MappingFile` watches the file (`FileSystemWatcher` raises a flag; the plugin's
+  `Update` reloads 0.5 s later on the main thread, since editors save in several writes), plus
+  `cgf_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
+  and empties `Localization.m_cache` (the `$KEY_` text cache). `ButtonGlyphs` changes empty it too,
+  which should fix the known limit above (to check in game).
+- **Key finder:** `cgf_keylog` toggles it; each keyboard key pressed shows as a top-left message
+  and a `[cgf-keylog]` log line, named as the mapping file spells it (Core `KeyFinder`: `Digit1` →
+  `1`, `Numpad1` → `Keypad1`), with its buttons or "isn't in your mapping". Keyboard keys only;
+  Steam layouts that send mouse buttons aren't covered.
+- **Self-test:** mapping loaded, file watched, Localization cache reachable.
+
 **READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
 documents for two readers:
 
