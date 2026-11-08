@@ -620,8 +620,8 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
     hotbar keeps slot 1, the other bars get -1, exactly as the first D-pad press would. Postfix on
     `Hud.Update` after AzuEPI's (`[HarmonyAfter]`).
   - **Upstream:** worth reporting to AzuEPI's author (same fix inside its controller, e.g. select
-    bar 0 where it first fills `HotkeyBars`). To confirm first: the second square goes away after
-    one D-pad left/right press.
+    bar 0 where it first fills `HotkeyBars`). Confirmed in game (2026-11-08): one D-pad left/right
+    press clears the second square.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
