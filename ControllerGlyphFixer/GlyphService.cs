@@ -39,8 +39,11 @@ namespace ControllerGlyphFixer
         /// <summary>Config General.ButtonGlyphs: Valheim's art or the mod's tried first (F5).</summary>
         private readonly ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
 
-        /// <summary>The mod's glyph tag for a normalized button (<see cref="ModGlyphs.Tag"/>); null without the sprite asset.</summary>
+        /// <summary>The mod's glyph tag for a normalized button (<see cref="ModGlyphs.Tag(string)"/>); null without the sprite asset.</summary>
         private readonly Func<string, string> m_modGlyph;
+
+        /// <summary>Like <see cref="m_modGlyph"/>, at the smaller size hover hints use; null without the sprite asset.</summary>
+        private readonly Func<string, string> m_hintModGlyph;
 
         /// <summary>Most answers <see cref="m_keyNames"/> keeps before starting over.</summary>
         private const int MaxCachedKeyNames = 256;
@@ -59,12 +62,14 @@ namespace ControllerGlyphFixer
         /// <param name="hoverText">Config switch for F4; read live.</param>
         /// <param name="buttonGlyphs">Config art order for mapped buttons (F5); read live.</param>
         /// <param name="modGlyph">The mod's glyph lookup, or null if the sprite asset couldn't be built.</param>
+        /// <param name="hintModGlyph">The same at hover-hint size, or null if the sprite asset couldn't be built.</param>
         internal GlyphService(KeyMap keyMap, ConfigEntry<bool> enabled, ConfigEntry<bool> keyPrompts,
             ConfigEntry<bool> hotbarLabels, ConfigEntry<PrefixColorMode> prefixColors, ConfigEntry<bool> hoverText,
-            ConfigEntry<ButtonGlyphOrder> buttonGlyphs, Func<string, string> modGlyph)
+            ConfigEntry<ButtonGlyphOrder> buttonGlyphs, Func<string, string> modGlyph, Func<string, string> hintModGlyph)
         {
             m_buttonGlyphs = buttonGlyphs ?? throw new ArgumentNullException(nameof(buttonGlyphs));
             m_modGlyph = modGlyph;
+            m_hintModGlyph = hintModGlyph;
             m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
             m_enabled = enabled ?? throw new ArgumentNullException(nameof(enabled));
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
@@ -74,6 +79,7 @@ namespace ControllerGlyphFixer
 
             // Built once: the $KEY_ and hover postfixes pass these on every call, often every frame
             KeyTranslator = TranslateKey;
+            HintKeyTranslator = TranslateHintKey;
             JoyLookup = LookupJoy;
             KeyNameCheck = IsKeyName;
         }
@@ -83,6 +89,9 @@ namespace ControllerGlyphFixer
 
         /// <summary><see cref="TranslateKey"/> as a delegate, created once.</summary>
         internal Func<string, string> KeyTranslator { get; }
+
+        /// <summary><see cref="TranslateHintKey"/> as a delegate, created once.</summary>
+        internal Func<string, string> HintKeyTranslator { get; }
 
         /// <summary><see cref="LookupJoy"/> as a delegate, created once.</summary>
         internal Func<string, string> JoyLookup { get; }
@@ -173,6 +182,18 @@ namespace ControllerGlyphFixer
         internal string TranslateKey(string key)
         {
             return m_keyMap.Translate(key, ValheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
+        }
+
+        /// <summary>
+        /// Translates a key name written in a hover hint (F4): like <see cref="TranslateKey"/>, with
+        /// the mod's glyphs at the smaller hover-hint size.
+        /// </summary>
+        /// <param name="key">Key name as the mod wrote it (e.g. "B").</param>
+        /// <returns>The mapped display string, or null if the key isn't mapped.</returns>
+        // $KEY_ tokens in hover text resolve through TranslateKey (F1/F2) and keep the full size
+        internal string TranslateHintKey(string key)
+        {
+            return m_keyMap.Translate(key, ValheimGlyph, m_hintModGlyph, m_buttonGlyphs.Value);
         }
 
         /// <summary>The current ButtonGlyphs setting, for the self-test.</summary>

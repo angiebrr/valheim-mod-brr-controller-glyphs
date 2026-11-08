@@ -92,7 +92,7 @@ namespace ControllerGlyphFixer
         /// <returns>The rewritten text.</returns>
         internal string Rewrite(string text)
         {
-            HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.KeyTranslator, m_glyphs.KeyNameCheck);
+            HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.HintKeyTranslator, m_glyphs.KeyNameCheck);
             foreach (UnmappedKey unmapped in result.UnmappedKeys.Where(unmapped => !m_missingKeys.ContainsKey(unmapped.Key)))
             {
                 m_missingKeys[unmapped.Key] = unmapped.Line;

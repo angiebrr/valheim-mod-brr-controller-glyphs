@@ -44,6 +44,12 @@ namespace ControllerGlyphFixer
         /// <summary>Corner radius of the group prefix backings, in UI units (pixels of the sprite).</summary>
         private const int BackingCornerRadius = 7;
 
+        /// <summary>
+        /// Size of the mod's glyphs in hover hints, in percent. Hint lines are packed tightly (Valheim's
+        /// own glyphs nearly touch); at full size the trackpad-up arrow reached the line above (in game 2026-11-08).
+        /// </summary>
+        private const int HintGlyphPercent = 85;
+
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
@@ -104,9 +110,10 @@ namespace ControllerGlyphFixer
             // Built before the services that format buttons; without it, buttons fall back to [badges]
             m_modSprites = ModSpriteAsset.TryCreate();
             Func<string, string> modGlyph = m_modSprites != null ? ModGlyphs.Tag : null;
+            Func<string, string> hintModGlyph = m_modSprites != null ? button => ModGlyphs.Tag(button, HintGlyphPercent) : null;
 
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText,
-                buttonGlyphs, modGlyph);
+                buttonGlyphs, modGlyph, hintModGlyph);
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));

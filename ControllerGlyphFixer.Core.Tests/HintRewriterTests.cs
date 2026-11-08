@@ -62,6 +62,23 @@ public class HintRewriterTests
         Assert.Equal(result.Text, HintRewriter.Rewrite(result.Text, translate, KeyNames.Contains).Text);
     }
 
+    /// <summary>
+    /// Hover hints get the smaller glyph (a size tag around the sprite): still a glyph, so the
+    /// brackets go, and rewriting the output again changes nothing.
+    /// </summary>
+    [Fact]
+    public void Mapped_key_hint_becomes_the_smaller_mod_glyph()
+    {
+        const string glyph = "<size=85%><sprite=\"cgf_deck\" name=\"lpad_up\"></size>";
+        Func<string, string> translate = key =>
+            SteamController.Translate(key, control => $"<{control}>", button => ModGlyphs.Tag(button, 85));
+
+        HintRewrite result = HintRewriter.Rewrite("[B] AutoFuel: On", translate, KeyNames.Contains);
+
+        Assert.Equal(glyph + " AutoFuel: On", result.Text);
+        Assert.Equal(result.Text, HintRewriter.Rewrite(result.Text, translate, KeyNames.Contains).Text);
+    }
+
     /// <summary>A plain bracketed key (no tags) works too, in any case.</summary>
     /// <param name="key">The key as written.</param>
     [Theory]

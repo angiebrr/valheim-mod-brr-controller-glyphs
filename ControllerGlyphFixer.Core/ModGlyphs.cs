@@ -60,5 +60,17 @@ namespace ControllerGlyphFixer.Core
         {
             return TryGetSprite(normalizedButton, out string sprite) ? SpriteStyle.Tag(AssetName, sprite) : null;
         }
+
+        /// <summary>
+        /// Returns the tag showing the mod's glyph at a percentage of its size, inside a TMP size tag.
+        /// </summary>
+        /// <param name="normalizedButton">Lowercase button name without spaces, '_' or '-'.</param>
+        /// <param name="sizePercent">Glyph size in percent; 100 gives the plain <see cref="Tag(string)"/>.</param>
+        /// <returns>A tag such as &lt;size=85%&gt;&lt;sprite="cgf_deck" name="r4"&gt;&lt;/size&gt;, or null if there's no glyph.</returns>
+        public static string Tag(string normalizedButton, int sizePercent)
+        {
+            string tag = Tag(normalizedButton);
+            return tag == null || sizePercent == 100 ? tag : "<size=" + sizePercent + "%>" + tag + "</size>";
+        }
     }
 }

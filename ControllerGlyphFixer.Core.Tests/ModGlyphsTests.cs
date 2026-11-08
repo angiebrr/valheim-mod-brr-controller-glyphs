@@ -85,6 +85,18 @@ public class ModGlyphsTests
     }
 
     /// <summary>
+    /// Hover hints show the glyph smaller (in game 2026-11-08: the trackpad arrow reached the glyph
+    /// on the line above); 100% is the plain tag, and buttons without a glyph still get none.
+    /// </summary>
+    [Fact]
+    public void Sized_tag_wraps_the_glyph_in_a_size_tag()
+    {
+        Assert.Equal("<size=85%><sprite=\"cgf_deck\" name=\"lpad_up\"></size>", ModGlyphs.Tag("lpadup", 85));
+        Assert.Equal(ModGlyphs.Tag("lpadup"), ModGlyphs.Tag("lpadup", 100));
+        Assert.Null(ModGlyphs.Tag("lg", 85));
+    }
+
+    /// <summary>
     /// The plugin loads one embedded image per sprite name, so the table and the Glyphs folder
     /// (made by scripts/make-glyphs.ps1) must list the same names.
     /// </summary>
