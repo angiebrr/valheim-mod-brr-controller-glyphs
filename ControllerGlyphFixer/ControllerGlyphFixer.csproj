@@ -41,6 +41,12 @@
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="Glyphs\License.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Controller glyphs (F5), made by scripts/make-glyphs.ps1; loaded by ModSpriteAsset -->
+    <EmbeddedResource Include="Glyphs\*.png" LogicalName="ControllerGlyphFixer.Glyphs.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
