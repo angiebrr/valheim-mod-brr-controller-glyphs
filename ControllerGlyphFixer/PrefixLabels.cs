@@ -28,7 +28,7 @@ namespace ControllerGlyphFixer
     }
 
     /// <summary>
-    /// One group's prefix label: its text, its colour, and the slots its line spans.
+    /// One group's prefix label: its text, its color, and the slots its line spans.
     /// </summary>
     internal readonly struct PrefixLabel
     {
@@ -36,7 +36,7 @@ namespace ControllerGlyphFixer
         /// Creates a prefix label.
         /// </summary>
         /// <param name="text">Prefix text (the formatted prefix buttons).</param>
-        /// <param name="color">Colour as #RRGGBB or #RRGGBBAA; null for the slot-label colour.</param>
+        /// <param name="color">Color as #RRGGBB or #RRGGBBAA; null for the slot-label color.</param>
         /// <param name="slots">The group's slots on screen, in order; at least one.</param>
         internal PrefixLabel(string text, string color, IReadOnlyList<RectTransform> slots)
         {
@@ -48,7 +48,7 @@ namespace ControllerGlyphFixer
         /// <summary>Prefix text (the formatted prefix buttons).</summary>
         internal string Text { get; }
 
-        /// <summary>Colour as #RRGGBB or #RRGGBBAA; null for the slot-label colour.</summary>
+        /// <summary>Color as #RRGGBB or #RRGGBBAA; null for the slot-label color.</summary>
         internal string Color { get; }
 
         /// <summary>The group's slots on screen, in order.</summary>
@@ -59,7 +59,7 @@ namespace ControllerGlyphFixer
     /// Draws each group's prefix at the group's top-left (or bottom-left, below the slots) and a line
     /// that shows which slots it covers: across a row, down a column's left side, or an outline
     /// around anything else (<see cref="GroupShapes"/>). Each prefix sits on a rounded, translucent
-    /// backing (config General.PrefixBackground); for a row it spans the prefix and its line.
+    /// backing (config "Hotbar group background"); for a row it spans the prefix and its line.
     /// Everything lives under one container object per set of slots, rebuilt on every write and
     /// removed when glyphs turn off.
     /// </summary>
@@ -97,7 +97,7 @@ namespace ControllerGlyphFixer
         private readonly Sprite m_backingSprite;
 
         /// <summary>
-        /// Config General.PrefixBackground: the backing's colour and transparency. Read on each draw;
+        /// Config "Hotbar group background": the backing's color and transparency. Read on each draw;
         /// the plugin redraws the bars when it changes.
         /// </summary>
         private readonly ConfigEntry<Color> m_backingColor;
@@ -106,7 +106,7 @@ namespace ControllerGlyphFixer
         /// Creates the drawer.
         /// </summary>
         /// <param name="backingSprite">The rounded backing sprite, made once at startup.</param>
-        /// <param name="backingColor">Config backing colour; read live.</param>
+        /// <param name="backingColor">Config backing color; read live.</param>
         internal PrefixLabels(Sprite backingSprite, ConfigEntry<Color> backingColor)
         {
             m_backingSprite = backingSprite ? backingSprite : throw new System.ArgumentNullException(nameof(backingSprite));
@@ -121,7 +121,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="parent">The slots' parent; the container is added here.</param>
         /// <param name="prefixes">One prefix per group; empty removes them all.</param>
-        /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
+        /// <param name="style">A slot label to copy the font, size and neutral color from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
         /// <returns>How far the prefixes reach below their slots, in the parent's units; 0 when none do
@@ -349,7 +349,7 @@ namespace ControllerGlyphFixer
         /// <param name="container">The prefixes' container.</param>
         /// <param name="style">A slot label to copy the font and size from.</param>
         /// <param name="value">The text.</param>
-        /// <param name="color">The text colour.</param>
+        /// <param name="color">The text color.</param>
         /// <returns>The new text.</returns>
         private TextMeshProUGUI CreateText(Transform container, TMP_Text style, string value, Color color)
         {
@@ -377,7 +377,7 @@ namespace ControllerGlyphFixer
         /// Draws a thin outline just outside an area.
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
-        /// <param name="color">The line colour.</param>
+        /// <param name="color">The line color.</param>
         /// <param name="area">The area to outline, in the parent's local space.</param>
         private void CreateOutline(Transform container, Color color, Rect area)
         {
@@ -393,7 +393,7 @@ namespace ControllerGlyphFixer
         /// Adds a solid rectangle (a line segment).
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
-        /// <param name="color">The colour.</param>
+        /// <param name="color">The color.</param>
         /// <param name="area">Where it goes, in the parent's local space.</param>
         private void CreateRect(Transform container, Color color, Rect area)
         {
@@ -406,7 +406,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="container">The prefixes' container.</param>
         /// <param name="name">Object name, for UnityExplorer.</param>
-        /// <param name="color">The image colour (tints its sprite, if any).</param>
+        /// <param name="color">The image color (tints its sprite, if any).</param>
         /// <returns>The new image.</returns>
         private Image CreateImage(Transform container, string name, Color color)
         {

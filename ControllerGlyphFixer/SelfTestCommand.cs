@@ -151,7 +151,7 @@ namespace ControllerGlyphFixer
             Check("Mapping file loaded", !status.StartsWith("Error", StringComparison.Ordinal), status);
             Check("Mapping file watched for saves", m_mappingFile.IsWatching,
                 m_mappingFile.IsWatching ? null : "use cgf_reloadmapping after editing; see the log");
-            Info($"Other mods' shortcut keys not in the mapping: {m_mappingFile.UnmappedShortcuts}");
+            Info($"Keys missing from mapping (hover hints and mod keybindings): {m_mappingFile.MissingKeysSummary}");
 
             try
             {
@@ -327,7 +327,7 @@ namespace ControllerGlyphFixer
         {
             if (!m_glyphs.ShowHoverText)
             {
-                Info("Skipping hover text checks (glyphs, KeyPrompts or HoverText off)");
+                Info("Skipping hover text checks (glyphs, Override keyboard prompts or Glyphs in mod hints off)");
                 return;
             }
 
@@ -337,12 +337,6 @@ namespace ControllerGlyphFixer
             string actual = m_hoverText.Rewrite(sample);
             Check("Hover hint rewriter drops brackets around glyphs and leaves other text", actual == expected,
                 $"got \"{actual}\"");
-
-            IReadOnlyDictionary<string, string> missing = m_hoverText.MissingKeys;
-            Info(missing.Count == 0
-                ? "No hover hint has used a key missing from the mapping yet"
-                : "Keys used in hover hints but missing from the mapping: " +
-                  string.Join("; ", missing.Select(pair => $"{pair.Key} (\"{pair.Value}\")")));
         }
 
         /// <summary>

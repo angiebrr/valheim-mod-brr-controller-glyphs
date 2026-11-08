@@ -13,10 +13,6 @@ namespace ControllerGlyphFixer.Core.Tests;
 /// </summary>
 public class MappingStatusTests
 {
-    /// <summary>My Steam Controller layout, loaded from the test fixture file.</summary>
-    private static readonly KeyMap SteamController = KeyMap.Parse(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "steam-controller.yaml")));
-
     /// <summary>A loaded file reports how many keys it maps, in the right number.</summary>
     /// <param name="count">Mapped keys.</param>
     /// <param name="expected">Status line.</param>
@@ -51,47 +47,5 @@ public class MappingStatusTests
         Assert.Equal(
             "Error: Invalid YAML at line 3: While scanning a plain scalar. No keys are mapped until it's fixed",
             MappingStatus.Failed("Invalid YAML at line 3: While scanning a plain scalar", lastGoodCount: null));
-    }
-
-    /// <summary>No missing keys reads as "None".</summary>
-    [Fact]
-    public void Missing_keys_none()
-    {
-        Assert.Equal("None", MappingStatus.MissingKeys(new Dictionary<string, string>(), SteamController));
-    }
-
-    /// <summary>Missing keys list each key with its hint (bracketed key dropped), sorted by key.</summary>
-    [Fact]
-    public void Missing_keys_list_each_key_with_its_hint()
-    {
-        var missing = new Dictionary<string, string>
-        {
-            { "T", "[T] Toggle crafting chest" },
-            { "E", "[E] Fill all" },
-        };
-
-        Assert.Equal("E (Fill all), T (Toggle crafting chest)", MappingStatus.MissingKeys(missing, SteamController));
-    }
-
-    /// <summary>Keys the mapping now covers (added and reloaded) drop off the list.</summary>
-    [Fact]
-    public void Missing_keys_skip_keys_the_mapping_now_has()
-    {
-        var missing = new Dictionary<string, string>
-        {
-            { "B", "[B] AutoFuel: On" },
-            { "E", "[E] Fill all" },
-        };
-
-        Assert.Equal("E (Fill all)", MappingStatus.MissingKeys(missing, SteamController));
-    }
-
-    /// <summary>A hint that is only the key (nothing else on the line) lists the key alone.</summary>
-    [Fact]
-    public void Missing_key_with_no_other_text()
-    {
-        var missing = new Dictionary<string, string> { { "E", "[E]" } };
-
-        Assert.Equal("E", MappingStatus.MissingKeys(missing, SteamController));
     }
 }

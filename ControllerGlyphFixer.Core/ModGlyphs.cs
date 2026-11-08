@@ -30,7 +30,7 @@ namespace ControllerGlyphFixer.Core
         public const int ShadowPad = (ImageSize - GlyphSize) / 2;
 
         /// <summary>Normalized mapping-file button name (aliases included) to sprite name.</summary>
-        // Sticks are missing: Kenney has no outline variant to recolour, and Valheim has stick art
+        // Sticks are missing: Kenney has no outline variant to recolor, and Valheim has stick art
         private static readonly Dictionary<string, string> Sprites = new ()
         {
             { "a", "a" }, { "b", "b" }, { "x", "x" }, { "y", "y" },

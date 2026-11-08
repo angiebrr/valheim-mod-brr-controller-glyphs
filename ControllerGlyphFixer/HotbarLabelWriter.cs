@@ -175,7 +175,7 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Forgets what was written, so every bar is rewritten on its next update (e.g. after the
-        /// prefix colour setting changes).
+        /// prefix color setting changes).
         /// </summary>
         internal void Invalidate()
         {

@@ -7,7 +7,7 @@
 #
 #   pwsh scripts/make-glyphs.ps1 -KenneyDir <unzipped folder>
 #
-# Each Steam Deck glyph is recoloured to match Valheim's dark glyphs: Kenney's plain glyph (letters
+# Each Steam Deck glyph is recolored to match Valheim's dark glyphs: Kenney's plain glyph (letters
 # cut out) plus its _outline variant (rim + letters) is the solid shape; it's filled dark, the
 # letters and a thin rim along the shape's edge are light, and a soft shadow goes underneath. Output: one
 # 144 x 144 PNG per sprite in ControllerGlyphFixer/Glyphs (the 128 px glyph with 8 px for the
@@ -39,7 +39,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-/// <summary>Recolours a Kenney glyph pair and adds a shadow (see make-glyphs.ps1).</summary>
+/// <summary>Recolors a Kenney glyph pair and adds a shadow (see make-glyphs.ps1).</summary>
 public static class GlyphComposer
 {
     /// <summary>Width of the rim in Kenney's 128 px outline variants (measured: 6 px), plus a pixel of anti-aliasing.</summary>
@@ -265,7 +265,7 @@ public static class GlyphComposer
         return blurred;
     }
 
-    /// <summary>Rounds and clamps to a colour channel.</summary>
+    /// <summary>Rounds and clamps to a color channel.</summary>
     private static int To255(float value)
     {
         return Math.Max(0, Math.Min(255, (int)Math.Round(value)));

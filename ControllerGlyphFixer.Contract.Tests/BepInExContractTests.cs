@@ -21,26 +21,6 @@ public class BepInExContractTests
             : null;
 
     /// <summary>
-    /// ConfigFile.OrphanedEntries holds .cfg entries no setting claims; CarryOverMovedSettings
-    /// reads the old values of moved settings from it and removes them.
-    /// </summary>
-    [BepInExFact]
-    public void ConfigFile_keeps_unclaimed_entries_as_orphans()
-    {
-        using MetadataLoadContext context = Context();
-        Type configFile = BepInExType(context, "BepInEx.Configuration.ConfigFile");
-
-        PropertyInfo orphans = configFile.GetProperty("OrphanedEntries",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-        Assert.True(orphans != null, "ConfigFile.OrphanedEntries not found");
-        Assert.Equal("Dictionary`2", orphans.PropertyType.Name);
-        Assert.Equal(
-            new[] { "BepInEx.Configuration.ConfigDefinition", "System.String" },
-            orphans.PropertyType.GetGenericArguments().Select(type => type.FullName));
-    }
-
-    /// <summary>
     /// ModShortcuts reads other plugins' shortcut settings: the loaded plugins, each one's config
     /// entries, and the keys of a KeyboardShortcut.
     /// </summary>

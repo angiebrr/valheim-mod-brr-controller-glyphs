@@ -199,6 +199,19 @@ public class PatchTargetTests
     }
 
     /// <summary>
+    /// HoverTextMods finds the hovered object to name the mods patching its hover text (F9).
+    /// </summary>
+    [GameFact]
+    public void Player_hover_object_members_exist()
+    {
+        Type player = GameAssemblies.Type("assembly_valheim", "Player");
+
+        Assert.True(player.GetField("m_localPlayer", Static) != null, "Player.m_localPlayer not found");
+        Assert.Equal("GameObject", player.GetMethod("GetHoverObject", Instance, null, Type.EmptyTypes, null)?.ReturnType.Name);
+        Assert.NotNull(GameAssemblies.Type("assembly_valheim", "Hoverable").GetMethod("GetHoverText"));
+    }
+
+    /// <summary>
     /// Localize's text cache, which RedrawGlyphs empties after a mapping reload or ButtonGlyphs
     /// change so cached $KEY_ text picks up the new glyphs (F9).
     /// </summary>

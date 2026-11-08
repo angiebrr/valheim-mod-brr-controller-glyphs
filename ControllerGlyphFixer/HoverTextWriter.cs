@@ -23,8 +23,11 @@ namespace ControllerGlyphFixer
         /// <summary>Glyph mode, mapping lookups and the key-name check.</summary>
         private readonly GlyphService m_glyphs;
 
-        /// <summary>Unmapped key names reported so far, with the hover line they were seen in.</summary>
-        private readonly Dictionary<string, string> m_missingKeys = new (StringComparer.OrdinalIgnoreCase);
+        /// <summary>Finds the mods that may have written the hint being hovered.</summary>
+        private readonly HoverTextMods m_hoverTextMods;
+
+        /// <summary>Unmapped keys reported so far, first sighting each; bounded by the keys mods use.</summary>
+        private readonly Dictionary<string, HintKeyUse> m_missingKeys = new (StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The last text Valheim set, and what it was rewritten to.</summary>
         private string m_lastInput;
@@ -36,15 +39,17 @@ namespace ControllerGlyphFixer
         /// Creates the writer.
         /// </summary>
         /// <param name="glyphs">Glyph mode, mapping lookups and the key-name check.</param>
-        internal HoverTextWriter(GlyphService glyphs)
+        /// <param name="hoverTextMods">Finds the mods that may have written the hovered hint.</param>
+        internal HoverTextWriter(GlyphService glyphs, HoverTextMods hoverTextMods)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
+            m_hoverTextMods = hoverTextMods ?? throw new ArgumentNullException(nameof(hoverTextMods));
         }
 
         /// <summary>
-        /// Unmapped key names seen in hover hints this session, each with the line it was in.
+        /// Unmapped keys seen in hover hints this session, each with its line and likely mods.
         /// </summary>
-        internal IReadOnlyDictionary<string, string> MissingKeys => m_missingKeys;
+        internal IEnumerable<HintKeyUse> MissingKeys => m_missingKeys.Values;
 
         /// <summary>Raised after a rewrite adds keys to <see cref="MissingKeys"/>.</summary>
         internal event Action MissingKeysChanged;
@@ -104,7 +109,8 @@ namespace ControllerGlyphFixer
                     continue;
                 }
 
-                m_missingKeys[unmapped.Key] = unmapped.Line;
+                // Only on a key's first sighting, so the patch lookup never runs per frame
+                m_missingKeys[unmapped.Key] = new HintKeyUse(unmapped.Key, unmapped.Line, m_hoverTextMods.ForHoveredObject());
                 found = true;
                 Jotunn.Logger.LogInfo($"Hover hint uses key {unmapped.Key}, which isn't in your mapping file, so no " +
                                       $"controller button shows for it: \"{unmapped.Line}\"");

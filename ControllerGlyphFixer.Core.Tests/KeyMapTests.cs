@@ -85,9 +85,9 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
-    /// <summary>The colors section sets a button's colour, matched like other button names.</summary>
+    /// <summary>The colors section sets a button's color, matched like other button names.</summary>
     [Fact]
-    public void Colors_section_sets_button_colours()
+    public void Colors_section_sets_button_colors()
     {
         var map = KeyMap.Parse("colors:\n  R4: \"#9B8CFF\"\n  L 5: \"#5DCAA580\"\nkeys:\n  Q: L5\n");
 
@@ -96,13 +96,13 @@ public class KeyMapTests
         Assert.Null(map.Color("R5"));
     }
 
-    /// <summary>A colour that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
-    /// <param name="color">An invalid colour.</param>
+    /// <summary>A color that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
+    /// <param name="color">An invalid color.</param>
     [Theory]
     [InlineData("purple")]
     [InlineData("\"#12345\"")]
     [InlineData("\"#GGGGGG\"")]
-    public void Invalid_colours_are_an_error(string color)
+    public void Invalid_colors_are_an_error(string color)
     {
         var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"colors:\n  R4: {color}\n"));
 
@@ -211,25 +211,25 @@ public class KeyMapTests
     private static string Deck(string sprite) => $"<sprite=\"cgf_deck\" name=\"{sprite}\">";
 
     /// <summary>
-    /// ValheimFirst (default): Valheim's art for buttons it has, the mod's glyph for the rest; the
+    /// Valheim (default): Valheim's art for buttons it has, the mod's glyph for the rest; the
     /// glyph replaces the labels-section badge text (LPad Up).
     /// </summary>
     [Fact]
-    public void ValheimFirst_uses_valheim_art_then_ours()
+    public void Valheim_uses_valheim_art_then_ours()
     {
         Assert.Equal(Deck("r4") + " + <dpad_up>", SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag));
         Assert.Equal(Deck("lpad_up"), SteamController.Translate("B", FakeGlyph, ModGlyphs.Tag));
     }
 
-    /// <summary>ModGlyphsForAll: the mod's glyph for every button it has, Valheim's art for the rest.</summary>
+    /// <summary>SteamDeck: the mod's glyph for every button it has, Valheim's art for the rest.</summary>
     [Fact]
-    public void ModGlyphsForAll_uses_ours_then_valheim()
+    public void SteamDeck_uses_ours_then_valheim()
     {
         var map = KeyMap.Parse("keys:\n  Q: LS\n");
 
         Assert.Equal(Deck("r4") + " + " + Deck("dpad_up"),
-            SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
-        Assert.Equal("<leftStickPress>", map.Translate("Q", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
+            SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
+        Assert.Equal("<leftStickPress>", map.Translate("Q", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
     }
 
     /// <summary>
@@ -243,14 +243,14 @@ public class KeyMapTests
 
         Assert.Equal("<dpad_up>", SteamController.Format(new[] { "DPadUp" }, FakeGlyph, NoCall));
         Assert.Equal(Deck("dpad_up"),
-            SteamController.Format(new[] { "DPadUp" }, NoCall, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
+            SteamController.Format(new[] { "DPadUp" }, NoCall, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
     }
 
     /// <summary>Without the mod's glyphs (the sprite asset couldn't be built), badges stay in either order.</summary>
     /// <param name="order">Lookup order.</param>
     [Theory]
-    [InlineData(ButtonGlyphOrder.ValheimFirst)]
-    [InlineData(ButtonGlyphOrder.ModGlyphsForAll)]
+    [InlineData(ButtonGlyphOrder.Valheim)]
+    [InlineData(ButtonGlyphOrder.SteamDeck)]
     public void No_mod_glyphs_keeps_badges(ButtonGlyphOrder order)
     {
         Assert.Equal("[R4] + <dpad_up>", SteamController.Translate("1", FakeGlyph, null, order));
@@ -259,8 +259,8 @@ public class KeyMapTests
     /// <summary>A button no art covers (a back grip) keeps its badge in either order.</summary>
     /// <param name="order">Lookup order.</param>
     [Theory]
-    [InlineData(ButtonGlyphOrder.ValheimFirst)]
-    [InlineData(ButtonGlyphOrder.ModGlyphsForAll)]
+    [InlineData(ButtonGlyphOrder.Valheim)]
+    [InlineData(ButtonGlyphOrder.SteamDeck)]
     public void Buttons_with_no_art_keep_their_badge(ButtonGlyphOrder order)
     {
         var map = KeyMap.Parse("keys:\n  Q: LG\n");

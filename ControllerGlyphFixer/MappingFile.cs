@@ -23,14 +23,11 @@ namespace ControllerGlyphFixer
         /// <summary>Full path of the mapping file.</summary>
         private readonly string m_path;
 
-        /// <summary>Config Mapping.Status: loaded key count or the parse error.</summary>
+        /// <summary>Config "Mapping status": loaded key count or the parse error.</summary>
         private readonly ConfigEntry<string> m_status;
 
-        /// <summary>Config Mapping.MissingKeys: hover-hint keys the mapping lacks.</summary>
+        /// <summary>Config "Keys missing from mapping", one line (the .cfg and Jotunn's Mod Settings).</summary>
         private readonly ConfigEntry<string> m_missingKeys;
-
-        /// <summary>Config Mapping.UnmappedShortcuts: other mods' shortcut keys the mapping lacks.</summary>
-        private readonly ConfigEntry<string> m_unmappedShortcuts;
 
         /// <summary>Watches the file for saves; null until <see cref="Watch"/> or if it couldn't start.</summary>
         private FileSystemWatcher m_watcher;
@@ -45,36 +42,33 @@ namespace ControllerGlyphFixer
         /// Creates the file handler and shows the path in the settings.
         /// </summary>
         /// <param name="path">Full path of the mapping file.</param>
-        /// <param name="file">Config Mapping.File (read-only), set to the path.</param>
-        /// <param name="status">Config Mapping.Status (read-only).</param>
-        /// <param name="missingKeys">Config Mapping.MissingKeys (read-only).</param>
-        /// <param name="unmappedShortcuts">Config Mapping.UnmappedShortcuts (read-only).</param>
+        /// <param name="file">Config "Mapping file" (read-only), set to the path.</param>
+        /// <param name="status">Config "Mapping status" (read-only).</param>
+        /// <param name="missingKeys">Config "Keys missing from mapping" (read-only).</param>
         internal MappingFile(string path, ConfigEntry<string> file, ConfigEntry<string> status,
-            ConfigEntry<string> missingKeys, ConfigEntry<string> unmappedShortcuts)
+            ConfigEntry<string> missingKeys)
         {
             m_path = path ?? throw new ArgumentNullException(nameof(path));
             m_status = status ?? throw new ArgumentNullException(nameof(status));
             m_missingKeys = missingKeys ?? throw new ArgumentNullException(nameof(missingKeys));
-            m_unmappedShortcuts = unmappedShortcuts ?? throw new ArgumentNullException(nameof(unmappedShortcuts));
             if (file == null)
             {
                 throw new ArgumentNullException(nameof(file));
             }
 
             file.Value = path;
-            m_missingKeys.Value = MappingStatus.None;
-            m_unmappedShortcuts.Value = "Checked when the main menu first opens";
-            UnmappedShortcutsTree = m_unmappedShortcuts.Value;
+            m_missingKeys.Value = "Checked when the main menu first opens";
+            MissingKeysTree = m_missingKeys.Value;
         }
 
-        /// <summary>The current status line (Mapping.Status).</summary>
+        /// <summary>The current status line ("Mapping status").</summary>
         internal string Status => m_status.Value;
 
-        /// <summary>The current Mapping.UnmappedShortcuts text (one line).</summary>
-        internal string UnmappedShortcuts => m_unmappedShortcuts.Value;
+        /// <summary>The current "Keys missing from mapping" text (one line).</summary>
+        internal string MissingKeysSummary => m_missingKeys.Value;
 
         /// <summary>The same as a tree, for ConfigurationManager's monospace drawer.</summary>
-        internal string UnmappedShortcutsTree { get; private set; }
+        internal string MissingKeysTree { get; private set; }
 
         /// <summary>Whether saves to the file are being watched.</summary>
         internal bool IsWatching => m_watcher != null;
@@ -126,23 +120,13 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Shows the hover-hint keys the mapping doesn't cover.
+        /// Shows the keys the mapping doesn't cover: one line in the setting, a tree for the drawer.
         /// </summary>
-        /// <param name="missing">Keys seen in hover hints, with their lines.</param>
-        /// <param name="map">The mapping in use.</param>
-        internal void ShowMissingKeys(IReadOnlyDictionary<string, string> missing, KeyMap map)
+        /// <param name="missing">From <see cref="MissingKeys.Find"/>.</param>
+        internal void ShowMissingKeys(IReadOnlyList<MissingKey> missing)
         {
-            m_missingKeys.Value = MappingStatus.MissingKeys(missing, map);
-        }
-
-        /// <summary>
-        /// Shows other mods' shortcut keys the mapping doesn't cover.
-        /// </summary>
-        /// <param name="unmapped">From <see cref="ShortcutAudit.Unmapped"/>.</param>
-        internal void ShowUnmappedShortcuts(IReadOnlyList<UnmappedShortcutKey> unmapped)
-        {
-            m_unmappedShortcuts.Value = ShortcutAudit.Summary(unmapped);
-            UnmappedShortcutsTree = ShortcutAudit.Tree(unmapped);
+            m_missingKeys.Value = MissingKeys.Summary(missing);
+            MissingKeysTree = MissingKeys.Tree(missing);
         }
 
         /// <summary>

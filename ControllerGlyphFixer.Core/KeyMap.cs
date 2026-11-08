@@ -50,13 +50,13 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Normalized alias to normalized key name, from the file's aliases section.</summary>
         private readonly Dictionary<string, string> m_aliases;
 
-        /// <summary>Colours the colors section accepts: #RRGGBB or #RRGGBBAA.</summary>
+        /// <summary>Colors the colors section accepts: #RRGGBB or #RRGGBBAA.</summary>
         private static readonly Regex ColorPattern = new (@"^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$");
 
         /// <summary>Normalized button name to badge text, from the file's labels section.</summary>
         private readonly Dictionary<string, string> m_labels;
 
-        /// <summary>Normalized button name to colour, from the file's colors section.</summary>
+        /// <summary>Normalized button name to color, from the file's colors section.</summary>
         private readonly Dictionary<string, string> m_colors;
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace ControllerGlyphFixer.Core
         /// <param name="keys">Normalized key name to buttons.</param>
         /// <param name="aliases">Normalized alias to normalized key name.</param>
         /// <param name="labels">Normalized button name to badge text.</param>
-        /// <param name="colors">Normalized button name to colour.</param>
+        /// <param name="colors">Normalized button name to color.</param>
         private KeyMap(
             Dictionary<string, IReadOnlyList<string>> keys,
             Dictionary<string, string> aliases,
@@ -77,7 +77,7 @@ namespace ControllerGlyphFixer.Core
             m_labels = labels;
             m_colors = colors;
 
-            // Buttons held while pressing another one (the action-set buttons), for palette colours
+            // Buttons held while pressing another one (the action-set buttons), for palette colors
             PrefixButtons = keys.Values
                 .SelectMany(buttons => buttons.Take(buttons.Count - 1))
                 .Select(Normalize)
@@ -94,15 +94,15 @@ namespace ControllerGlyphFixer.Core
 
         /// <summary>
         /// Normalized names of buttons pressed before another button in any key (e.g. "r4"),
-        /// sorted by name. <see cref="PrefixColors"/> numbers palette colours in this order.
+        /// sorted by name. <see cref="PrefixColors"/> numbers palette colors in this order.
         /// </summary>
         public IReadOnlyList<string> PrefixButtons { get; }
 
         /// <summary>
-        /// Returns a button's colour from the colors section.
+        /// Returns a button's color from the colors section.
         /// </summary>
         /// <param name="button">Button name in any spelling the mapping file accepts.</param>
-        /// <returns>The colour (#RRGGBB or #RRGGBBAA), or null if none is set.</returns>
+        /// <returns>The color (#RRGGBB or #RRGGBBAA), or null if none is set.</returns>
         public string Color(string button)
         {
             return m_colors.TryGetValue(Normalize(button), out string color) ? color : null;
@@ -181,11 +181,11 @@ namespace ControllerGlyphFixer.Core
                     case "colors":
                         foreach (var entry in Mapping(section.Value, sectionName).Children)
                         {
-                            string color = ScalarText(entry.Value, "colour");
+                            string color = ScalarText(entry.Value, "color");
                             if (!ColorPattern.IsMatch(color))
                             {
                                 throw new KeyMapException(
-                                    $"Colour '{color}' at line {entry.Value.Start.Line} must be \"#RRGGBB\" or \"#RRGGBBAA\" (in quotes)");
+                                    $"Color '{color}' at line {entry.Value.Start.Line} must be \"#RRGGBB\" or \"#RRGGBBAA\" (in quotes)");
                             }
 
                             colors[Normalize(ScalarText(entry.Key, "button name"))] = color;
@@ -210,7 +210,7 @@ namespace ControllerGlyphFixer.Core
         /// <param name="order">Which art is tried first.</param>
         /// <returns>The buttons joined with " + ", each as a sprite tag or a [badge]; null if unmapped.</returns>
         public string Translate(string keyName, Func<string, string> valheimGlyph, Func<string, string> modGlyph = null,
-            ButtonGlyphOrder order = ButtonGlyphOrder.ValheimFirst)
+            ButtonGlyphOrder order = ButtonGlyphOrder.Valheim)
         {
             return Format(Buttons(keyName), valheimGlyph, modGlyph, order);
         }
@@ -236,7 +236,7 @@ namespace ControllerGlyphFixer.Core
         /// <param name="order">See <see cref="Translate"/>.</param>
         /// <returns>The display string, or null for a null or empty list.</returns>
         public string Format(IReadOnlyList<string> buttons, Func<string, string> valheimGlyph,
-            Func<string, string> modGlyph = null, ButtonGlyphOrder order = ButtonGlyphOrder.ValheimFirst)
+            Func<string, string> modGlyph = null, ButtonGlyphOrder order = ButtonGlyphOrder.Valheim)
         {
             if (buttons == null || buttons.Count == 0)
             {
@@ -258,7 +258,7 @@ namespace ControllerGlyphFixer.Core
             ButtonGlyphOrder order)
         {
             string normalized = Normalize(button);
-            bool modFirst = order == ButtonGlyphOrder.ModGlyphsForAll;
+            bool modFirst = order == ButtonGlyphOrder.SteamDeck;
 
             // The second source is asked only when the first has nothing: this runs on the $KEY_ path
             string glyph = modFirst ? ModGlyph(normalized, modGlyph) : ValheimGlyph(normalized, valheimGlyph);
