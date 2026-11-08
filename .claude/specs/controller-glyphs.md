@@ -380,7 +380,9 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 1. **Mapping status in the config** (`[Mapping]` section, read-only): the file's path, and
    "Loaded 20 keys" or the parse error with its line number. Shows in both settings UIs, so a
    broken file isn't silent. (Read-only entries are still written to the `.cfg`; acceptable, or
-   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.) Also list the   **missing keys**: key names seen in hover hints this session that the mapping doesn't   cover (F4), e.g. "E (AzuCraftyBoxes chest toggle)", so users know what to add.
+   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.) Also list the
+   **missing keys**: key names seen in hover hints this session that the mapping doesn't
+   cover (F4), e.g. "E (AzuCraftyBoxes chest toggle)", so users know what to add.
 2. **Reload without restarting** (the existing TODO in `ControllerGlyphFixer.LoadKeyMap`): watch
    the file (`FileSystemWatcher`), plus a *Reload mapping* button (`CustomDrawer`) and a
    `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
