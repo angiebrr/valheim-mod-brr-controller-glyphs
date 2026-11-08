@@ -575,23 +575,31 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
    Localization's cache, call `HotbarLabelWriter.Invalidate()`. With ConfigurationManager's File
    Editor this gives a full in-game loop: edit, save, see the labels change.
-3. **Key finder** (`cgf_keylog` console command, toggles on/off): logs each keyboard key the game
-   receives, by the name the mapping file uses (e.g. `Keypad1`, `LeftShift`), and whether the
-   mapping has it. Press a button combo on the controller, read which key Steam sent, write
-   `Keypad1: [R5, DPadUp]`. Answers "what key does this button send?" in game.
+3. ~~**Key finder** (`cgf_keylog`)~~ **Dropped 2026-11-08:** a command that watches key presses
+   reads as a keylogger, even one that only names keys while switched on. Replaced by a
+   **shortcut audit**: other mods' keyboard shortcut settings, read once at startup, compared
+   with the mapping. "Which key does this button send?" is answered by the Steam layout file
+   instead (next phase, see piece 6).
 4. **Starter mappings:** a few commented example blocks in the template (Steam Controller back
    buttons + action set, Steam Deck back grips, a DualSense touchpad layout) so users copy the
    closest one instead of starting from nothing.
 5. **Open file / write template buttons** (`CustomDrawer`, ConfigurationManager only): *Open
    mapping file* (opens it in the system's default editor, outside the game) and *Reset to
    template* (with confirmation; backs up the old file first).
-6. **Later:** generate the mapping from the Steam layout VDF (see above), so most users never
-   type buttons at all. Needs research: where Steam stores the active layout for Valheim
-   (app 892970) and how action sets, chords and mode shifts appear in it.
+6. **Next phase (decided 2026-11-08):** audit the Steam layout VDF against the mapping (keys the
+   layout sends that the mapping lacks, entries that disagree), then generate the mapping from it,
+   so most users never type buttons at all. Both need the same parser. Found 2026-11-08: Steam
+   keeps the layouts at `<Steam>\steamapps\common\Steam Controller Configs\<account
+   id>\config\892970\*.vdf`; mine is `FXA9962300C51.vdf` ("Valheim - Gamepad - Base Layout 2 -
+   Action Set Layers", action sets Default / Hotbar / Quick slots) with bindings such as
+   `"key_press B, Torch on/off/timer, , "` and `"xinput_button X, Use, , "`, so the labels I gave
+   each binding are in the file. To research: which file is the active one, and how groups, modes,
+   action sets and layers nest. Read-only, and only Valheim's folder; the README says so.
 
 **Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`), not yet tested in game:**
 - **Settings sections:** `General` (Enabled, KeyPrompts, HoverText, ButtonGlyphs), `Hotbar labels`
-  (HotbarLabels, PrefixColors, PrefixBackground), `Mapping` (File, Status, MissingKeys, read-only).
+  (HotbarLabels, PrefixColors, PrefixBackground), `Mapping` (File, Status, MissingKeys,
+  UnmappedShortcuts, read-only).
   Plain names: both settings UIs sort sections alphabetically, which gives this order without
   numbers. `ConfigurationManagerAttributes.Order` keeps each section's order. Moved settings keep
   their values: `CarryOverMovedSettings` copies BepInEx's orphaned `[General]` entries (private
@@ -605,11 +613,19 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   `cgf_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
   and empties `Localization.m_cache` (the `$KEY_` text cache). `ButtonGlyphs` changes empty it too,
   which should fix the known limit above (to check in game).
-- **Key finder:** `cgf_keylog` toggles it; each keyboard key pressed shows as a top-left message
-  and a `[cgf-keylog]` log line, named as the mapping file spells it (Core `KeyFinder`: `Digit1` →
-  `1`, `Numpad1` → `Keypad1`), with its buttons or "isn't in your mapping". Keyboard keys only;
-  Steam layouts that send mouse buttons aren't covered.
-- **Self-test:** mapping loaded, file watched, Localization cache reachable.
+- **Shortcut audit:** when the main menu first opens (Jotunn's `GUIManager.OnCustomGUIAvailable`,
+  then unsubscribed; every plugin has bound its config by then), `ModShortcuts` reads each loaded
+  plugin's `KeyboardShortcut` and `KeyCode` settings through `Chainloader.PluginInfos`, read-only.
+  Core `ShortcutAudit` lists the keys the mapping lacks (only the unmapped keys of a combo; `None`,
+  mouse and joystick buttons skipped). `Mapping.UnmappedShortcuts` shows "E (EpicLoot,
+  AzuCraftyBoxes), F1 (ConfigurationManager)"; the log names each setting and its whole shortcut.
+  A reload re-checks the list against the new mapping without reading the mods again. Not seen:
+  mods that keep settings in their own file or hard-code keys (hover hints' MissingKeys still
+  catches those when they show a hint). My profile has ~60 shortcut settings, most of them
+  keyboard-only conveniences, so the list is long; the description says to add only keys the
+  Steam layout sends.
+- **Self-test:** mapping loaded, file watched, Localization cache reachable; the unmapped
+  shortcut keys (INFO).
 
 **READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
 documents for two readers:
@@ -635,8 +651,9 @@ documents for two readers:
     features, each with a screenshot and its settings (prompts stay controller glyphs, hotbar
     and quick-slot labels with group prefixes, hover hints from other mods, glyph art,
     inventory badges); **setting up your mapping**: "the mapping lives outside your Steam
-    layout and must match it", then the steps (open the file, find each key with `cgf_keylog`,
-    write the buttons, save and see it reload) and the `labels`/`colors`/`aliases` sections;
+    layout and must match it", then the steps (open the file, read each key from Steam's
+    controller configurator or let the layout audit list them, write the buttons, save and see
+    it reload) and the `labels`/`colors`/`aliases` sections;
     console commands; FAQ (does it change my input mode? does the trackpad cursor still
     work? why does a hint still show a key? can I use it without a Steam Controller?);
     compatibility (AzuEPI, MyLittleUI, ConfigurationManager, mods whose hints it rewrites);
@@ -820,8 +837,9 @@ thin patches → in-game self-test checks → manual checklist.
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
    2026-11-02). F5 glyph images (branch `phase-f5-glyphs`, started 2026-11-08).
 4. **v4 (branch `phase-4-mapping-setup`, started 2026-11-08):** F9 pieces 1–3 (mapping status,
-   reload, key finder) and the settings reorganisation below. F7 has no target (see F7).
-5. **Before sharing the mod:** F9 piece 4, both READMEs, then the VDF → YAML generator (F9 piece 6).
+   reload, mod shortcut audit) and the settings reorganisation below. F7 has no target (see F7).
+5. **v5 (next):** F9 piece 6, the Steam layout VDF audit, then the VDF → YAML generator.
+6. **Before sharing the mod:** F9 piece 4 and both READMEs.
 6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,

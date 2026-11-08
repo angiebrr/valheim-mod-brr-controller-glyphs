@@ -15,6 +15,9 @@ namespace ControllerGlyphFixer.Core
     /// </summary>
     public static class MappingStatus
     {
+        /// <summary>Shown when a list of missing keys is empty.</summary>
+        public const string None = "None";
+
         /// <summary>
         /// Describes a successful load.
         /// </summary>
@@ -54,7 +57,7 @@ namespace ControllerGlyphFixer.Core
                 .OrderBy(entry => entry.Key, System.StringComparer.OrdinalIgnoreCase)
                 .Select(entry => Entry(entry.Key, entry.Value))
                 .ToArray();
-            return entries.Length == 0 ? "None" : string.Join(", ", entries);
+            return entries.Length == 0 ? None : string.Join(", ", entries);
         }
 
         /// <summary>

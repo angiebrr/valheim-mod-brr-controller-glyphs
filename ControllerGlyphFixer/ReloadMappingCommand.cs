@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------
-// MappingCommands.cs: the cgf_reloadmapping and cgf_keylog console commands (F9).
+// ReloadMappingCommand.cs: the cgf_reloadmapping console command (F9).
 // ------------------------------------------------------------------------------------------------
 
 using System;
@@ -43,46 +43,6 @@ namespace ControllerGlyphFixer
             if (Console.instance)
             {
                 Console.instance.Print(status);
-            }
-        }
-    }
-
-    /// <summary>
-    /// "cgf_keylog": switches the key finder (<see cref="KeyLog"/>) on or off.
-    /// </summary>
-    internal sealed class KeyLogCommand : ConsoleCommand
-    {
-        /// <summary>The key finder.</summary>
-        private readonly KeyLog m_keyLog;
-
-        /// <summary>
-        /// Creates the command.
-        /// </summary>
-        /// <param name="keyLog">The key finder.</param>
-        internal KeyLogCommand(KeyLog keyLog)
-        {
-            m_keyLog = keyLog ?? throw new ArgumentNullException(nameof(keyLog));
-        }
-
-        /// <summary>Command name typed in the console.</summary>
-        public override string Name => "cgf_keylog";
-
-        /// <summary>Help text shown by the console's help command.</summary>
-        public override string Help =>
-            "ControllerGlyphFixer: show each keyboard key the game receives (top left), to find the keys your Steam buttons send";
-
-        /// <summary>
-        /// Toggles the key finder and says which way it went.
-        /// </summary>
-        /// <param name="args">Unused.</param>
-        public override void Run(string[] args)
-        {
-            string state = m_keyLog.Toggle()
-                ? "Key finder on: close the console and press your controller buttons; run cgf_keylog again to stop"
-                : "Key finder off";
-            if (Console.instance)
-            {
-                Console.instance.Print(state);
             }
         }
     }

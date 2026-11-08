@@ -151,6 +151,7 @@ namespace ControllerGlyphFixer
             Check("Mapping file loaded", !status.StartsWith("Error", StringComparison.Ordinal), status);
             Check("Mapping file watched for saves", m_mappingFile.IsWatching,
                 m_mappingFile.IsWatching ? null : "use cgf_reloadmapping after editing; see the log");
+            Info($"Other mods' shortcut keys not in the mapping: {m_mappingFile.UnmappedShortcuts}");
 
             try
             {

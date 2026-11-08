@@ -27,11 +27,8 @@ public class BepInExContractTests
     [BepInExFact]
     public void ConfigFile_keeps_unclaimed_entries_as_orphans()
     {
-        var resolver = new PathAssemblyResolver(
-            Directory.GetFiles(CoreDir, "*.dll").Concat(Directory.GetFiles(GameAssemblies.ManagedDir, "*.dll")));
-        using var context = new MetadataLoadContext(resolver, coreAssemblyName: "mscorlib");
-        Type configFile = context.LoadFromAssemblyPath(Path.Combine(CoreDir, "BepInEx.dll"))
-            .GetType("BepInEx.Configuration.ConfigFile");
+        using MetadataLoadContext context = Context();
+        Type configFile = BepInExType(context, "BepInEx.Configuration.ConfigFile");
 
         PropertyInfo orphans = configFile.GetProperty("OrphanedEntries",
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -41,6 +38,54 @@ public class BepInExContractTests
         Assert.Equal(
             new[] { "BepInEx.Configuration.ConfigDefinition", "System.String" },
             orphans.PropertyType.GetGenericArguments().Select(type => type.FullName));
+    }
+
+    /// <summary>
+    /// ModShortcuts reads other plugins' shortcut settings: the loaded plugins, each one's config
+    /// entries, and the keys of a KeyboardShortcut.
+    /// </summary>
+    [BepInExFact]
+    public void Members_read_by_the_shortcut_audit_exist()
+    {
+        using MetadataLoadContext context = Context();
+        const BindingFlags Public = BindingFlags.Public | BindingFlags.Instance;
+
+        PropertyInfo pluginInfos = BepInExType(context, "BepInEx.Bootstrap.Chainloader")
+            .GetProperty("PluginInfos", BindingFlags.Public | BindingFlags.Static);
+        Assert.True(pluginInfos != null, "Chainloader.PluginInfos not found");
+
+        Type pluginInfo = BepInExType(context, "BepInEx.PluginInfo");
+        Assert.NotNull(pluginInfo.GetProperty("Instance", Public));
+        Assert.NotNull(pluginInfo.GetProperty("Metadata", Public));
+        Assert.NotNull(BepInExType(context, "BepInEx.BaseUnityPlugin").GetProperty("Config", Public));
+
+        Type shortcut = BepInExType(context, "BepInEx.Configuration.KeyboardShortcut");
+        Assert.Equal("KeyCode", shortcut.GetProperty("MainKey", Public)?.PropertyType.Name);
+        Assert.Equal("IEnumerable`1", shortcut.GetProperty("Modifiers", Public)?.PropertyType.Name);
+    }
+
+    /// <summary>
+    /// Creates a metadata-only context over BepInEx's core and the game's DLLs (for UnityEngine).
+    /// </summary>
+    /// <returns>The context; dispose it after the test.</returns>
+    private static MetadataLoadContext Context()
+    {
+        var resolver = new PathAssemblyResolver(
+            Directory.GetFiles(CoreDir, "*.dll").Concat(Directory.GetFiles(GameAssemblies.ManagedDir, "*.dll")));
+        return new MetadataLoadContext(resolver, coreAssemblyName: "mscorlib");
+    }
+
+    /// <summary>
+    /// Returns a type from BepInEx.dll; fails the test if it's missing.
+    /// </summary>
+    /// <param name="context">From <see cref="Context"/>.</param>
+    /// <param name="typeName">Full type name.</param>
+    /// <returns>The type.</returns>
+    private static Type BepInExType(MetadataLoadContext context, string typeName)
+    {
+        Type type = context.LoadFromAssemblyPath(Path.Combine(CoreDir, "BepInEx.dll")).GetType(typeName);
+        Assert.True(type != null, $"{typeName} not found in BepInEx.dll");
+        return type;
     }
 
     /// <summary>

@@ -212,20 +212,6 @@ public class PatchTargetTests
         Assert.NotNull(cache.FieldType.GetMethod("EvictAll", Instance, null, Type.EmptyTypes, null));
     }
 
-    /// <summary>The key finder (cgf_keylog) shows each key as a top-left message (F9).</summary>
-    [GameFact]
-    public void MessageHud_ShowMessage_takes_a_type_and_text()
-    {
-        Type messageHud = GameAssemblies.Type("assembly_valheim", "MessageHud");
-
-        Assert.Contains(messageHud.GetMethods(Instance), method =>
-            method.Name == "ShowMessage" &&
-            method.GetParameters() is { Length: >= 2 } parameters &&
-            parameters[0].ParameterType.Name == "MessageType" &&
-            parameters[1].ParameterType.FullName == "System.String" &&
-            parameters.Skip(2).All(parameter => parameter.IsOptional));
-        Assert.Contains("TopLeft", EnumNames(messageHud.GetNestedType("MessageType")));
-    }
 
     /// <summary>
     /// Asserts a static property exists with the given type name.

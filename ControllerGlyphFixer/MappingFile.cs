@@ -29,6 +29,9 @@ namespace ControllerGlyphFixer
         /// <summary>Config Mapping.MissingKeys: hover-hint keys the mapping lacks.</summary>
         private readonly ConfigEntry<string> m_missingKeys;
 
+        /// <summary>Config Mapping.UnmappedShortcuts: other mods' shortcut keys the mapping lacks.</summary>
+        private readonly ConfigEntry<string> m_unmappedShortcuts;
+
         /// <summary>Watches the file for saves; null until <see cref="Watch"/> or if it couldn't start.</summary>
         private FileSystemWatcher m_watcher;
 
@@ -45,23 +48,29 @@ namespace ControllerGlyphFixer
         /// <param name="file">Config Mapping.File (read-only), set to the path.</param>
         /// <param name="status">Config Mapping.Status (read-only).</param>
         /// <param name="missingKeys">Config Mapping.MissingKeys (read-only).</param>
+        /// <param name="unmappedShortcuts">Config Mapping.UnmappedShortcuts (read-only).</param>
         internal MappingFile(string path, ConfigEntry<string> file, ConfigEntry<string> status,
-            ConfigEntry<string> missingKeys)
+            ConfigEntry<string> missingKeys, ConfigEntry<string> unmappedShortcuts)
         {
             m_path = path ?? throw new ArgumentNullException(nameof(path));
             m_status = status ?? throw new ArgumentNullException(nameof(status));
             m_missingKeys = missingKeys ?? throw new ArgumentNullException(nameof(missingKeys));
+            m_unmappedShortcuts = unmappedShortcuts ?? throw new ArgumentNullException(nameof(unmappedShortcuts));
             if (file == null)
             {
                 throw new ArgumentNullException(nameof(file));
             }
 
             file.Value = path;
-            m_missingKeys.Value = "None";
+            m_missingKeys.Value = MappingStatus.None;
+            m_unmappedShortcuts.Value = "Checked when the main menu first opens";
         }
 
         /// <summary>The current status line (Mapping.Status).</summary>
         internal string Status => m_status.Value;
+
+        /// <summary>The current Mapping.UnmappedShortcuts text.</summary>
+        internal string UnmappedShortcuts => m_unmappedShortcuts.Value;
 
         /// <summary>Whether saves to the file are being watched.</summary>
         internal bool IsWatching => m_watcher != null;
@@ -120,6 +129,15 @@ namespace ControllerGlyphFixer
         internal void ShowMissingKeys(IReadOnlyDictionary<string, string> missing, KeyMap map)
         {
             m_missingKeys.Value = MappingStatus.MissingKeys(missing, map);
+        }
+
+        /// <summary>
+        /// Shows other mods' shortcut keys the mapping doesn't cover.
+        /// </summary>
+        /// <param name="unmapped">From <see cref="ShortcutAudit.Unmapped"/>.</param>
+        internal void ShowUnmappedShortcuts(IReadOnlyList<UnmappedShortcutKey> unmapped)
+        {
+            m_unmappedShortcuts.Value = ShortcutAudit.Summary(unmapped);
         }
 
         /// <summary>

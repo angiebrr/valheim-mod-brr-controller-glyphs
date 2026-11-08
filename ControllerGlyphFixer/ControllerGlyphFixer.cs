@@ -96,11 +96,12 @@ namespace ControllerGlyphFixer
         /// <summary>The hover text writer, whose missing keys show in the settings; kept to unsubscribe.</summary>
         private HoverTextWriter m_hoverTextWriter;
 
-        /// <summary>The key finder (cgf_keylog), updated every frame while on.</summary>
-        private KeyLog m_keyLog;
 
         /// <summary>Unscaled time at which to reload the changed mapping file; null when none is pending.</summary>
         private float? m_reloadAt;
+
+        /// <summary>Other mods' shortcut settings, read once at the first main menu; null until then.</summary>
+        private List<ModShortcut> m_modShortcuts;
 
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
         private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
@@ -196,13 +197,12 @@ namespace ControllerGlyphFixer
 
             buttonGlyphs.SettingChanged += RedrawGlyphs;
 
-            m_keyLog = new KeyLog(glyphs);
             CommandManager.Instance.AddConsoleCommand(
                 new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter, m_modSprites,
                     m_mappingFile));
             CommandManager.Instance.AddConsoleCommand(new ReloadMappingCommand(ReloadMapping));
-            CommandManager.Instance.AddConsoleCommand(new KeyLogCommand(m_keyLog));
             m_mappingFile.Watch();
+            GUIManager.OnCustomGUIAvailable += AuditModShortcuts;
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
@@ -216,6 +216,7 @@ namespace ControllerGlyphFixer
         private void OnDestroy()
         {
             InputSystem.onDeviceChange -= OnDeviceChange;
+            GUIManager.OnCustomGUIAvailable -= AuditModShortcuts;
             m_mappingFile?.Dispose();
             if (m_hoverTextWriter != null)
             {
@@ -265,8 +266,8 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Called by Unity every frame: reloads the mapping a moment after the file changed, and
-        /// runs the key finder. Does nothing else per frame.
+        /// Called by Unity every frame: reloads the mapping a moment after the file changed. Does
+        /// nothing else per frame.
         /// </summary>
         private void Update()
         {
@@ -280,8 +281,39 @@ namespace ControllerGlyphFixer
                 m_reloadAt = null;
                 ReloadMapping();
             }
+        }
 
-            m_keyLog?.Update();
+        /// <summary>
+        /// Reads the other mods' shortcut settings once, when the main menu first opens (every
+        /// plugin has loaded and bound its config by then), logs each key the mapping lacks and
+        /// shows them in Mapping.UnmappedShortcuts.
+        /// </summary>
+        private void AuditModShortcuts()
+        {
+            GUIManager.OnCustomGUIAvailable -= AuditModShortcuts;
+            m_modShortcuts = ModShortcuts.Read(PluginGUID);
+
+            IReadOnlyList<UnmappedShortcutKey> unmapped = ShortcutAudit.Unmapped(m_modShortcuts, m_glyphs.KeyMap);
+            Jotunn.Logger.LogInfo($"Read {m_modShortcuts.Count} keyboard shortcut settings from other mods; " +
+                                  $"{unmapped.Count} of their keys aren't in your mapping");
+            foreach (UnmappedShortcutKey key in unmapped)
+            {
+                Jotunn.Logger.LogInfo(ShortcutAudit.LogLine(key));
+            }
+
+            m_mappingFile.ShowUnmappedShortcuts(unmapped);
+        }
+
+        /// <summary>
+        /// Updates Mapping.UnmappedShortcuts against the mapping in use, from the shortcuts read at
+        /// startup (not read again).
+        /// </summary>
+        private void ShowUnmappedShortcuts()
+        {
+            if (m_modShortcuts != null)
+            {
+                m_mappingFile.ShowUnmappedShortcuts(ShortcutAudit.Unmapped(m_modShortcuts, m_glyphs.KeyMap));
+            }
         }
 
         /// <summary>
@@ -296,6 +328,7 @@ namespace ControllerGlyphFixer
                 m_glyphs.ReplaceKeyMap(map);
                 RedrawGlyphs(this, EventArgs.Empty);
                 ShowMissingKeys();
+                ShowUnmappedShortcuts();
             }
 
             return m_mappingFile.Status;
@@ -321,15 +354,21 @@ namespace ControllerGlyphFixer
             ConfigEntry<string> file = Config.Bind(SettingMoves.Mapping, "File", "", Describe(
                 "The key mapping file: which controller buttons send each keyboard key in your Steam Input layout. " +
                 "Edit it in a text editor (or ConfigurationManager's File Editor); saves apply while playing. " +
-                "Set by the mod.", order: 3, readOnly: true));
+                "Set by the mod.", order: 4, readOnly: true));
             ConfigEntry<string> status = Config.Bind(SettingMoves.Mapping, "Status", "", Describe(
                 "Whether the mapping file loaded, or what's wrong with it and on which line. Set by the mod.",
-                order: 2, readOnly: true, drawer: DrawMappingStatus));
-            ConfigEntry<string> missingKeys = Config.Bind(SettingMoves.Mapping, "MissingKeys", "None", Describe(
+                order: 3, readOnly: true, drawer: DrawMappingStatus));
+            ConfigEntry<string> missingKeys = Config.Bind(SettingMoves.Mapping, "MissingKeys", MappingStatus.None, Describe(
                 "Keys that hover hints used this session but your mapping doesn't have, with the hint they're in. " +
-                "Add them to the mapping to show their buttons; cgf_keylog in the F5 console shows which key a " +
-                "controller button sends. Set by the mod.", order: 1, readOnly: true));
-            return new MappingFile(MappingPath, file, status, missingKeys);
+                "Add the ones your Steam layout sends to show their buttons (Steam's controller configurator shows " +
+                "which key each button sends). Set by the mod.", order: 2, readOnly: true));
+            ConfigEntry<string> unmappedShortcuts = Config.Bind(SettingMoves.Mapping, "UnmappedShortcuts",
+                MappingStatus.None, Describe(
+                "Keys that other mods' keyboard shortcut settings use but your mapping doesn't have, with the mods " +
+                "using them. Read once when the main menu first opens; the log names each setting. Most are " +
+                "keyboard-only conveniences: add only the ones your Steam layout sends. Set by the mod.",
+                order: 1, readOnly: true));
+            return new MappingFile(MappingPath, file, status, missingKeys, unmappedShortcuts);
         }
 
         /// <summary>
