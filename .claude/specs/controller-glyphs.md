@@ -290,7 +290,59 @@ EpicLoot.
 - BepInEx config, `[General]` section:
   - `Enabled` (bool, default true): master switch.
   - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
+  - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
+
+### F9. Helping other users set up their mapping
+Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
+`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`, written from
+`KeyMapTemplate` on first run with every example commented out, read once at startup. A new
+user has to find the file, learn the format, edit it in a text editor and restart the game.
+
+**What can't move into the game.** The *button* half of each entry can't be detected: Steam
+Input turns the button press into a key before Valheim sees anything, and action-set holds,
+chords and mode shifts are invisible to the game. The game only ever sees the resulting key.
+So users must write the buttons themselves, reading them from their own Steam layout (Steam's
+controller configurator, outside the game; or Big Picture's overlay while in game). The spec
+and the mod's README must say this plainly. The *key* half can be confirmed in game (below).
+
+**Settings UIs in my profile** (both read the BepInEx config):
+- Jotunn's *Mod Settings* (main menu and pause menu): lists config entries. To check: which
+  `ConfigurationManagerAttributes` it honours (probably `Order`, `ReadOnly`, `Browsable`; not
+  `CustomDrawer`).
+- shudnal's ConfigurationManager 1.1.27 (`F1`, or the pause menu's *Mod Config* button): honours
+  `ConfigurationManagerAttributes` including `CustomDrawer`, `ReadOnly`, `HideDefaultButton`
+  (seen in its DLL), and has an in-game **File Editor** for `.cfg`, `.yaml` and `.json` files
+  (its changelog). So users with it can edit the mapping file without leaving the game.
+
+**Proposed pieces** (smallest first; each optional):
+1. **Mapping status in the config** (`[Mapping]` section, read-only): the file's path, and
+   "Loaded 20 keys" or the parse error with its line number. Shows in both settings UIs, so a
+   broken file isn't silent. (Read-only entries are still written to the `.cfg`; acceptable, or
+   use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.)
+2. **Reload without restarting** (the existing TODO in `ControllerGlyphFixer.LoadKeyMap`): watch
+   the file (`FileSystemWatcher`), plus a *Reload mapping* button (`CustomDrawer`) and a
+   `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
+   Localization's cache, call `HotbarLabelWriter.Invalidate()`. With ConfigurationManager's File
+   Editor this gives a full in-game loop: edit, save, see the labels change.
+3. **Key finder** (`cgf_keylog` console command, toggles on/off): logs each keyboard key the game
+   receives, by the name the mapping file uses (e.g. `Keypad1`, `LeftShift`), and whether the
+   mapping has it. Press a button combo on the controller, read which key Steam sent, write
+   `Keypad1: [R5, DPadUp]`. Answers "what key does this button send?" in game.
+4. **Starter mappings:** a few commented example blocks in the template (Steam Controller back
+   buttons + action set, Steam Deck back grips, a DualSense touchpad layout) so users copy the
+   closest one instead of starting from nothing.
+5. **Open file / write template buttons** (`CustomDrawer`, ConfigurationManager only): *Open
+   mapping file* (opens it in the system's default editor, outside the game) and *Reset to
+   template* (with confirmation; backs up the old file first).
+6. **Later:** generate the mapping from the Steam layout VDF (see above), so most users never
+   type buttons at all. Needs research: where Steam stores the active layout for Valheim
+   (app 892970) and how action sets, chords and mode shifts appear in it.
+
+**User-facing doc** (README / Thunderstore page): what the mod does; "the mapping lives
+outside your Steam layout and must match it"; the four setup steps (open the file, find each
+key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
+sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
 
 ## Testing strategy
 
@@ -399,6 +451,7 @@ thin patches → in-game self-test checks → manual checklist.
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
+5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
 
 ## In-game test checklist (per phase)
 
