@@ -520,6 +520,8 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   own `IsInteractive()`; copies the rest of the condition (FIXME). Returns early in gamepad mode
   (vanilla's answer is ours there; runs per badge per frame) and only calls `SetActive` on a change.
   Covered by `KeyPrompts`; when glyphs turn off, vanilla's next `Update` restores the badge.
+  **Verified in game (2026-11-08):** badges stay in keyboard mode in the inventory and at a crafting
+  station; `cgf_selftest` all PASS, including the new badge postfix check.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
