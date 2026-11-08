@@ -307,6 +307,17 @@ EpicLoot.
 - **Expected results with my mapping:** `[B] AutoFuel: …` -> `[LPad Up] AutoFuel: …`;
   `[LeftShift + (Use)]` -> `[LPad Down] + (Use glyph)`; `[E + LeftShift]` -> `[E + [LPad Down]]`
   with `E` reported (no button in my layout sends E).
+- **In-game check (2026-11-08):** AutomaticFuel's `[LPad Up] AutoFuel` and AzuCraftyBoxes'
+  `[E + [LPad Down]]` show as designed; vanilla chest hints match in both modes in keyboard
+  mode. Two problems come from other mods, not ours:
+  - **Smelter:** no AutomaticFuel line. MyLittleUI's postfix on `Smelter.OnHoverAddFuel` /
+    `OnHoverAddOre` replaces the whole `__result`, dropping AutomaticFuel's appended line.
+  - **Chest in gamepad mode:** a stray `[` and yellow text to the end of the line. MyLittleUI
+    writes chest hints as `[<color=#ffff00ff><b>…`; vanilla's gamepad cleanup only matches
+    `<color=yellow>`, so it removes the closing `</b></color>]` but not the opening. The hint
+    has no closing bracket left, so `HintRewriter` leaves it.
+  - Missing-key reports first named the wrong line (substring match: "Chest ( EMPTY )" contains
+    `E`); `UnmappedKey.Line` now carries the hint's own line, tags removed.
 - **Out of scope:** ImpactfulSkills' crafting-panel hint (`m_recipeDecription`, not hover text);
   `<b>KEY</b>` hints without brackets (none of my mods use them).
 - **Risk:** medium (one private method; mod-agnostic). Contract test for the method and

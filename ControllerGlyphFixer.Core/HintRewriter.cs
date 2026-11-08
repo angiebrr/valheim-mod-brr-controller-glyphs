@@ -4,12 +4,37 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace ControllerGlyphFixer.Core
 {
+    /// <summary>
+    /// A key name a hint uses that the mapping doesn't have, and where it was seen.
+    /// </summary>
+    public sealed class UnmappedKey
+    {
+        /// <summary>
+        /// Creates the report.
+        /// </summary>
+        /// <param name="key">The key name as written.</param>
+        /// <param name="line">The hint's line, without formatting tags.</param>
+        public UnmappedKey(string key, string line)
+        {
+            Key = key;
+            Line = line;
+        }
+
+        /// <summary>The key name as written (e.g. "E").</summary>
+        public string Key { get; }
+
+        /// <summary>The hint's line without formatting tags, to tell users where it came from.</summary>
+        public string Line { get; }
+    }
+
     /// <summary>
     /// The result of <see cref="HintRewriter.Rewrite"/>.
     /// </summary>
@@ -20,7 +45,7 @@ namespace ControllerGlyphFixer.Core
         /// </summary>
         /// <param name="text">The rewritten text.</param>
         /// <param name="unmappedKeys">Key names found in hints that the mapping doesn't have.</param>
-        public HintRewrite(string text, IReadOnlyList<string> unmappedKeys)
+        public HintRewrite(string text, IReadOnlyList<UnmappedKey> unmappedKeys)
         {
             Text = text;
             UnmappedKeys = unmappedKeys;
@@ -30,7 +55,7 @@ namespace ControllerGlyphFixer.Core
         public string Text { get; }
 
         /// <summary>Key names found in hints that the mapping doesn't have, in order (may repeat).</summary>
-        public IReadOnlyList<string> UnmappedKeys { get; }
+        public IReadOnlyList<UnmappedKey> UnmappedKeys { get; }
     }
 
     /// <summary>
@@ -48,6 +73,9 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Start of a TextMeshPro sprite tag, which is a glyph.</summary>
         private const string SpriteTagStart = "<sprite";
 
+        /// <summary>TextMeshPro tags, removed from report lines.</summary>
+        private static readonly Regex Tags = new ("<[^>]*>");
+
         /// <summary>
         /// Rewrites every key hint in a text.
         /// </summary>
@@ -58,7 +86,7 @@ namespace ControllerGlyphFixer.Core
         /// hints), plus the unmapped key names found.</returns>
         public static HintRewrite Rewrite(string text, Func<string, string> translateKey, Func<string, bool> isKeyName)
         {
-            var unmapped = new List<string>();
+            var unmapped = new List<UnmappedKey>();
             if (string.IsNullOrEmpty(text))
             {
                 return new HintRewrite(text, unmapped);
@@ -81,7 +109,11 @@ namespace ControllerGlyphFixer.Core
                 {
                     // Fully translated hints lose their brackets, like vanilla's gamepad-mode hints
                     output.Append(hintUnmapped.Count == 0 ? rewritten : "[" + rewritten + "]");
-                    unmapped.AddRange(hintUnmapped);
+                    if (hintUnmapped.Count > 0)
+                    {
+                        string line = PlainLine(text, index);
+                        unmapped.AddRange(hintUnmapped.Select(key => new UnmappedKey(key, line)));
+                    }
                 }
                 else
                 {
@@ -92,6 +124,20 @@ namespace ControllerGlyphFixer.Core
             }
 
             return new HintRewrite(output.ToString(), unmapped);
+        }
+
+        /// <summary>
+        /// The line around a position, without TextMeshPro tags, for reports.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="index">A position on the line.</param>
+        /// <returns>The trimmed line with tags removed.</returns>
+        private static string PlainLine(string text, int index)
+        {
+            int start = text.LastIndexOf('\n', index) + 1;
+            int end = text.IndexOf('\n', index);
+            string line = text.Substring(start, (end < 0 ? text.Length : end) - start);
+            return Tags.Replace(line, "").Trim();
         }
 
         /// <summary>

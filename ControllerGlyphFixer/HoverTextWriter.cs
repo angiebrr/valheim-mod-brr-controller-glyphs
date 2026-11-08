@@ -83,12 +83,11 @@ namespace ControllerGlyphFixer
         internal string Rewrite(string text)
         {
             HintRewrite result = HintRewriter.Rewrite(text, m_glyphs.KeyTranslator, m_glyphs.KeyNameCheck);
-            foreach (string key in result.UnmappedKeys.Where(key => !m_missingKeys.ContainsKey(key)))
+            foreach (UnmappedKey unmapped in result.UnmappedKeys.Where(unmapped => !m_missingKeys.ContainsKey(unmapped.Key)))
             {
-                string line = text.Split('\n').FirstOrDefault(part => part.Contains(key)) ?? text;
-                m_missingKeys[key] = line.Trim();
-                Jotunn.Logger.LogInfo($"Hover hint uses key {key}, which isn't in your mapping file, so no controller " +
-                                      $"button shows for it: \"{m_missingKeys[key]}\"");
+                m_missingKeys[unmapped.Key] = unmapped.Line;
+                Jotunn.Logger.LogInfo($"Hover hint uses key {unmapped.Key}, which isn't in your mapping file, so no " +
+                                      $"controller button shows for it: \"{unmapped.Line}\"");
             }
 
             return result.Text;

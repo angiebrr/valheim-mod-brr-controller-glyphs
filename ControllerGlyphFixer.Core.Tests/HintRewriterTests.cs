@@ -74,7 +74,21 @@ public class HintRewriterTests
         HintRewrite result = Rewrite("[<color=yellow><b>E + LeftShift</b></color>] $hud_crafting");
 
         Assert.Equal("[<color=yellow><b>E + [LPad Down]</b></color>] $hud_crafting", result.Text);
-        Assert.Equal(new[] { "E" }, result.UnmappedKeys);
+        Assert.Equal(new[] { "E" }, result.UnmappedKeys.Select(unmapped => unmapped.Key));
+    }
+
+    /// <summary>
+    /// An unmapped key is reported with the line its hint is on, without formatting tags; other
+    /// lines that merely contain the letter (Chest ( EMPTY )) aren't it.
+    /// </summary>
+    [Fact]
+    public void Unmapped_key_is_reported_with_its_hints_line()
+    {
+        HintRewrite result = Rewrite("Chest ( EMPTY )\n[<color=yellow><b>E + LeftShift</b></color>] Crafting Chest");
+
+        UnmappedKey unmapped = Assert.Single(result.UnmappedKeys);
+        Assert.Equal("E", unmapped.Key);
+        Assert.Equal("[E + LeftShift] Crafting Chest", unmapped.Line);
     }
 
     /// <summary>Vanilla hints in keyboard mode (glyph inside brackets) lose their brackets, like gamepad mode.</summary>
@@ -119,7 +133,8 @@ public class HintRewriterTests
         HintRewrite result = Rewrite("[Q] Pick up\n[E] Use\n[Zebra]");
 
         Assert.Equal("[L5] Pick up\n[E] Use\n[Zebra]", result.Text);
-        Assert.Equal(new[] { "E" }, result.UnmappedKeys);
+        Assert.Equal(new[] { "E" }, result.UnmappedKeys.Select(unmapped => unmapped.Key));
+        Assert.Equal("[E] Use", result.UnmappedKeys[0].Line);
     }
 
     /// <summary>Null and empty text pass through.</summary>
