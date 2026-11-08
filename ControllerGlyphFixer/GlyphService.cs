@@ -48,10 +48,31 @@ namespace ControllerGlyphFixer
             m_keyPrompts = keyPrompts ?? throw new ArgumentNullException(nameof(keyPrompts));
             m_hotbarLabels = hotbarLabels ?? throw new ArgumentNullException(nameof(hotbarLabels));
             m_prefixColors = prefixColors ?? throw new ArgumentNullException(nameof(prefixColors));
+
+            // Built once: the $KEY_ postfix passes these on every call, often every frame
+            KeyTranslator = TranslateKey;
+            JoyLookup = LookupJoy;
         }
 
         /// <summary>Number of keys in the loaded mapping.</summary>
         internal int MappedKeyCount => m_keyMap.Count;
+
+        /// <summary><see cref="TranslateKey"/> as a delegate, created once.</summary>
+        internal Func<string, string> KeyTranslator { get; }
+
+        /// <summary><see cref="LookupJoy"/> as a delegate, created once.</summary>
+        internal Func<string, string> JoyLookup { get; }
+
+        /// <summary>
+        /// Returns the display string of a controller binding (e.g. "JoyUse").
+        /// </summary>
+        /// <param name="joyName">Controller binding name.</param>
+        /// <returns>Valheim's glyph for it, or "" if it isn't bound (or ZInput isn't ready).</returns>
+        internal string LookupJoy(string joyName)
+        {
+            ZInput input = ZInput.instance;
+            return input != null ? input.GetBoundKeyString(joyName, emptyStringOnMissing: true) : "";
+        }
 
         /// <summary>
         /// Whether $KEY_ prompts should show controller glyphs right now (F1 + F2). Computed on each
@@ -127,7 +148,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="control">Valheim control name (e.g. "buttonSouth").</param>
         /// <returns>A sprite tag, or null if Valheim has no sprite for the control.</returns>
-        private static string ValheimGlyph(string control)
+        private string ValheimGlyph(string control)
         {
             string style = SpriteStyle.For(ZInput.CurrentGlyph.ToString(), ZInput.ConnectedGamepadType.ToString());
             if (ZInput.s_gamepadSpriteMap.TryGetValue(control, out Dictionary<string, string> styles) &&

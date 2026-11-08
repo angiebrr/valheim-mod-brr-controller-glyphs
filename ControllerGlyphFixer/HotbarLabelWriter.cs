@@ -29,8 +29,8 @@ namespace ControllerGlyphFixer
         /// <summary>Name of AzuExtendedPlayerInventory's quick-slot bar (a second HotkeyBar).</summary>
         private const string QuickSlotBarName = "AzuEPI_QuickAccessBar";
 
-        /// <summary>Slots per bar whose shortcuts decide the groups (Valheim and AzuEPI have 8).</summary>
-        private const int MaxSlots = 8;
+        /// <summary>Valheim's hotbar slots ("Hotbar1".."Hotbar8"); all of them decide its groups.</summary>
+        private const int HotbarSlots = 8;
 
         /// <summary>Glyph mode, mapping lookups and glyph formatting.</summary>
         private readonly GlyphService m_glyphs;
@@ -65,7 +65,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="barName">The HotkeyBar's object name.</param>
         /// <returns>True for the two bars this writer handles.</returns>
-        internal static bool Handles(string barName)
+        internal bool Handles(string barName)
         {
             return barName == VanillaBarName || barName == QuickSlotBarName;
         }
@@ -85,9 +85,8 @@ namespace ControllerGlyphFixer
                 return;
             }
 
-            GameObject firstSlot = bar.m_elements.Count > 0 ? bar.m_elements[0].m_go : null;
-            var current = new SlotBarState(bar.m_elements.Count, firstSlot ? firstSlot.GetInstanceID() : 0,
-                m_glyphs.ShowHotbarLabels);
+            SlotBarState current = BindingLabels.State(bar.m_elements.Count,
+                bar.m_elements.Count > 0 ? bar.m_elements[0].m_go : null, m_glyphs.ShowHotbarLabels);
             SlotBarState? last = m_lastStates.TryGetValue(barName, out SlotBarState previous) ? previous : null;
 
             // Recorded first: Restore calls ToggleBindingHint, which re-enters this method
@@ -99,7 +98,7 @@ namespace ControllerGlyphFixer
                     WriteLabels(bar, barName);
                     break;
                 case SlotLabelAction.Restore:
-                    PrefixLabels.Clear(bar.transform);
+                    m_prefixLabels.Clear(bar.transform);
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
                     break;
             }
@@ -125,10 +124,7 @@ namespace ControllerGlyphFixer
         /// <returns>The groups and each slot's own buttons.</returns>
         internal BarLabels LabelsFor(string barName)
         {
-            // AzuEPI keeps shortcuts for 8 quick slots; unused ones (default Alt + 7, ...) would stop sharing
-            int slotCount = barName == VanillaBarName
-                ? MaxSlots
-                : Math.Min(QuickSlotKeys.Count ?? MaxSlots, MaxSlots);
+            int slotCount = barName == VanillaBarName ? HotbarSlots : m_quickSlots.SlotCount;
             var slots = new IReadOnlyList<string>[slotCount];
             for (int slot = 0; slot < slotCount; slot++)
             {
@@ -173,17 +169,6 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Finds a slot's label text.
-        /// </summary>
-        /// <param name="slot">The slot's GameObject.</param>
-        /// <returns>The "binding" label, or null if the slot has none.</returns>
-        internal static TMP_Text BindingText(GameObject slot)
-        {
-            Transform binding = slot ? slot.transform.Find("binding") : null;
-            return binding ? binding.GetComponent<TMP_Text>() : null;
-        }
-
-        /// <summary>
         /// Buttons for one of Valheim's hotbar slots, from the raw key bound to "HotbarN".
         /// </summary>
         /// <param name="slot">Zero-based slot index.</param>
@@ -219,13 +204,9 @@ namespace ControllerGlyphFixer
             TMP_Text style = null;
             for (int i = 0; i < bar.m_elements.Count; i++)
             {
-                TMP_Text text = BindingText(bar.m_elements[i].m_go);
-                style = style ? style : text;
-                string label = SlotText(labels, i);
-                if (text && label != null && text.text != label)
-                {
-                    text.text = label;
-                }
+                GameObject slot = bar.m_elements[i].m_go;
+                style = style ? style : BindingLabels.Find(slot);
+                BindingLabels.Set(slot, SlotText(labels, i));
             }
 
             // Below for AzuEPI's bar: it sits right under the hotbar

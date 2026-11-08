@@ -17,7 +17,8 @@ namespace ControllerGlyphFixer
     internal static class RoundedSprite
     {
         /// <summary>
-        /// Creates the sprite. Call once (it creates a texture) and share it.
+        /// Creates the sprite. Call once (it creates a texture) and share it; <see cref="Destroy"/> it
+        /// when the plugin unloads.
         /// </summary>
         /// <param name="radius">Corner radius in pixels; also the 9-slice border.</param>
         /// <returns>The sprite; at 100 pixels per unit, a pixel is one UI unit.</returns>
@@ -44,8 +45,35 @@ namespace ControllerGlyphFixer
             texture.SetPixels32(pixels);
             texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
 
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0,
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0,
                 SpriteMeshType.FullRect, new Vector4(radius, radius, radius, radius));
+
+            // Valheim unloads unused assets on scene loads; a texture made in code can count as unused,
+            // and Images then draw plain squares (seen in game 2026-11-07: corners weren't rounded)
+            texture.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            sprite.name = texture.name;
+            return sprite;
+        }
+
+        /// <summary>
+        /// Destroys a sprite made by <see cref="Create"/> and its texture (they're kept loaded on purpose,
+        /// so nothing else frees them).
+        /// </summary>
+        /// <param name="sprite">The sprite; may already be destroyed or null.</param>
+        internal static void Destroy(Sprite sprite)
+        {
+            if (!sprite)
+            {
+                return;
+            }
+
+            Texture2D texture = sprite.texture;
+            Object.Destroy(sprite);
+            if (texture)
+            {
+                Object.Destroy(texture);
+            }
         }
     }
 }

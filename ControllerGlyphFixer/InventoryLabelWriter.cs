@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ControllerGlyphFixer.Core;
-using TMPro;
 using UnityEngine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +27,7 @@ namespace ControllerGlyphFixer
         internal const string QuickSlotContainer = "cgf_PrefixLabels_QuickSlots";
 
         /// <summary>Glyph size in inventory cells, relative to the cell's label font.</summary>
-        // TODO(F3): check in game; make it a setting if people disagree on the size.
+        // TODO(F3): make it a setting if people disagree on the size (70% looked right, 2026-11-07).
         private const string LabelSize = "70%";
 
         /// <summary>Glyph mode, mapping lookups and glyph formatting.</summary>
@@ -37,12 +36,17 @@ namespace ControllerGlyphFixer
         /// <summary>Builds the hotbar and quick-slot labels the inventory shares with the HUD.</summary>
         private readonly HotbarLabelWriter m_hotbar;
 
+        /// <summary>AzuEPI's quick-slot settings (count, cell names).</summary>
+        private readonly QuickSlotKeys m_quickSlots;
+
         /// <summary>Draws the group prefixes above the top row and the quick-slot cells.</summary>
         private readonly PrefixLabels m_prefixLabels;
 
-        /// <summary>Quick-slot cells found so far, to their quick-slot index. Found by AzuEPI's text,
-        /// which is gone once replaced, so remembered until the cells are rebuilt.</summary>
-        private readonly Dictionary<InventoryElement, int> m_quickSlotCells = new ();
+        /// <summary>
+        /// Each quick slot's cell, by quick-slot index; null until found. Found by AzuEPI's text,
+        /// which is gone once replaced, so remembered until the cells are destroyed.
+        /// </summary>
+        private readonly InventoryElement[] m_cellBySlot = new InventoryElement[QuickSlotKeys.MaxSlots];
 
         /// <summary>State when the grid's labels were last handled; null before the first time.</summary>
         private SlotBarState? m_lastState;
@@ -52,11 +56,14 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="glyphs">Glyph mode, mapping lookups and glyph formatting.</param>
         /// <param name="hotbar">Builds the hotbar and quick-slot labels.</param>
+        /// <param name="quickSlots">AzuEPI's quick-slot settings.</param>
         /// <param name="prefixLabels">Draws the group prefixes.</param>
-        internal InventoryLabelWriter(GlyphService glyphs, HotbarLabelWriter hotbar, PrefixLabels prefixLabels)
+        internal InventoryLabelWriter(GlyphService glyphs, HotbarLabelWriter hotbar, QuickSlotKeys quickSlots,
+            PrefixLabels prefixLabels)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_hotbar = hotbar ?? throw new ArgumentNullException(nameof(hotbar));
+            m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
             m_prefixLabels = prefixLabels ?? throw new ArgumentNullException(nameof(prefixLabels));
         }
 
@@ -74,8 +81,7 @@ namespace ControllerGlyphFixer
             }
 
             List<InventoryElement> cells = grid.m_elements;
-            InventoryElement first = cells.Count > 0 ? cells[0] : null;
-            var current = new SlotBarState(cells.Count, first ? first.gameObject.GetInstanceID() : 0, m_glyphs.ShowHotbarLabels);
+            SlotBarState current = BindingLabels.State(cells.Count, cells.Count > 0 ? cells[0] : null, m_glyphs.ShowHotbarLabels);
             SlotLabelAction action = SlotLabelRefresh.Decide(m_lastState, current, force: false);
             m_lastState = current;
             if (action == SlotLabelAction.Skip)
@@ -97,8 +103,8 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Forgets what was written, so the labels are rewritten on the next update (e.g. after the
-        /// prefix colour setting changes).
+        /// Forgets what was written, so the labels are rewritten on the next update (e.g. after a
+        /// prefix setting changes).
         /// </summary>
         internal void Invalidate()
         {
@@ -129,38 +135,35 @@ namespace ControllerGlyphFixer
         /// The cell found for a quick slot.
         /// </summary>
         /// <param name="slot">Zero-based quick-slot index.</param>
-        /// <returns>The cell, or null if it wasn't found (yet).</returns>
+        /// <returns>The cell, or null if it wasn't found (yet) or was destroyed.</returns>
         internal InventoryElement QuickSlotCell(int slot)
         {
-            return m_quickSlotCells.FirstOrDefault(pair => pair.Key && pair.Value == slot).Key;
+            InventoryElement cell = slot >= 0 && slot < m_cellBySlot.Length ? m_cellBySlot[slot] : null;
+            return cell ? cell : null;
         }
 
         /// <summary>
-        /// Finds AzuEPI's quick-slot cells by the names it writes on them, and forgets cells that
-        /// were destroyed.
+        /// Finds AzuEPI's quick-slot cells by the names it writes on them; cells already found are
+        /// kept until they're destroyed.
         /// </summary>
         /// <param name="cells">The player grid's cells.</param>
         private void FindQuickSlotCells(List<InventoryElement> cells)
         {
-            foreach (InventoryElement gone in m_quickSlotCells.Keys.Where(cell => !cell).ToList())
-            {
-                m_quickSlotCells.Remove(gone);
-            }
-
-            int count = Math.Min(QuickSlotKeys.Count ?? 0, 8);
+            var known = new HashSet<InventoryElement>(m_cellBySlot.Where(cell => cell));
+            int count = m_quickSlots.SlotCount;
             var names = new string[count];
             for (int slot = 0; slot < count; slot++)
             {
-                names[slot] = QuickSlotKeys.TryGetCellName(slot, out string name) && !m_quickSlotCells.ContainsValue(slot) ? name : null;
+                names[slot] = !QuickSlotCell(slot) && m_quickSlots.TryGetCellName(slot, out string name) ? name : null;
             }
 
-            string[] texts = cells.Select(cell => cell && !m_quickSlotCells.ContainsKey(cell) ? BindingText(cell)?.text : null).ToArray();
+            string[] texts = cells.Select(cell => cell && !known.Contains(cell) ? BindingLabels.Text(cell.gameObject) : null).ToArray();
             int[] found = QuickSlotCells.Find(texts, names);
             for (int slot = 0; slot < found.Length; slot++)
             {
                 if (found[slot] >= 0)
                 {
-                    m_quickSlotCells[cells[found[slot]]] = slot;
+                    m_cellBySlot[slot] = cells[found[slot]];
                 }
             }
         }
@@ -172,7 +175,8 @@ namespace ControllerGlyphFixer
         private void WriteTopRow(InventoryGrid grid)
         {
             List<InventoryElement> topRow = TopRow(grid);
-            if (topRow.Count == 0)
+            InventoryElement first = topRow.FirstOrDefault(cell => cell);
+            if (!first)
             {
                 return;
             }
@@ -184,8 +188,9 @@ namespace ControllerGlyphFixer
             }
 
             List<PrefixLabel> prefixes = m_hotbar.PrefixLabelsFor(labels,
-                slot => slot < topRow.Count ? (RectTransform)topRow[slot].transform : null);
-            m_prefixLabels.Show(topRow[0].transform.parent, prefixes, BindingText(topRow[0]), PrefixSide.Above, TopRowContainer);
+                slot => slot < topRow.Count && topRow[slot] ? (RectTransform)topRow[slot].transform : null);
+            m_prefixLabels.Show(first.transform.parent, prefixes, BindingLabels.Find(first.gameObject), PrefixSide.Above,
+                TopRowContainer);
         }
 
         /// <summary>
@@ -193,16 +198,16 @@ namespace ControllerGlyphFixer
         /// </summary>
         private void WriteQuickSlots()
         {
-            InventoryElement first = QuickSlotCell(0) ?? m_quickSlotCells.Keys.FirstOrDefault(cell => cell);
+            InventoryElement first = Enumerable.Range(0, m_cellBySlot.Length).Select(QuickSlotCell).FirstOrDefault(cell => cell);
             if (!first)
             {
                 return;
             }
 
             BarLabels labels = m_hotbar.QuickSlotLabels();
-            foreach (KeyValuePair<InventoryElement, int> cell in m_quickSlotCells.Where(pair => pair.Key))
+            for (int slot = 0; slot < m_cellBySlot.Length; slot++)
             {
-                SetLabel(cell.Key, Scaled(m_hotbar.SlotText(labels, cell.Value)));
+                SetLabel(QuickSlotCell(slot), Scaled(m_hotbar.SlotText(labels, slot)));
             }
 
             Transform parent = first.transform.parent;
@@ -211,14 +216,14 @@ namespace ControllerGlyphFixer
                 InventoryElement cell = QuickSlotCell(slot);
                 return cell && cell.transform.parent == parent ? (RectTransform)cell.transform : null;
             });
-            m_prefixLabels.Show(parent, prefixes, BindingText(first), PrefixSide.Above, QuickSlotContainer);
+            m_prefixLabels.Show(parent, prefixes, BindingLabels.Find(first.gameObject), PrefixSide.Above, QuickSlotContainer);
         }
 
         /// <summary>
         /// Puts vanilla's "1".."8" back on the top row and removes its prefixes.
         /// </summary>
         /// <param name="grid">The player grid.</param>
-        private static void RestoreTopRow(InventoryGrid grid)
+        private void RestoreTopRow(InventoryGrid grid)
         {
             List<InventoryElement> topRow = TopRow(grid);
             for (int slot = 0; slot < topRow.Count; slot++)
@@ -227,9 +232,10 @@ namespace ControllerGlyphFixer
                 SetLabel(topRow[slot], (slot + 1).ToString());
             }
 
-            if (topRow.Count > 0)
+            InventoryElement first = topRow.FirstOrDefault(cell => cell);
+            if (first)
             {
-                PrefixLabels.Clear(topRow[0].transform.parent, TopRowContainer);
+                m_prefixLabels.Clear(first.transform.parent, TopRowContainer);
             }
         }
 
@@ -238,49 +244,45 @@ namespace ControllerGlyphFixer
         /// </summary>
         private void RestoreQuickSlots()
         {
-            foreach (KeyValuePair<InventoryElement, int> cell in m_quickSlotCells.Where(pair => pair.Key))
+            for (int slot = 0; slot < m_cellBySlot.Length; slot++)
             {
-                if (QuickSlotKeys.TryGetCellName(cell.Value, out string name))
+                InventoryElement cell = QuickSlotCell(slot);
+                if (!cell)
                 {
-                    SetLabel(cell.Key, name);
+                    continue;
                 }
 
-                PrefixLabels.Clear(cell.Key.transform.parent, QuickSlotContainer);
+                if (m_quickSlots.TryGetCellName(slot, out string name))
+                {
+                    SetLabel(cell, name);
+                }
+
+                m_prefixLabels.Clear(cell.transform.parent, QuickSlotContainer);
             }
         }
 
         /// <summary>
-        /// The top row's cells: the first row of the player grid, minus any AzuEPI moved there.
+        /// The top row's cells: the first row of the player grid, in column order. Destroyed cells
+        /// stay in place (as destroyed objects) so the others keep their column numbers.
         /// </summary>
         /// <param name="grid">The player grid.</param>
-        /// <returns>The cells in column order; at most the grid's width.</returns>
-        private static List<InventoryElement> TopRow(InventoryGrid grid)
+        /// <returns>At most the grid's width of cells.</returns>
+        private List<InventoryElement> TopRow(InventoryGrid grid)
         {
-            return grid.m_elements.Take(grid.m_width).Where(cell => cell).ToList();
+            return grid.m_elements.Take(grid.m_width).ToList();
         }
 
         /// <summary>
-        /// Sets a cell's label if it has one and the text differs.
+        /// Sets a cell's label if the cell is alive, has a label, and the text differs.
         /// </summary>
-        /// <param name="cell">The cell.</param>
+        /// <param name="cell">The cell; may be null or destroyed.</param>
         /// <param name="label">The new text; null leaves the cell alone.</param>
-        private static void SetLabel(InventoryElement cell, string label)
+        private void SetLabel(InventoryElement cell, string label)
         {
-            TMP_Text text = BindingText(cell);
-            if (text && label != null && text.text != label)
+            if (cell)
             {
-                text.text = label;
+                BindingLabels.Set(cell.gameObject, label);
             }
-        }
-
-        /// <summary>
-        /// Finds a cell's label text.
-        /// </summary>
-        /// <param name="cell">The cell.</param>
-        /// <returns>The "binding" label, or null if the cell has none.</returns>
-        private static TMP_Text BindingText(InventoryElement cell)
-        {
-            return cell ? HotbarLabelWriter.BindingText(cell.gameObject) : null;
         }
 
         /// <summary>
@@ -288,7 +290,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="label">The label, or null.</param>
         /// <returns>The label wrapped in a size tag, or null.</returns>
-        private static string Scaled(string label)
+        private string Scaled(string label)
         {
             return label == null ? null : $"<size={LabelSize}>{label}</size>";
         }

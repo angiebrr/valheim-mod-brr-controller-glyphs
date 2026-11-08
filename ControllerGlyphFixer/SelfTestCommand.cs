@@ -39,6 +39,9 @@ namespace ControllerGlyphFixer
         /// <summary>AzuEPI's quick-slot shortcuts.</summary>
         private readonly QuickSlotKeys m_quickSlots;
 
+        /// <summary>Draws the group prefixes; null if the reverse patch didn't apply.</summary>
+        private readonly PrefixLabels m_prefixLabels;
+
         /// <summary>
         /// Creates the command.
         /// </summary>
@@ -46,13 +49,15 @@ namespace ControllerGlyphFixer
         /// <param name="labels">The slot label writer, or null if hotbar labels couldn't be set up.</param>
         /// <param name="inventoryLabels">The inventory label writer, or null if it couldn't be set up.</param>
         /// <param name="quickSlots">AzuEPI's quick-slot shortcuts.</param>
+        /// <param name="prefixLabels">Draws the group prefixes, or null if it couldn't be set up.</param>
         internal SelfTestCommand(GlyphService glyphs, HotbarLabelWriter labels, InventoryLabelWriter inventoryLabels,
-            QuickSlotKeys quickSlots)
+            QuickSlotKeys quickSlots, PrefixLabels prefixLabels)
         {
             m_glyphs = glyphs ?? throw new ArgumentNullException(nameof(glyphs));
             m_labels = labels;
             m_inventoryLabels = inventoryLabels;
             m_quickSlots = quickSlots ?? throw new ArgumentNullException(nameof(quickSlots));
+            m_prefixLabels = prefixLabels;
         }
 
         /// <summary>Command name typed in the console.</summary>
@@ -136,8 +141,10 @@ namespace ControllerGlyphFixer
             }
 
             Check("Raw key for Hotbar1 readable (reverse patch)", !string.IsNullOrEmpty(rawKey), rawKey);
+            Check("Prefix backing image loaded", m_prefixLabels != null && m_prefixLabels.BackingSpriteLoaded,
+                "if this fails, backings draw as plain squares");
 
-            if (QuickSlotKeys.IsInstalled)
+            if (m_quickSlots.IsInstalled)
             {
                 bool found = m_quickSlots.TryGet(0, out string mainKey, out var modifiers);
                 Check("AzuEPI quick slot 1 shortcut readable", found,
@@ -155,7 +162,7 @@ namespace ControllerGlyphFixer
             }
 
             var bars = UnityEngine.Object.FindObjectsByType<HotkeyBar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
-                .Where(bar => HotbarLabelWriter.Handles(bar.name))
+                .Where(bar => m_labels.Handles(bar.name))
                 .ToList();
             if (bars.Count == 0)
             {
@@ -172,7 +179,7 @@ namespace ControllerGlyphFixer
 
                 BarLabels labels = m_labels.LabelsFor(bar.name);
                 string expected = m_labels.SlotText(labels, 0);
-                string actual = HotbarLabelWriter.BindingText(bar.m_elements[0].m_go)?.text;
+                string actual = BindingLabels.Text(bar.m_elements[0].m_go);
                 if (expected == null)
                 {
                     Info($"{bar.name} slot 1's key isn't in the mapping; label is \"{actual}\"");
@@ -183,7 +190,7 @@ namespace ControllerGlyphFixer
                     $"got \"{actual}\", expected \"{expected}\"");
 
                 string expectedPrefixes = string.Join(", ", m_labels.PrefixTexts(labels, bar.m_elements.Count));
-                string actualPrefixes = string.Join(", ", PrefixLabels.Texts(bar.transform));
+                string actualPrefixes = string.Join(", ", m_prefixLabels.Texts(bar.transform));
                 Check($"{bar.name} shows a prefix per group", actualPrefixes == expectedPrefixes,
                     $"got [{actualPrefixes}], expected [{expectedPrefixes}]");
             }
@@ -214,7 +221,7 @@ namespace ControllerGlyphFixer
             CheckPrefixes("Inventory top row", topSlot.transform.parent, InventoryLabelWriter.TopRowContainer,
                 m_labels.PrefixTexts(m_labels.HotbarLabels(), Math.Min(grid.m_width, grid.m_elements.Count)));
 
-            if (!QuickSlotKeys.IsInstalled)
+            if (!m_quickSlots.IsInstalled)
             {
                 return;
             }
@@ -237,9 +244,9 @@ namespace ControllerGlyphFixer
         /// <param name="what">The cell, for the report.</param>
         /// <param name="cell">The cell.</param>
         /// <param name="expected">Expected label; null if the slot's key isn't mapped.</param>
-        private static void CheckCell(string what, InventoryElement cell, string expected)
+        private void CheckCell(string what, InventoryElement cell, string expected)
         {
-            string actual = HotbarLabelWriter.BindingText(cell.gameObject)?.text;
+            string actual = BindingLabels.Text(cell.gameObject);
             if (expected == null)
             {
                 Info($"{what}'s key isn't in the mapping; label is \"{actual}\"");
@@ -256,10 +263,10 @@ namespace ControllerGlyphFixer
         /// <param name="parent">The slots' parent.</param>
         /// <param name="containerName">The prefixes' container name.</param>
         /// <param name="expected">Expected prefix texts, in order.</param>
-        private static void CheckPrefixes(string what, Transform parent, string containerName, IReadOnlyList<string> expected)
+        private void CheckPrefixes(string what, Transform parent, string containerName, IReadOnlyList<string> expected)
         {
             string expectedText = string.Join(", ", expected);
-            string actualText = string.Join(", ", PrefixLabels.Texts(parent, containerName));
+            string actualText = string.Join(", ", m_prefixLabels.Texts(parent, containerName));
             Check($"{what} show a prefix per group", actualText == expectedText, $"got [{actualText}], expected [{expectedText}]");
         }
 
@@ -268,7 +275,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="method">The patched method.</param>
         /// <returns>True if one of the method's postfixes belongs to this mod.</returns>
-        private static bool HasOurPostfix(System.Reflection.MethodBase method)
+        private bool HasOurPostfix(System.Reflection.MethodBase method)
         {
             var patchInfo = Harmony.GetPatchInfo(method);
             return patchInfo != null && patchInfo.Postfixes.Any(p => p.owner == ControllerGlyphFixer.PluginGUID);
@@ -280,7 +287,7 @@ namespace ControllerGlyphFixer
         /// <param name="name">What was checked.</param>
         /// <param name="passed">Whether the check passed.</param>
         /// <param name="detail">Optional detail, such as the actual value.</param>
-        private static void Check(string name, bool passed, string detail = null)
+        private void Check(string name, bool passed, string detail = null)
         {
             Report((passed ? "PASS " : "FAIL ") + name + (detail != null ? ": " + detail : ""));
         }
@@ -289,7 +296,7 @@ namespace ControllerGlyphFixer
         /// Reports an INFO line (not a pass or fail).
         /// </summary>
         /// <param name="message">The information to report.</param>
-        private static void Info(string message)
+        private void Info(string message)
         {
             Report("INFO " + message);
         }
@@ -298,10 +305,13 @@ namespace ControllerGlyphFixer
         /// Writes a result line to LogOutput.log and the in-game console.
         /// </summary>
         /// <param name="line">The line without the prefix.</param>
-        private static void Report(string line)
+        private void Report(string line)
         {
             Jotunn.Logger.LogInfo(Prefix + line);
-            Console.instance?.Print(Prefix + line);
+            if (Console.instance)
+            {
+                Console.instance.Print(Prefix + line);
+            }
         }
     }
 }

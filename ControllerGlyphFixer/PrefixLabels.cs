@@ -73,10 +73,11 @@ namespace ControllerGlyphFixer
         private const float Gap = 2f;
 
         /// <summary>
-        /// Space between the slots and a prefix above them. Larger than <see cref="Gap"/>: with 2 the
-        /// hotbar's prefix looked cramped against the slots (checked in game 2026-11-07).
+        /// Space between the slots and a prefix above them: the same as below, so the backing meets
+        /// the slots and reads as part of the bar. (8 was tried before backings existed, when 2 looked
+        /// cramped; with backings the attached look was preferred, checked in game 2026-11-07.)
         /// </summary>
-        private const float AboveGap = 8f;
+        private const float AboveGap = Gap;
 
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
@@ -106,6 +107,9 @@ namespace ControllerGlyphFixer
             m_backingSprite = backingSprite ? backingSprite : throw new System.ArgumentNullException(nameof(backingSprite));
             m_backingColor = backingColor ?? throw new System.ArgumentNullException(nameof(backingColor));
         }
+
+        /// <summary>Whether the rounded backing sprite is still loaded (checked by the self-test).</summary>
+        internal bool BackingSpriteLoaded => m_backingSprite && m_backingSprite.texture;
 
         /// <summary>
         /// Replaces the prefixes beside a set of slots.
@@ -184,7 +188,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="parent">The slots' parent.</param>
         /// <param name="containerName">The name given to <see cref="Show"/>.</param>
-        internal static void Clear(Transform parent, string containerName = ContainerName)
+        internal void Clear(Transform parent, string containerName = ContainerName)
         {
             Transform container = parent.Find(containerName);
             if (container)
@@ -201,7 +205,7 @@ namespace ControllerGlyphFixer
         /// <param name="parent">The slots' parent.</param>
         /// <param name="containerName">The name given to <see cref="Show"/>.</param>
         /// <returns>The prefix texts; empty if there are none.</returns>
-        internal static IReadOnlyList<string> Texts(Transform parent, string containerName = ContainerName)
+        internal IReadOnlyList<string> Texts(Transform parent, string containerName = ContainerName)
         {
             Transform container = parent.Find(containerName);
             return container
@@ -214,7 +218,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="slots">Slots with the same parent.</param>
         /// <returns>The bounding rectangle.</returns>
-        private static Rect Bounds(IReadOnlyList<RectTransform> slots)
+        private Rect Bounds(IReadOnlyList<RectTransform> slots)
         {
             float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
             foreach (RectTransform slot in slots)
@@ -239,7 +243,7 @@ namespace ControllerGlyphFixer
         /// <param name="value">The text.</param>
         /// <param name="color">The text colour.</param>
         /// <returns>The new text.</returns>
-        private static TextMeshProUGUI CreateText(Transform container, TMP_Text style, string value, Color color)
+        private TextMeshProUGUI CreateText(Transform container, TMP_Text style, string value, Color color)
         {
             var prefixObject = new GameObject("Prefix", typeof(RectTransform));
             prefixObject.transform.SetParent(container, worldPositionStays: false);
@@ -262,7 +266,7 @@ namespace ControllerGlyphFixer
         /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The line colour.</param>
         /// <param name="area">The area to outline, in the parent's local space.</param>
-        private static void CreateOutline(Transform container, Color color, Rect area)
+        private void CreateOutline(Transform container, Color color, Rect area)
         {
             float xMin = area.xMin - Gap - LineThickness, xMax = area.xMax + Gap + LineThickness;
             float yMin = area.yMin - Gap - LineThickness, yMax = area.yMax + Gap + LineThickness;
@@ -278,7 +282,7 @@ namespace ControllerGlyphFixer
         /// <param name="container">The prefixes' container.</param>
         /// <param name="color">The colour.</param>
         /// <param name="area">Where it goes, in the parent's local space.</param>
-        private static void CreateRect(Transform container, Color color, Rect area)
+        private void CreateRect(Transform container, Color color, Rect area)
         {
             Image line = CreateImage(container, "Line", color);
             Place(line.rectTransform, Vector2.zero, area.size, area.min);
@@ -291,7 +295,7 @@ namespace ControllerGlyphFixer
         /// <param name="name">Object name, for UnityExplorer.</param>
         /// <param name="color">The image colour (tints its sprite, if any).</param>
         /// <returns>The new image.</returns>
-        private static Image CreateImage(Transform container, string name, Color color)
+        private Image CreateImage(Transform container, string name, Color color)
         {
             var imageObject = new GameObject(name, typeof(RectTransform));
             imageObject.transform.SetParent(container, worldPositionStays: false);
@@ -309,7 +313,7 @@ namespace ControllerGlyphFixer
         /// <param name="pivot">Which point of the rect sits at the position.</param>
         /// <param name="size">The rect's size.</param>
         /// <param name="position">Where the pivot goes.</param>
-        private static void Place(RectTransform rect, Vector2 pivot, Vector2 size, Vector2 position)
+        private void Place(RectTransform rect, Vector2 pivot, Vector2 size, Vector2 position)
         {
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = pivot;

@@ -13,6 +13,7 @@ using HarmonyLib;
 using Jotunn.Managers;
 using UnityEngine.InputSystem;
 using Color = UnityEngine.Color;
+using Sprite = UnityEngine.Sprite;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -41,20 +42,29 @@ namespace ControllerGlyphFixer
         public const string PluginVersion = "0.0.1";
 
         /// <summary>Corner radius of the group prefix backings, in UI units (pixels of the sprite).</summary>
-        private const int BackingCornerRadius = 4;
+        private const int BackingCornerRadius = 5;
 
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
+        /// <summary>Config General.PrefixColors; kept to unsubscribe on destroy.</summary>
+        private ConfigEntry<PrefixColorMode> m_prefixColors;
+
+        /// <summary>Config General.PrefixBackground; kept to unsubscribe on destroy.</summary>
+        private ConfigEntry<Color> m_prefixBackground;
+
+        /// <summary>The rounded prefix backing, created in Awake and destroyed with the plugin.</summary>
+        private Sprite m_backingSprite;
+
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
-        private static string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
+        private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
         /// <summary>
         /// Called by Unity when BepInEx loads the plugin: builds every object with its
         /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
         // TODO(phase 2): bind a HoverText (F4) toggle and apply its patch.
-        // TODO: give config entries ConfigurationManagerAttributes (order, sections) for the in-game UI.
+        // TODO(before sharing): sections and ConfigurationManagerAttributes.Order for Mod Config (spec: Phases).
         private void Awake()
         {
             ConfigEntry<bool> enabled = Config.Bind("General", "Enabled", true,
@@ -72,6 +82,9 @@ namespace ControllerGlyphFixer
                 "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
                 "Set the alpha to 0 to hide it.");
 
+            m_prefixColors = prefixColors;
+            m_prefixBackground = prefixBackground;
+
             var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors);
 
             BoundKeyStringPatch.Glyphs = glyphs;
@@ -83,31 +96,26 @@ namespace ControllerGlyphFixer
             var quickSlots = new QuickSlotKeys();
             HotbarLabelWriter labels = null;
             InventoryLabelWriter inventoryLabels = null;
+            PrefixLabels prefixLabels = null;
             if (ApplyPatch(typeof(OriginalBoundKeyString)))
             {
-                var prefixLabels = new PrefixLabels(RoundedSprite.Create(BackingCornerRadius), prefixBackground);
+                m_backingSprite = RoundedSprite.Create(BackingCornerRadius);
+                prefixLabels = new PrefixLabels(m_backingSprite, prefixBackground);
 
                 labels = new HotbarLabelWriter(glyphs, quickSlots, prefixLabels);
                 HotbarLabelsPatch.Writer = labels;
                 ApplyPatch(typeof(HotbarLabelsPatch));
 
-                inventoryLabels = new InventoryLabelWriter(glyphs, labels, prefixLabels);
+                inventoryLabels = new InventoryLabelWriter(glyphs, labels, quickSlots, prefixLabels);
                 InventoryLabelsPatch.Writer = inventoryLabels;
                 ApplyPatch(typeof(InventoryLabelsPatch));
 
-                // Prefixes are only redrawn when something changes, so redraw them for these settings
-                void Redraw(object sender, EventArgs args)
-                {
-                    HotbarLabelsPatch.Writer?.Invalidate();
-                    InventoryLabelsPatch.Writer?.Invalidate();
-                }
-
-                prefixColors.SettingChanged += Redraw;
-                prefixBackground.SettingChanged += Redraw;
+                prefixColors.SettingChanged += RedrawPrefixes;
+                prefixBackground.SettingChanged += RedrawPrefixes;
             }
 
-            CommandManager.Instance.AddConsoleCommand(new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots));
-            CommandManager.Instance.AddConsoleCommand(new DumpHotbarsCommand(this));
+            CommandManager.Instance.AddConsoleCommand(
+                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels));
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
@@ -115,11 +123,40 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Called by Unity when the plugin is destroyed: stops listening for device changes.
+        /// Called by Unity when the plugin is destroyed (e.g. a hot reload): undoes everything Awake
+        /// hooked up, so a reloaded copy starts clean.
         /// </summary>
         private void OnDestroy()
         {
             InputSystem.onDeviceChange -= OnDeviceChange;
+            if (m_prefixColors != null)
+            {
+                m_prefixColors.SettingChanged -= RedrawPrefixes;
+            }
+
+            if (m_prefixBackground != null)
+            {
+                m_prefixBackground.SettingChanged -= RedrawPrefixes;
+            }
+
+            m_harmony.UnpatchSelf();
+            BoundKeyStringPatch.Glyphs = null;
+            InputHintPatch.Glyphs = null;
+            HotbarLabelsPatch.Writer = null;
+            InventoryLabelsPatch.Writer = null;
+            RoundedSprite.Destroy(m_backingSprite);
+        }
+
+        /// <summary>
+        /// Redraws the prefixes after a prefix setting changes; they're otherwise only redrawn when
+        /// the slots or glyph state change.
+        /// </summary>
+        /// <param name="sender">The setting.</param>
+        /// <param name="args">Unused.</param>
+        private void RedrawPrefixes(object sender, EventArgs args)
+        {
+            HotbarLabelsPatch.Writer?.Invalidate();
+            InventoryLabelsPatch.Writer?.Invalidate();
         }
 
         /// <summary>
@@ -128,7 +165,7 @@ namespace ControllerGlyphFixer
         /// <returns>The parsed map, or an empty map if the file can't be read or parsed.</returns>
         // TODO: reload the mapping when the file changes (FileSystemWatcher) or via a console
         // command, so edits don't need a game restart. Localization caches text, so clear it too.
-        private static KeyMap LoadKeyMap()
+        private KeyMap LoadKeyMap()
         {
             try
             {
@@ -174,7 +211,7 @@ namespace ControllerGlyphFixer
         /// Logs gamepads already connected when the plugin loads. Steam Input's virtual controller
         /// usually connects later (around character selection); <see cref="OnDeviceChange"/> logs that.
         /// </summary>
-        private static void LogGamepads()
+        private void LogGamepads()
         {
             var gamepads = InputSystem.devices.OfType<Gamepad>().ToList();
             if (gamepads.Count == 0)
@@ -194,7 +231,7 @@ namespace ControllerGlyphFixer
         /// </summary>
         /// <param name="device">The device that changed.</param>
         /// <param name="change">What happened to it.</param>
-        private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
+        private void OnDeviceChange(InputDevice device, InputDeviceChange change)
         {
             if (device is not Gamepad)
             {

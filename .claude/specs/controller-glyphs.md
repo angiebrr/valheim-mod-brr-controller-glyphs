@@ -196,7 +196,7 @@ EpicLoot.
 - **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
   Steam; the game only sees the key sent by the second button). Labels can always show the
   combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
-- **Found with `cgf_dumphotbars` (2026-11-02):** labels are written in two places, and both
+- **Found with a `cgf_dumphotbars` dev command (2026-11-02; removed once F3 settled):** labels are written in two places, and both
   apply to AzuEPI's quick-slot bar too (it's a second `HotkeyBar` named `AzuEPI_QuickAccessBar`):
   `UpdateIcons` when slots are created (AzuEPI sets its "Display Text" there), and
   `HotkeyBar.ToggleBindingHint`, which Valheim calls on every keyboard/gamepad switch and which
@@ -236,9 +236,14 @@ EpicLoot.
 - **Backings (2026-11-07):** the inventory panel's gamepad highlight ran through `[R4]`. Each
   prefix now sits on a rounded, translucent backing (`General.PrefixBackground`, default black
   at 55%, alpha 0 hides it; changes redraw live). For a row it spans the prefix and its line;
-  for a column or outlined group, the prefix only. Corners: a 4-unit radius from a small sprite
+  for a column or outlined group, the prefix only. Corners: a 5-unit radius from a small sprite
   built once at startup (`RoundedSprite`, pixels from `RoundedCorners.Coverage` in Core) and
-  stretched with fixed corners; Unity has no rounded shape mods can use at runtime.
+  stretched with fixed corners; Unity has no rounded shape mods can use at runtime. The
+  texture and sprite are marked `DontUnloadUnusedAsset`: in game the corners first showed
+  square, most likely because Valheim's unused-asset sweep on world load freed the texture made
+  at the main menu. The self-test checks the sprite is still loaded.
+- **Attached look (2026-11-07):** with backings, the hotbar's prefix sits 2 units above the
+  slots (like the quick-slot bar's below), so the backing meets the bar.
 - **Inventory follow-ups:** check the 70% size, the prefix positions over the panel edge, and
   whether the grid clips anything drawn above its first row.
 - **Later idea:** highlight the bar's slots while R4/R5 is held. Needs the Steam layout to also
@@ -465,6 +470,10 @@ thin patches → in-game self-test checks → manual checklist.
    2026-11-02).
 4. **v4:** F7, VDF → YAML generator.
 5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
+   Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
+   `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
+   so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
+   default once, so do it before others install the mod.
 
 ## In-game test checklist (per phase)
 
