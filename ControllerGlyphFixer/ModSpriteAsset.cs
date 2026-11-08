@@ -23,11 +23,11 @@ namespace ControllerGlyphFixer
     /// </summary>
     internal sealed class ModSpriteAsset
     {
-        /// <summary>Size of each embedded image (make-glyphs.ps1: 128 px glyph + 8 px shadow padding per side).</summary>
-        private const int ImageSize = 144;
+        /// <summary>Size of each embedded image.</summary>
+        private const int ImageSize = ModGlyphs.ImageSize;
 
         /// <summary>Size of the glyph itself inside each image.</summary>
-        private const int GlyphSize = 128;
+        private const int GlyphSize = ModGlyphs.GlyphSize;
 
         /// <summary>Padding around the glyph for its shadow.</summary>
         private const int ShadowPad = (ImageSize - GlyphSize) / 2;

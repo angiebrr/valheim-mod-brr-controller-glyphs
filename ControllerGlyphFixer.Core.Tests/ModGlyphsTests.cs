@@ -123,6 +123,24 @@ public class ModGlyphsTests
     }
 
     /// <summary>
+    /// Every image is ImageSize square with the glyph GlyphSize inside: the plugin's sizing and the
+    /// prefix layout (which trims the shadow padding) rely on it.
+    /// </summary>
+    [Fact]
+    public void Every_png_is_the_image_size()
+    {
+        Assert.True(ModGlyphs.GlyphSize < ModGlyphs.ImageSize);
+        foreach (string png in Directory.GetFiles(Path.Combine(RepoRoot(), "ControllerGlyphFixer", "Glyphs"), "*.png"))
+        {
+            // PNG header: 8-byte signature, IHDR length and type, then big-endian width and height
+            byte[] header = File.ReadAllBytes(png).Take(24).ToArray();
+            int width = (header[16] << 24) | (header[17] << 16) | (header[18] << 8) | header[19];
+            int height = (header[20] << 24) | (header[21] << 16) | (header[22] << 8) | header[23];
+            Assert.True(width == ModGlyphs.ImageSize && height == ModGlyphs.ImageSize, $"{Path.GetFileName(png)} is {width} x {height}");
+        }
+    }
+
+    /// <summary>
     /// Finds the repository root by walking up from the test output folder to the solution file.
     /// </summary>
     /// <returns>The folder holding ControllerGlyphFixer.sln.</returns>

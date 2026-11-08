@@ -80,11 +80,12 @@ namespace ControllerGlyphFixer
         private const float AboveGap = Gap;
 
         /// <summary>
-        /// Extra space under a prefix above the slots, inside its backing (which still meets the slots).
+        /// Extra space under the HUD hotbar's prefix, inside its backing (which still meets the slots).
         /// Glyph prefixes sat on the slots' top edge, where the selected slot's frame (larger than the
-        /// slot) and labels overhanging the slot drew over them (in game 2026-11-08).
+        /// slot) and labels overhanging the slot drew over them (in game 2026-11-08). The inventory
+        /// keeps none: there its line lines up with the gamepad-active panel border.
         /// </summary>
-        private const float AboveClearance = 6f;
+        internal const float SelectionClearance = 6f;
 
         /// <summary>Line thickness, in UI units.</summary>
         private const float LineThickness = 2f;
@@ -126,8 +127,10 @@ namespace ControllerGlyphFixer
         /// <param name="style">A slot label to copy the font, size and neutral colour from.</param>
         /// <param name="side">Above or below the slots.</param>
         /// <param name="containerName">Container name; distinct per set of slots sharing a parent.</param>
+        /// <param name="aboveClearance">Extra space under a prefix above the slots, inside its backing
+        /// (<see cref="SelectionClearance"/> for the HUD hotbar).</param>
         internal void Show(Transform parent, IReadOnlyList<PrefixLabel> prefixes, TMP_Text style, PrefixSide side,
-            string containerName = ContainerName)
+            string containerName = ContainerName, float aboveClearance = 0f)
         {
             Clear(parent, containerName);
             if (prefixes.Count == 0 || !style)
@@ -140,7 +143,12 @@ namespace ControllerGlyphFixer
             container.localPosition = Vector3.zero;
             // Moved among the slots below; never a cell if the parent ever gets a layout group
             container.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-            DrawBehindSlots(container, parent, prefixes);
+            // Only above: labels overhang the slots' top edge. Below, drawn on top, the prefix stays
+            // whole when the selected slot's frame reaches it (AzuEPI's bar, in game 2026-11-08)
+            if (side == PrefixSide.Above)
+            {
+                DrawBehindSlots(container, parent, prefixes);
+            }
 
             foreach (PrefixLabel prefix in prefixes)
             {
@@ -158,7 +166,7 @@ namespace ControllerGlyphFixer
                 // text and line (padding outside showed on one side when edges differed by a unit)
                 TextMeshProUGUI text = CreateText(container, style, prefix.Text, color);
                 float textLeft = bounds.xMin + BackingPadding;
-                float clearance = side == PrefixSide.Above ? AboveClearance : 0f;
+                float clearance = side == PrefixSide.Above ? aboveClearance : 0f;
                 float y = side == PrefixSide.Above ? bounds.yMax + AboveGap + clearance : bounds.yMin - Gap;
                 Vector2 size = PlaceByDrawnBounds(text, prefix.Text, side, new Vector2(textLeft, y));
                 float textBottom = side == PrefixSide.Above ? y : y - size.y;
@@ -441,16 +449,60 @@ namespace ControllerGlyphFixer
             Place(text.rectTransform, pivot, size, corner);
 
             text.ForceMeshUpdate();
-            Bounds drawn = text.textBounds;
-            if (drawn.size.x <= 0f || drawn.size.y <= 0f)
+            if (!TryVisibleBounds(text, out Rect drawn))
             {
                 return size;
             }
 
-            // textBounds is relative to the pivot, which sits at the corner
-            float edgeY = side == PrefixSide.Above ? drawn.min.y : drawn.max.y;
-            text.rectTransform.localPosition = new Vector3(corner.x - drawn.min.x, corner.y - edgeY, 0f);
+            // Character bounds are relative to the pivot, which sits at the corner
+            float edgeY = side == PrefixSide.Above ? drawn.yMin : drawn.yMax;
+            text.rectTransform.localPosition = new Vector3(corner.x - drawn.xMin, corner.y - edgeY, 0f);
             return drawn.size;
+        }
+
+        /// <summary>
+        /// Measures what a text draws, with the mod's glyphs trimmed to the glyph itself: their images
+        /// have transparent room for the shadow on every side (<see cref="ModGlyphs.ImageSize"/>).
+        /// </summary>
+        /// <param name="text">The text, with its mesh up to date.</param>
+        /// <param name="bounds">The drawn bounds, relative to the text's pivot.</param>
+        /// <returns>False when nothing is drawn.</returns>
+        // Untrimmed, the padding pushed AzuEPI's prefix towards Valheim's messages (in game 2026-11-08)
+        private bool TryVisibleBounds(TMP_Text text, out Rect bounds)
+        {
+            const float padFraction = (ModGlyphs.ImageSize - ModGlyphs.GlyphSize) / 2f / ModGlyphs.ImageSize;
+            int ourAsset = TMP_TextUtilities.GetHashCode(ModGlyphs.AssetName);
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            TMP_TextInfo info = text.textInfo;
+            for (int i = 0; i < info.characterCount; i++)
+            {
+                TMP_CharacterInfo character = info.characterInfo[i];
+                if (!character.isVisible)
+                {
+                    continue;
+                }
+
+                Vector3 min = character.bottomLeft, max = character.topRight;
+                bool isOurGlyph = character.elementType == TMP_TextElementType.Sprite &&
+                    character.textElement != null && character.textElement.textAsset &&
+                    character.textElement.textAsset.hashCode == ourAsset;
+                if (isOurGlyph)
+                {
+                    Vector3 pad = (max - min) * padFraction;
+                    min += pad;
+                    max -= pad;
+                }
+
+                xMin = Mathf.Min(xMin, min.x);
+                yMin = Mathf.Min(yMin, min.y);
+                xMax = Mathf.Max(xMax, max.x);
+                yMax = Mathf.Max(yMax, max.y);
+                any = true;
+            }
+
+            bounds = any ? Rect.MinMaxRect(xMin, yMin, xMax, yMax) : default;
+            return any && bounds.width > 0f && bounds.height > 0f;
         }
 
         /// <summary>

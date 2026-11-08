@@ -20,6 +20,12 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Name of the TextMeshPro sprite asset the plugin builds and registers.</summary>
         public const string AssetName = "cgf_deck";
 
+        /// <summary>Size of each glyph image (make-glyphs.ps1): the glyph plus room for its shadow.</summary>
+        public const int ImageSize = 144;
+
+        /// <summary>Size of the glyph itself, centred in each image.</summary>
+        public const int GlyphSize = 128;
+
         /// <summary>Normalized mapping-file button name (aliases included) to sprite name.</summary>
         // Sticks are missing: Kenney has no outline variant to recolour, and Valheim has stick art
         private static readonly Dictionary<string, string> Sprites = new ()
