@@ -27,7 +27,7 @@ namespace ControllerGlyphFixer
         /// <summary>Config "Force controller glyphs in Valheim hints": glyphs in $KEY_ prompts (F1, F2).</summary>
         private readonly ConfigEntry<bool> m_keyPrompts;
 
-        /// <summary>Config "Show hotbar controller glyphs": mapped buttons on hotbar and quick slots (F3).</summary>
+        /// <summary>Config "Force hotbar controller glyphs": mapped buttons on hotbar and quick slots (F3).</summary>
         private readonly ConfigEntry<bool> m_hotbarLabels;
 
         /// <summary>Config "Hotbar group colors": how group prefixes and lines are colored (F3).</summary>

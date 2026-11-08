@@ -142,10 +142,10 @@ namespace ControllerGlyphFixer
                 "Shows keys in other mods' hover hints (e.g. [B] AutoFuel) as your mapped buttons. Needs " +
                 $"{SettingNames.ForceGlyphsInValheimHints}. Off: the mods' key names.", order: 1));
 
-            ConfigEntry<bool> hotbarLabels = Config.Bind(SettingNames.HotbarGlyphs, SettingNames.ShowHotbarGlyphs, true,
+            ConfigEntry<bool> hotbarLabels = Config.Bind(SettingNames.HotbarGlyphs, SettingNames.ForceHotbarGlyphs, true,
                 Describe(
-                "Labels the hotbar and AzuExtendedPlayerInventory quick slots with your mapped buttons, grouped by " +
-                "held button (e.g. R4).", order: 3));
+                "With a gamepad connected, labels the hotbar and AzuExtendedPlayerInventory quick slots with your " +
+                "mapped buttons, grouped by held button (e.g. R4). Off: Valheim's own labels.", order: 3));
             ConfigEntry<PrefixColorMode> prefixColors = Config.Bind(SettingNames.HotbarGlyphs,
                 SettingNames.HotbarGroupColors, PrefixColorMode.Neutral, Describe(
                 "Color of each group's held button and line. Neutral: label color. Palette: built-in colors. " +

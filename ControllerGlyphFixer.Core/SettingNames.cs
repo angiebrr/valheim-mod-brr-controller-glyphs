@@ -41,7 +41,7 @@ namespace ControllerGlyphFixer.Core
         public const string GlyphsUsedByMod = "Glyphs used by mod";
 
         /// <summary>Mapped buttons on hotbar and quick slots (was HotbarLabels).</summary>
-        public const string ShowHotbarGlyphs = "Show hotbar controller glyphs";
+        public const string ForceHotbarGlyphs = "Force hotbar controller glyphs";
 
         /// <summary>Color of each group's held button and line (was PrefixColors).</summary>
         public const string HotbarGroupColors = "Hotbar group colors";

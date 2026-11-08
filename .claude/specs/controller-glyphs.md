@@ -536,7 +536,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
     `SteamDeck`, default `Valheim`) (F5).
   - `Hint Glyphs`: `Force controller glyphs in Valheim hints` [KeyPrompts] (F1+F2, F6);
     `Force controller glyphs in mod hints` [HoverText] (F4).
-  - `Hotbar Glyphs`: `Show hotbar controller glyphs` [HotbarLabels]; `Hotbar group colors`
+  - `Hotbar Glyphs`: `Force hotbar controller glyphs` [HotbarLabels]; `Hotbar group colors`
     [PrefixColors] (`Neutral` / `Palette` / `Custom`); `Hotbar group background` [PrefixBackground]
     (color with alpha, default black at 70%) (F3).
   - `Key Glyph Mapping` (read-only, F9): `Mapping file`, `Mapping status`, `Keys missing from mapping`.
@@ -670,7 +670,7 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 - **In game 2026-11-08: turning the Valheim-hints switch off mid-game** left chest and fire hints
   on glyphs while others went to keys: Valheim's `Localize` cache kept text translated while it
   was on. Every setting that changes which glyphs show (Enabled, both Hint Glyphs switches, Glyphs
-  used by mod, Show hotbar controller glyphs), and a gamepad connecting or
+  used by mod, Force hotbar controller glyphs), and a gamepad connecting or
   disconnecting, now runs `RedrawGlyphs` (one `Config.SettingChanged` handler). Its description
   now says what it covers (crosshair hints, hint bars, menu badges) and that the hotbar has its own
   switch.
