@@ -6,7 +6,7 @@ I play Valheim on a Steam Controller. My layout sends real gamepad buttons for t
 
 This mod keeps Valheim's controller glyphs on while a gamepad is connected, whatever the last input was. Keys your layout sends show as the buttons that send them, so hotbar slot 1 reads `R4 + D-pad Up`. Your input isn't touched: the trackpad cursor, run toggle and menu navigation work exactly as before.
 
-| Vanilla, after a keyboard key | With BrrControllerGlyphs |
+| Vanilla, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
 | ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.png?raw=true) |
 
@@ -25,7 +25,7 @@ Client-side only: servers and other players don't need it.
 
 Crosshair prompts, the hint bars and the inventory and crafting button badges keep showing controller glyphs after keyboard or mouse input. Setting: **Hint Glyphs > Force controller glyphs in Valheim hints**.
 
-| Vanilla, after moving the trackpad cursor | With BrrControllerGlyphs |
+| Vanilla, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
 | ![badges_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_mod.png?raw=true) |
 
@@ -81,13 +81,46 @@ The mod can't read your Steam layout. The mapping is a separate file that lists 
    ```
 
 4. Save. The mapping reloads while you play, and **Key Glyph Mapping > Mapping status** says whether it loaded or which line is wrong.
-5. Play a while, then look at **Keys missing from mapping**: keys that hover hints and other mods' keybindings use but your mapping lacks. Add only keys your layout actually sends.
+5. Play a while, then look at **Keys missing from mapping** (see [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)). Add only keys your layout actually sends.
 
 The template lists every button name with art and the key spellings that work. It also has three optional sections:
 
 - `labels`: the text for a button shown as a text badge, e.g. `M1: Grip` shows `[Grip]`.
 - `colors`: a color per held button for **Hotbar group colors** `Custom`, e.g. `R4: "#9B8CFF"`.
 - `aliases`: another spelling of a key, for a mod that writes it oddly, e.g. `Pickup: Q`.
+
+## Checking your mapping against your mods
+
+Other mods bring their own keys, and it's easy to miss one when you write your mapping. The mod checks your mapping against two sources and lists every keyboard key that's used but not mapped, so you can see what's left to add.
+
+- **Other mods' keybinding settings.** At the main menu, the mod reads every keybinding setting (BepInEx `KeyboardShortcut` and `KeyCode` settings) of every loaded mod, including modifiers: AzuExtendedPlayerInventory's `Hotkey 7` set to `LeftAlt + Keypad7` needs both keys.
+- **Hover hints you've seen.** Each time a hover hint shows a key in brackets that your mapping doesn't have, like `[E] Open`, the key is added with the hint's text and the mods that change that object's hover text. The mod is a best guess when several mods touch the same object.
+
+The result is in **Key Glyph Mapping > Keys missing from mapping**. In ConfigurationManager it's a list per key with every place the key is used, for example:
+
+```
+E
+├─ AzuCraftyBoxes > UI Hint > Pull from nearby containers
+└─ SomeMod > Toggle key
+LeftAlt
+└─ AzuExtendedPlayerInventory > Hotkey 7 (Keypad7 + LeftAlt)
+```
+
+The `.cfg` file and Jotunn's Mod Settings show the same list on one line (`E (AzuCraftyBoxes, SomeMod), LeftAlt (AzuExtendedPlayerInventory)`), and `LogOutput.log` gets a line per key: for keybindings at the main menu, for hints the first time each key shows up.
+
+What it leaves out, so the list stays useful:
+
+- Mouse and joystick buttons, and unbound settings: only keyboard keys can come from your Steam layout.
+- Keys already in your mapping, in any spelling: `LeftControl` and `LeftCtrl`, or `Alpha1` and `1`, are the same key, and your `aliases` count.
+- Keys a mod hard-codes or keeps outside its BepInEx config. Those still show up once you've seen them in a hover hint.
+
+Not every key on the list needs a button. It lists what your mods use, but only keys your Steam layout actually sends belong in the mapping. Ignore the rest; a key you never press has nothing to show.
+
+The list updates when you save the mapping and when a hint shows a new missing key. **Mapping status** above it says whether the file loaded (`Loaded 30 keys`) or what's wrong and on which line, and ConfigurationManager shows a **Reload mapping** button next to it.
+
+| Keys missing from mapping | Mapping status after a typo |
+| ------------- | ------------- |
+| ![audit_missing_keys](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_missing_keys.png?raw=true) | ![audit_status_error](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_status_error.png?raw=true) |
 
 ## Console commands (F5)
 
@@ -100,7 +133,7 @@ The template lists every button name with art and the key spellings that work. I
 
 **Does the trackpad cursor still work?** Yes, in menus and the inventory, as before.
 
-**Why does a hint still show a key?** That key isn't in your mapping, or the mod writes it in a way the mapping doesn't match. Check **Keys missing from mapping**, then add the key or an alias.
+**Why does a hint still show a key?** That key isn't in your mapping, or the mod writes it in a way the mapping doesn't match. Check **Keys missing from mapping** (see [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)), then add the key or an alias.
 
 **Can I use it without a Steam Controller?** Yes. Any gamepad keeps its glyphs; the mapping is only needed for keys your layout sends.
 

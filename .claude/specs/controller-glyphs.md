@@ -292,6 +292,7 @@ Written 2026-11-07, before any of it is built. Today the mapping is a YAML file 
   - Screenshots need to be taken in game; list the shots needed when writing it.
   - **Written 2026-11-08** to this plan. Screenshots go in tables like ImpactfulSkills' (one column per state: vanilla, then the mod or each setting value), linked from GitHub as `docs/images/<name>.png?raw=true`; `docs/images/README.md` lists the shots still to take.
   - **Hotbar grouping table (2026-11-08):** rows no groups / one group / multiple groups, columns HUD and inventory, each with and without AzuEPI quick slots (12 shots). The mappings for them are in `docs/example-mappings/` (one-group is the author's layout); `ExampleMappingsTests` checks each groups both bars as named.
+  - **Mapping check section (2026-11-08):** the mod page explains the audit in its own section (sources: other mods' keybinding settings at the main menu and hover hints seen; what it leaves out; one-line and tree forms; status and reload), with two shots (`audit_missing_keys`, `audit_status_error`).
   - **Known issue (user, 2026-11-08):** switching the mod or its features off and on while the game runs can leave labels or hints in the wrong state; a restart fixes it. Listed in the mod page's Known issues until fixed. The layout audit (F9 piece 6) isn't in the setup steps until it exists.
 
 ### F10. Mod compat plugin (later, separate mod)

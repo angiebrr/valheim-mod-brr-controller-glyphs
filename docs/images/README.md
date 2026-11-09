@@ -41,3 +41,10 @@ Twelve shots for the grouping table: three mappings × HUD or inventory × with 
 | `groups_multiple_hud_quickslots.png` | multiple-groups | HUD | 6 |
 | `groups_multiple_inventory.png` | multiple-groups | Inventory | 0 |
 | `groups_multiple_inventory_quickslots.png` | multiple-groups | Inventory | 6 |
+
+## Mapping check
+
+| File | Shot |
+|---|---|
+| `audit_missing_keys.png` | ConfigurationManager (F1) open on **Key Glyph Mapping**, with **Keys missing from mapping** showing a few keys and their uses. Play a while first, hovering things with key hints, so hint uses show up next to keybinding settings. |
+| `audit_status_error.png` | The same section after saving the mapping with a typo (e.g. a missing `:` or `]`): **Mapping status** shows the error and line, with the **Reload mapping** button. Fix the file afterwards. |
