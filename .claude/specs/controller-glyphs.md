@@ -2,7 +2,7 @@
 
 Status: draft, approved direction, not implemented
 Last updated: 2026-11-08
-Mod: ControllerGlyphFixer (`angiebrr.ControllerGlyphFixer`, renamed from `com.angiebrr.controllerglyphfixer` 2026-11-08), BepInEx + Jotunn, Valheim 1.0
+Mod: BrrControllerGlyphs (`angiebrr.BrrControllerGlyphs`; was ControllerGlyphFixer, `com.angiebrr.controllerglyphfixer` then `angiebrr.ControllerGlyphFixer`, renamed 2026-11-08), BepInEx + Jotunn, Valheim 1.0
 
 ## Problem
 
@@ -58,13 +58,13 @@ Steam Input's virtual controller connects after plugins load, so the startup lin
 shows none (open question 1, answered).
 
 ### Mapping table (YAML)
-- File: `<profile>/BepInEx/config/angiebrr.ControllerGlyphFixer.mapping.yaml`
+- File: `<profile>/BepInEx/config/angiebrr.BrrControllerGlyphs.mapping.yaml`
   (next to the `.cfg`).
 - **No mapping is built into the mod.** If the file is missing, the plugin writes
   `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
   glyphs (F1) still work; keyboard-only keys stay as keys until the file is edited.
   Uncommenting an example (deleting its `#`) must be enough to enable it (tested).
-- My layout lives in the test fixture `ControllerGlyphFixer.Core.Tests/Fixtures/steam-controller.yaml`
+- My layout lives in the test fixture `BrrControllerGlyphs.Core.Tests/Fixtures/steam-controller.yaml`
   and, as my real config, in the profile's mapping file. Later the VDF generator produces it.
 - Maps a key name to display output: Valheim key names (`Q`, `LeftShift`, `Keypad1`,
   `1`–`8`), plus aliases for spellings mods use (`Alpha1`, `KeypadNumber1`, `Left Shift`).
@@ -89,11 +89,11 @@ My mapping (test fixture and profile config):
 | `B` | left trackpad click up (AutomaticFuel torch mode) |
 | `LeftShift` | left trackpad click down (AzuCraftyBoxes fill all) |
 
-### Pure library: `ControllerGlyphFixer.Core`
+### Pure library: `BrrControllerGlyphs.Core`
 - Separate `netstandard2.0` class library with no Unity/BepInEx references. The plugin
-  compiles Core's source files into `ControllerGlyphFixer.dll` (linked `Compile` items), so
+  compiles Core's source files into `BrrControllerGlyphs.dll` (linked `Compile` items), so
   only one DLL is deployed and `publish.ps1` needs no changes. xUnit test project
-  `ControllerGlyphFixer.Core.Tests` references the Core project and targets a modern .NET.
+  `BrrControllerGlyphs.Core.Tests` references the Core project and targets a modern .NET.
 - Holds **all decision logic** ("functional core"); Harmony patches are a thin
   "imperative shell" that gathers inputs from the game, calls Core, and applies the result.
 - API sketch:
@@ -170,7 +170,7 @@ EpicLoot.
   colors `General.PrefixColors`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
   `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
-  objects added are the group prefixes and lines under one container per bar (`cgf_PrefixLabels`,
+  objects added are the group prefixes and lines under one container per bar (`brrcg_PrefixLabels`,
   a child of the bar), rebuilt on each write and removed when glyphs turn off.
 - **When:** `SlotLabelRefresh.Decide` (Core). These methods run every frame, so labels are
   written only when the slots were rebuilt (count or first slot object changed), glyphs
@@ -198,7 +198,7 @@ EpicLoot.
 - **Limit:** Valheim can't see Steam action-set modifiers (holding R4/R5 switches layers inside
   Steam; the game only sees the key sent by the second button). Labels can always show the
   combo, but can't appear only while R4/R5 is held unless the hold itself sends a key.
-- **Found with a `cgf_dumphotbars` dev command (2026-11-02; removed once F3 settled):** labels are written in two places, and both
+- **Found with a `brrcg_dumphotbars` dev command (2026-11-02; removed once F3 settled):** labels are written in two places, and both
   apply to AzuEPI's quick-slot bar too (it's a second `HotkeyBar` named `AzuEPI_QuickAccessBar`):
   `UpdateIcons` when slots are created (AzuEPI sets its "Display Text" there), and
   `HotkeyBar.ToggleBindingHint`, which Valheim calls on every keyboard/gamepad switch and which
@@ -332,7 +332,7 @@ EpicLoot.
   Avoiding it would need a prefix or transpiler, which the design rules rule out; it's small.
 - **Missing keys (2026-11-08):** each unmapped key name the rewriter meets is logged once per
   session ("Hover hint uses key E, which isn't in your mapping file: no controller button
-  shows for it"), and `cgf_selftest` lists the ones seen so far. Later, F9's mapping status in
+  shows for it"), and `brrcg_selftest` lists the ones seen so far. Later, F9's mapping status in
   Mod Config can show them too, so users find gaps in their mapping without reading code.
 - **Expected results with my mapping:** `[B] AutoFuel: …` -> `[LPad Up] AutoFuel: …`;
   `[LeftShift + (Use)]` -> `[LPad Down] + (Use glyph)`; `[E + LeftShift]` -> `[E + [LPad Down]]`
@@ -374,7 +374,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   the solid shape; fill that dark, draw the outline variant over it in light, add a shadow.
 - **Build-time script:** `scripts/make-glyphs.ps1` reads the unpacked Kenney zip (path as a
   parameter; the zip isn't committed, the script says where to download it), recolors the
-  128 px `Double` PNGs, pads them for the shadow and writes `ControllerGlyphFixer/Glyphs/*.png`.
+  128 px `Double` PNGs, pads them for the shadow and writes `BrrControllerGlyphs/Glyphs/*.png`.
   The outputs are committed and embedded in the DLL as resources, with Kenney's `License.txt`
   beside them and a credit in the README. 28 images: A/B/X/Y, D-pad, bumpers, triggers,
   View/Options, R4/R5/L4/L5, both trackpads and their directions. Sticks are left out (Kenney has
@@ -393,9 +393,9 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   A test checks every sprite name in the table has an embedded PNG (reads the plugin's
   `Glyphs/` folder).
 - **Sprite set (plugin, `ModSpriteAsset`):** at startup, load the embedded PNGs, pack them into
-  one texture (`Texture2D.PackTextures`) and build a `TMP_SpriteAsset` named `cgf_deck` with
+  one texture (`Texture2D.PackTextures`) and build a `TMP_SpriteAsset` named `brrcg_deck` with
   TMP's sprite shader (a glyph and a character per image, lookup tables updated). Register it with
-  `MaterialReferenceManager.AddSpriteAsset(asset)` (keyed by the hash of its name) so `<sprite="cgf_deck" name="r4">`
+  `MaterialReferenceManager.AddSpriteAsset(asset)` (keyed by the hash of its name) so `<sprite="brrcg_deck" name="r4">`
   finds it: TMP checks that table before `Resources.Load` (decompiled `TMP_Text` 2026-11-08).
   - Size and baseline copied from Valheim's `xbox` sprite asset (its `button_a` glyph metrics,
     scaled to our image size), so our glyphs line up with Valheim's in the same label.
@@ -463,7 +463,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   - Hover-hint glyphs use `<size=75%>`, which TMP takes from the text's base size, not the size
     around it. Inside a hint a mod wraps in its own `<size=…>`, our glyph keeps the base-relative
     size (the `<space=0.12em>` padding does follow the current size). None of my hints do this. If
-    one does: a second sprite asset (`cgf_deck_hint`) built at 0.75 scale shrinks with its context.
+    one does: a second sprite asset (`brrcg_deck_hint`) built at 0.75 scale shrinks with its context.
   - Switching `ButtonGlyphs` live redraws bars, prefixes and hover hints at once, but `$KEY_` text
     Valheim's Localization cached updates after the next input-mode switch (said in the setting's
     description). Clearing that cache is planned with F9's mapping reload.
@@ -521,7 +521,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   (vanilla's answer is ours there; runs per badge per frame) and only calls `SetActive` on a change.
   Covered by `KeyPrompts`; when glyphs turn off, vanilla's next `Update` restores the badge.
   **Verified in game (2026-11-08):** badges stay in keyboard mode in the inventory and at a crafting
-  station; `cgf_selftest` all PASS, including the new badge postfix check.
+  station; `brrcg_selftest` all PASS, including the new badge postfix check.
 
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
@@ -546,7 +546,7 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 
 ### F9. Helping other users set up their mapping
 Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
-`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml` (now `angiebrr.ControllerGlyphFixer.mapping.yaml`), written from
+`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml` (now `BrrControllerGlyphs.mapping.yaml`), written from
 `KeyMapTemplate` on first run with every example commented out, read once at startup. A new
 user has to find the file, learn the format, edit it in a text editor and restart the game.
 
@@ -573,12 +573,12 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    use a `CustomDrawer` label that isn't persisted, ConfigurationManager only.) Also list the
    **missing keys**: key names seen in hover hints this session that the mapping doesn't
    cover (F4), e.g. "E (AzuCraftyBoxes chest toggle)", so users know what to add.
-2. **Reload without restarting** (the existing TODO in `ControllerGlyphFixer.LoadKeyMap`): watch
+2. **Reload without restarting** (the existing TODO in `BrrControllerGlyphs.LoadKeyMap`): watch
    the file (`FileSystemWatcher`), plus a *Reload mapping* button (`CustomDrawer`) and a
-   `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
+   `brrcg_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
    Localization's cache, call `HotbarLabelWriter.Invalidate()`. With ConfigurationManager's File
    Editor this gives a full in-game loop: edit, save, see the labels change.
-3. ~~**Key finder** (`cgf_keylog`)~~ **Dropped 2026-11-08:** a command that watches key presses
+3. ~~**Key finder** (`brrcg_keylog`)~~ **Dropped 2026-11-08:** a command that watches key presses
    reads as a keylogger, even one that only names keys while switched on. Replaced by a
    **shortcut audit**: other mods' keyboard shortcut settings, read once at startup, compared
    with the mapping. "Which key does this button send?" is answered by the Steam layout file
@@ -603,7 +603,7 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
 the settings sections and names in Mod Config, the missing-keys tree (wrapping is fine), toggling
 glyph settings mid-game (only My Little UI's own chest cache stays stale, see below), and the
 radial menu hint showing LB. Not yet checked: saving the mapping file to reload, an invalid file's
-status, the Reload and Copy buttons, and the new `cgf_selftest` lines.
+status, the Reload and Copy buttons, and the new `brrcg_selftest` lines.
 - **Settings names (reviewed with me one by one, 2026-11-08):** sections in Title Case, settings in
   sentence case, all in Core `SettingNames`; US spelling ("color") everywhere. Sections `General`,
   `Hint Glyphs`, `Hotbar Glyphs`, `Key Glyph Mapping` sort in that order alphabetically (both
@@ -633,7 +633,7 @@ status, the Reload and Copy buttons, and the new `cgf_selftest` lines.
   save.
 - **Reload:** `MappingFile` watches the file (`FileSystemWatcher` raises a flag; the plugin's
   `Update` reloads 0.5 s later on the main thread, since editors save in several writes), plus
-  `cgf_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
+  `brrcg_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
   and empties `Localization.m_cache` (the `$KEY_` text cache). `Glyphs used by mod` changes empty
   it too, which should fix the known limit above (to check in game).
 - **Keys missing from mapping** (one read-only setting, merged 2026-11-08 from "missing hint keys"
@@ -711,11 +711,11 @@ documents for two readers:
 - **Development README** (repo root `README.md`): for me or a contributor. What the mod is in two
   lines and a link to the mod-page README; repo layout (Core, plugin, the two test projects,
   `scripts/`); setup (`Environment.props` and its four paths, the Gale profile, ilspycmd);
-  build/test/deploy commands and the locked-DLL gotcha; `cgf_selftest` and contract tests after a
+  build/test/deploy commands and the locked-DLL gotcha; `brrcg_selftest` and contract tests after a
   game update; the design rules in short, pointing to `CLAUDE.md` and the spec for the rest;
   how the glyph PNGs are made (`scripts/make-glyphs.ps1`, Kenney credit). Drop the template's
   Unity sections unless the Unity project is used.
-- **Mod-page README** (`ControllerGlyphFixer/README.md`, packaged for Thunderstore): for players.
+- **Mod-page README** (`BrrControllerGlyphs/README.md`, packaged for Thunderstore): for players.
   - **Style I like:** ImpactfulSkills (Thunderstore): short tagline and intro, then one section
     per feature with its settings named right there in the text, a screenshot per feature,
     console commands, suggested mods to pair with. RimWorld Workshop pages (Vanilla
@@ -741,7 +741,7 @@ documents for two readers:
 
 ### F10. Mod compat plugin (later, separate mod)
 A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
-ControllerGlyphFixer, whose rules forbid changing other mods' patches or behaviour.
+BrrControllerGlyphs, whose rules forbid changing other mods' patches or behaviour.
 
 - **Structure:** one class per fix, each with:
   - a config switch (`[Fixes] AutomaticFuelSmelterHint`, `[Fixes] ChestRenameOnHold`, …), on by
@@ -795,9 +795,9 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
   findings): My Little UI caches each chest's localized hover text per chest
   (`ChestHoverText.hoverTextCache`) and only clears it when that chest's contents or its own
   settings change, so a chest keeps the key glyphs it was cached with after an input switch (in
-  vanilla too) or after ControllerGlyphFixer's glyph settings or the gamepad change.
+  vanilla too) or after BrrControllerGlyphs's glyph settings or the gamepad change.
   - **Fix:** call its `ChestHoverText.ResetHoverCache()` on `ZInput.OnInputLayoutChanged` and when
-    ControllerGlyphFixer's glyph settings change (watch its config entries through
+    BrrControllerGlyphs's glyph settings change (watch its config entries through
     `Chainloader.PluginInfos`, no compile-time reference) and when a gamepad connects or
     disconnects.
   - **Upstream:** ask shudnal to clear the cache on `ZInput.OnInputLayoutChanged`; same report as the
@@ -812,7 +812,7 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
 Develop test-first. Valheim code needs Unity's native engine, so it can't run in a test
 runner; keep logic in Core and patches thin. Four layers:
 
-### 1. Unit tests (`ControllerGlyphFixer.Core.Tests`, xUnit, .NET 10) — TDD, seconds
+### 1. Unit tests (`BrrControllerGlyphs.Core.Tests`, xUnit, .NET 10) — TDD, seconds
 Red → green → refactor for every Core function. Required cases:
 - `KeyMap`: every row of the fixture mapping (tests supply the mapping; Core has none);
   aliases (`Alpha1`, `KeypadNumber1`, `Left Shift`, `$button_lshift`); case-insensitivity;
@@ -852,7 +852,7 @@ Red → green → refactor for every Core function. Required cases:
 - `ModGlyphs` / `KeyMap.Format` (F5): every Deck button and alias; `ValheimFirst` and
   `ModGlyphsForAll` orders; badge fallback when neither has art; every sprite name has a PNG.
 
-### 2. Contract tests (`ControllerGlyphFixer.Contract.Tests`) — catch game updates, seconds
+### 2. Contract tests (`BrrControllerGlyphs.Contract.Tests`) — catch game updates, seconds
 Inspect the real game DLLs **read-only** with `System.Reflection.MetadataLoadContext`
 (no game code runs). Paths come from `Environment.props` (`VALHEIM_INSTALL`); tests skip
 when the game isn't installed. Assert each patch target and touched member exists with the
@@ -875,8 +875,8 @@ installed. AzuExtendedPlayerInventory: plugin ID, `8 - Quick Slot Hotkeys`, `Hot
 `3 - Quick Slots`, `Number of Quick Slots`.
 Run after every Valheim or mod update before launching the game.
 
-### 3. In-game self-test (Jotunn console command `cgf_selftest`) — real game
-Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` prefix:
+### 3. In-game self-test (Jotunn console command `brrcg_selftest`) — real game
+Registered by the plugin; logs `PASS`/`FAIL` per check with a `[brrcg_selftest]` prefix:
 - each of our Harmony patches is applied (`Harmony.GetPatchInfo`);
 - `ZInput.IsGamepadActive()` still reports the real input mode (behaviour untouched);
 - a gamepad device is present (open question 1);
@@ -889,8 +889,8 @@ Registered by the plugin; logs `PASS`/`FAIL` per check with a `[cgf-selftest]` p
 - F4: the `Hud.UpdateCrosshair` postfix is applied; a sample hint loses its brackets around a
   glyph while `[Zebra]` stays; the keys hover hints used this session that the mapping lacks
   are listed (INFO).
-Semi-automated: run `cgf_selftest` in the F5 console, then grep `LogOutput.log`.
-Later option: a launch flag (`-cgf-selftest`) runs it at the main menu and quits, so a
+Semi-automated: run `brrcg_selftest` in the F5 console, then grep `LogOutput.log`.
+Later option: a launch flag (`-brrcg_selftest`) runs it at the main menu and quits, so a
 script can launch the game the way Gale does (doorstop args pointing at the profile) and
 read the results without manual steps (~1 min per run; use before commits, not per edit).
 
@@ -903,13 +903,13 @@ Applying real Harmony patches to Valheim methods inside the test runner: loading
 types without the native engine is fragile and tests less than the in-game self-test.
 
 ### Solution layout
-- `ControllerGlyphFixer.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
-- `ControllerGlyphFixer.Core.Tests/` (net10.0, xUnit, references Core)
-- `ControllerGlyphFixer.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext; references
+- `BrrControllerGlyphs.Core/` (netstandard2.0, YamlDotNet 16.3.0 NuGet)
+- `BrrControllerGlyphs.Core.Tests/` (net10.0, xUnit, references Core)
+- `BrrControllerGlyphs.Contract.Tests/` (net10.0, xUnit, MetadataLoadContext; references
   Core for the mod names it checks)
-- `ControllerGlyphFixer/` (plugin; compiles Core sources in; YamlDotNet NuGet with
+- `BrrControllerGlyphs/` (plugin; compiles Core sources in; YamlDotNet NuGet with
   `ExcludeAssets="runtime"` so YamlDotNet.dll is not deployed)
-- `dotnet test ControllerGlyphFixer.sln` runs layers 1 and 2. Build through the solution:
+- `dotnet test BrrControllerGlyphs.sln` runs layers 1 and 2. Build through the solution:
   JotunnLib finds `Environment.props` via `$(SolutionDir)`, so building the plugin project
   alone loses the BepInEx paths.
 
@@ -920,7 +920,7 @@ thin patches → in-game self-test checks → manual checklist.
 
 1. **v1:** bump JotunnLib NuGet and manifest dependencies to the installed versions; set up
    Core + both test projects; `KeyMap`, `GlyphMode`, `BoundKeyResolver` (TDD); F1 + F2
-   postfix; config; startup gamepad log; `cgf_selftest`. Verify in game.
+   postfix; config; startup gamepad log; `brrcg_selftest`. Verify in game.
 2. **v2:** F3 hotbar + AzuExtendedPlayerInventory extra slots, F4 hover rewriter (TDD for
    `HotbarLabels` and `HintRewriter`).
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
@@ -931,10 +931,19 @@ thin patches → in-game self-test checks → manual checklist.
    **Plugin ID renamed (done 2026-11-08, in v4):** ConfigurationManager's file view lists configs
    by file name, and ours (`com.angiebrr.controllerglyphfixer.cfg`, `….mapping.yaml`) read oddly
    next to the others' `Author.ModName` style (`Azumatt.AzuAutoStore.yml`,
-   `aedenthorn.AmmoCount.cfg`). Now `angiebrr.ControllerGlyphFixer` (also the Harmony ID). No
-   migration (local mod): the old files are left behind, so the mapping file had to be renamed by
-   hand once. Still to check: why our file showed uncolored where most mods' files are highlighted.
-6. **Before sharing the mod:** F9 piece 4 and both READMEs.
+   `aedenthorn.AmmoCount.cfg`). Now `angiebrr.ControllerGlyphFixer` (also the Harmony ID); see
+   the mod rename below. No migration (local mod): the old files are left behind, so the mapping
+   file had to be renamed by hand once. Still to check: why our file showed uncolored where most
+   mods' files are highlighted (Gale shows a "?" on config files it can't tie to a mod).
+   **Mod renamed to BrrControllerGlyphs (2026-11-08, branch `rename-brr-controller-glyphs`):** a
+   "Brr" prefix like Azumatt's "Azu", so the mod and its files sort together in Gale. Plugin ID
+   `angiebrr.BrrControllerGlyphs`; the mapping file is now named after the mod
+   (`BrrControllerGlyphs.mapping.yaml`), not the ID, so it sorts next to the mod's entry; console
+   commands and created objects use the `brrcg_` prefix (`NamePrefix`). Projects, namespaces and
+   folders renamed too. No migration: the old .cfg and mapping file were copied to the new names
+   once, by hand.
+6. **Before sharing the mod:** F9 piece 4. Both READMEs written 2026-11-08 (update with each
+   feature).
 7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
    Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,

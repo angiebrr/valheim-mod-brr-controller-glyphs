@@ -39,10 +39,10 @@ self-test checks, spec.
 <!--
 More than "dotnet test passes". Cover:
 
-- unit tests added or changed in ControllerGlyphFixer.Core.Tests, written test-first, and what
+- unit tests added or changed in BrrControllerGlyphs.Core.Tests, written test-first, and what
   behaviour they pin down
 - contract tests for new patch targets or names copied from other mods
 - in-game checks: what was looked at, in which input mode, with screenshots
-- cgf_selftest results (the relevant PASS/INFO lines)
+- brrcg_selftest results (the relevant PASS/INFO lines)
 - anything that couldn't be checked, and why
 -->

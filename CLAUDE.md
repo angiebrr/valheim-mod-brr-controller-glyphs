@@ -1,4 +1,4 @@
-# ControllerGlyphFixer
+# BrrControllerGlyphs
 
 A personal BepInEx/Jotunn mod for Valheim 1.0 (Windows). The player uses a Steam Controller
 whose Steam Input layout sends real gamepad buttons for core actions and keyboard keys for
@@ -13,25 +13,25 @@ and decisions there (dated).
 
 ## Layout
 
-- `ControllerGlyphFixer.Core/`: netstandard2.0, no Unity or Valheim types. All decision logic
+- `BrrControllerGlyphs.Core/`: netstandard2.0, no Unity or Valheim types. All decision logic
   (KeyMap, BoundKeyResolver, SlotLabel, BarLabels, SlotLabelRefresh, PrefixColors, HintRewriter,
   QuickSlotCells, GroupShapes, RoundedCorners…). Compiled into the plugin DLL via linked sources,
   so only one DLL ships.
-- `ControllerGlyphFixer/`: the plugin, a thin shell. Reads game state, calls Core, sets text.
+- `BrrControllerGlyphs/`: the plugin, a thin shell. Reads game state, calls Core, sets text.
   Harmony patches live in `Patches/`.
-- `ControllerGlyphFixer.Core.Tests/`: xUnit, net10.0. Fixture mapping in
+- `BrrControllerGlyphs.Core.Tests/`: xUnit, net10.0. Fixture mapping in
   `Fixtures/steam-controller.yaml` (the mod ships no mapping; tests supply one).
-- `ControllerGlyphFixer.Contract.Tests/`: reads the installed game DLLs (and other mods' DLLs in
+- `BrrControllerGlyphs.Contract.Tests/`: reads the installed game DLLs (and other mods' DLLs in
   the Gale profile) with MetadataLoadContext to check every member we patch or read still exists.
   Tests skip when the game or mod isn't installed.
-- `ControllerGlyphFixerUnity/`, `libraries/`, `scripts/`: from the JotunnModStub template;
+- `BrrControllerGlyphsUnity/`, `libraries/`, `scripts/`: from the JotunnModStub template;
   `scripts/publish.ps1` deploys Debug builds.
 
 ## Build, test, deploy
 
 - Always build the solution, not a single project: JotunnLib's props need `$(SolutionDir)`.
-  `dotnet build ControllerGlyphFixer.sln -c Debug`
-- Tests: `dotnet test ControllerGlyphFixer.sln --no-build`
+  `dotnet build BrrControllerGlyphs.sln -c Debug`
+- Tests: `dotnet test BrrControllerGlyphs.sln --no-build`
 - `Environment.props` (git-ignored, machine-local) sets `VALHEIM_INSTALL`, `GALE_PROFILE`,
   `BEPINEX_PATH` and `MOD_DEPLOYPATH`. Mods run from the Gale profile "QoL Valheim", not the game
   folder; Debug builds copy into its `BepInEx\plugins`.
@@ -43,7 +43,7 @@ and decisions there (dated).
 ## In-game testing
 
 - The user tests in game and sends screenshots (controller mode and keyboard/trackpad mode).
-- `cgf_selftest` (F5 console) logs PASS/FAIL/INFO lines with a `[cgf-selftest]` prefix to
+- `brrcg_selftest` (F5 console) logs PASS/FAIL/INFO lines with a `[brrcg_selftest]` prefix to
   `LogOutput.log`. Extend it whenever a feature adds a patch or something only checkable in game.
 - Mod Config (shudnal's ConfigurationManager, F1 or the pause menu button) applies setting
   changes live; the Gale config editor needs a restart.
