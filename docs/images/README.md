@@ -1,50 +1,87 @@
 # Screenshots for the mod page
 
-The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub (`blob/main/docs/images/<name>.png?raw=true`), so they appear on Thunderstore once they're on `main`. Take each pair from the same spot, with a gamepad connected, cropped to the part that changes. PNG, named exactly as below. Restart the game after switching the mod on or off (toggling it live can leave labels in the wrong state).
+The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub (`blob/main/docs/images/<name>.png?raw=true`), so they appear on Thunderstore once they're on `main`. Save each as PNG in this folder, named exactly as below, cropped to the part that changes. Take each pair from the same spot with the same crop, with the gamepad connected.
 
-| File | Shot |
+The list is in shooting order: four rounds, three restarts. Tick each box as you go.
+
+## Before you start
+
+- [ ] Back up your mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe. Rounds 1 and 2 copy the example mappings over it.
+- [ ] Settings in Mod Config (F1): **Enabled** on, **Glyphs used by mod** `Valheim`.
+- [ ] AzuEPI: **3 - Quick Slots > Number of Quick Slots** `6`, **5 - UI Features > Inventory Layout** `Legacy` (other layouts are a known issue).
+- [ ] Stand near a chest, with an item or two on hotbar slots 1–4 and in some quick slots.
+
+Other UI mods (e.g. MyLittleUI) can stay on: just keep the same mods for both shots of a pair, since the tables compare with and without this mod only.
+
+Switching settings live can leave labels stale (known issue). If a shot looks wrong after a change, reopen the inventory, and if that doesn't fix it, restart.
+
+## Round 1: mod on, your mapping, quick slots 6 (no restart)
+
+Hotbar colors and art (HUD):
+
+- [ ] **Hotbar group colors** `Neutral` → `hotbar_neutral.png`: the hotbar and AzuEPI's bar under it, with the R4 and R5 groups.
+- [ ] **Hotbar group colors** `Palette` → `hotbar_palette.png`: the same view. Leave `Palette` on from here.
+- [ ] `buttons_valheim.png`: close-up of hotbar slots 1–4 and the R4 prefix (R4 in Steam Deck art, D-pad in Valheim's art).
+- [ ] **Glyphs used by mod** `SteamDeck` → `buttons_steamdeck.png`: the same close-up (all Steam Deck art). Set it back to `Valheim`.
+
+Prompts and badges:
+
+- [ ] `prompt_mod.png`: look at the chest, press a key your controller sends (e.g. pickup on L5), and shoot the chest prompt: still glyphs. Crop to Valheim's own lines (`Open`), not AzuCraftyBoxes' line.
+- [ ] `badges_mod.png`: open the inventory, move the trackpad cursor, and shoot the button badges (Y, LSt, RT...) still showing.
+
+Mapping check (Mod Config, **Key Glyph Mapping**):
+
+- [ ] `audit_missing_keys.png`: **Keys missing from mapping** with a few keys and their uses. Hover a few things with mod hints first so hint uses show up.
+- [ ] `audit_status_error.png`: break the mapping file (delete a `:` or a `]`), save, and shoot **Mapping status** with the error, line and **Reload mapping** button. Then fix the file and save.
+
+Groups with quick slots (`groups_one_*_quickslots` are done):
+
+- [ ] Copy `docs/example-mappings/no-groups.yaml` over `BrrControllerGlyphs.mapping.yaml` and save; **Mapping status** should say it loaded.
+- [ ] `groups_none_hud_quickslots.png`: the hotbar and AzuEPI's bar.
+- [ ] `groups_none_inventory_quickslots.png`: the inventory's top row and AzuEPI's quick-slot cells.
+- [ ] Copy `multiple-groups.yaml` over the mapping and save.
+- [ ] `groups_multiple_hud_quickslots.png`
+- [ ] `groups_multiple_inventory_quickslots.png`
+- [ ] Put your own mapping back.
+
+## Round 2: no quick slots (restart 1)
+
+- [ ] Set AzuEPI's **Number of Quick Slots** to `0`, quit and restart.
+- [ ] `groups_one_hud.png`: your mapping, the hotbar alone.
+- [ ] `groups_one_inventory.png`: the inventory's top row.
+- [ ] Copy `no-groups.yaml` over the mapping and save.
+- [ ] `groups_none_hud.png`
+- [ ] `groups_none_inventory.png`
+- [ ] Copy `multiple-groups.yaml` over the mapping and save.
+- [ ] `groups_multiple_hud.png`
+- [ ] `groups_multiple_inventory.png`
+- [ ] Put your own mapping back.
+
+## Round 3: mod off (restart 2)
+
+- [ ] Set AzuEPI's **Number of Quick Slots** back to `6` and the mod's **Enabled** off, quit and restart.
+- [ ] `hotbar_vanilla.png`: the hotbar and AzuEPI's bar, same view as `hotbar_neutral`.
+- [ ] `buttons_vanilla.png`: close-up of hotbar slots 1–4, same crop as `buttons_valheim`.
+- [ ] `prompt_vanilla.png`: the chest prompt after pressing the same key as for `prompt_mod`: keyboard keys. Same crop.
+- [ ] `badges_vanilla.png`: the inventory after moving the trackpad cursor: badges gone. Same crop as `badges_mod`.
+
+## Round 4: back to normal (restart 3)
+
+- [ ] Turn **Enabled** back on, quit and restart.
+- [ ] Check your mapping is your own and **Mapping status** says it loaded.
+
+## Done already
+
+- [x] `hints_vanilla.png`, `hints_mod.png`: AzuCraftyBoxes' Crafting Chest hint, mod off and on.
+- [x] `groups_one_hud_quickslots.png`, `groups_one_inventory_quickslots.png`: your mapping with quick slots. Optional: retake in Round 1 with `Palette`, so all the group shots match.
+
+## What each table shows
+
+| Table on the mod page | Files |
 |---|---|
-| `prompt_vanilla.png` | A crosshair prompt (e.g. a chest) with the mod's **Enabled** off, just after pressing a key your layout sends: keyboard keys. |
-| `prompt_mod.png` | The same prompt with the mod on: controller glyphs. |
-| `badges_vanilla.png` | Inventory with the mod off, after moving the trackpad cursor: button badges gone. |
-| `badges_mod.png` | The same with the mod on: badges still showing. |
-| `buttons_vanilla.png` | A prompt or hint for a key your layout sends (e.g. AzuCraftyBoxes' fill all), mod off: the key. |
-| `buttons_valheim.png` | The same, **Glyphs used by mod** `Valheim`: Valheim's art plus Steam Deck art for back buttons and trackpads. |
-| `buttons_steamdeck.png` | The same, **Glyphs used by mod** `SteamDeck`. |
-| `hotbar_vanilla.png` | Hotbar and AzuEPI quick-slot bar, mod off: `1`–`8` and AzuEPI's key names. |
-| `hotbar_neutral.png` | The same, mod on, **Hotbar group colors** `Neutral`: R4/R5 groups. |
-| `hotbar_palette.png` | The same, **Hotbar group colors** `Palette`. |
-| `hints_vanilla.png` | Another mod's hover hint with a key in it, mod off, using the gamepad (e.g. AzuCraftyBoxes' `[E + LeftShift] Crafting Chest` on a chest). |
-| `hints_mod.png` | The same with the mod on: your button. |
-
-## Hotbar groups (HUD and inventory, with and without quick slots)
-
-Twelve shots for the grouping table: three mappings × HUD or inventory × with or without AzuExtendedPlayerInventory's quick slots. Use **Hotbar group colors** `Palette` so the groups stand out.
-
-1. Back up your own mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe.
-2. For each example in [`docs/example-mappings`](../example-mappings) (`no-groups`, `one-group`, `multiple-groups`), copy it over `BrrControllerGlyphs.mapping.yaml`. The mapping reloads when saved; check **Mapping status**, and restart if the labels don't update.
-3. With quick slots: AzuEPI's **3 - Quick Slots > Number of Quick Slots** at 6. Without: set it to 0 (restart the game if the bar or cells don't go away).
-4. Take the HUD shot (hotbar, plus AzuEPI's bar under it when on) and the inventory shot (top row, plus the quick-slot cells when on).
-5. Put your own mapping and quick-slot count back afterwards.
-
-| File | Mapping | Screen | Quick slots |
-|---|---|---|---|
-| `groups_none_hud.png` | no-groups | HUD | 0 |
-| `groups_none_hud_quickslots.png` | no-groups | HUD | 6 |
-| `groups_none_inventory.png` | no-groups | Inventory | 0 |
-| `groups_none_inventory_quickslots.png` | no-groups | Inventory | 6 |
-| `groups_one_hud.png` | one-group | HUD | 0 |
-| `groups_one_hud_quickslots.png` | one-group | HUD | 6 |
-| `groups_one_inventory.png` | one-group | Inventory | 0 |
-| `groups_one_inventory_quickslots.png` | one-group | Inventory | 6 |
-| `groups_multiple_hud.png` | multiple-groups | HUD | 0 |
-| `groups_multiple_hud_quickslots.png` | multiple-groups | HUD | 6 |
-| `groups_multiple_inventory.png` | multiple-groups | Inventory | 0 |
-| `groups_multiple_inventory_quickslots.png` | multiple-groups | Inventory | 6 |
-
-## Mapping check
-
-| File | Shot |
-|---|---|
-| `audit_missing_keys.png` | ConfigurationManager (F1) open on **Key Glyph Mapping**, with **Keys missing from mapping** showing a few keys and their uses. Play a while first, hovering things with key hints, so hint uses show up next to keybinding settings. |
-| `audit_status_error.png` | The same section after saving the mapping with a typo (e.g. a missing `:` or `]`): **Mapping status** shows the error and line, with the **Reload mapping** button. Fix the file afterwards. |
+| Prompts stay controller glyphs | `prompt_vanilla`, `prompt_mod`, `badges_vanilla`, `badges_mod` |
+| Your buttons instead of keyboard keys | `buttons_vanilla`, `buttons_valheim`, `buttons_steamdeck` |
+| Hotbar group colors | `hotbar_vanilla`, `hotbar_neutral`, `hotbar_palette` |
+| Hotbar groups (mapping × HUD/inventory × quick slots) | `groups_{none,one,multiple}_{hud,inventory}[_quickslots]` |
+| Other mods' hover hints | `hints_vanilla`, `hints_mod` |
+| Checking your mapping | `audit_missing_keys`, `audit_status_error` |

@@ -8,7 +8,7 @@ This mod does a few things and can be enabled/disabled to taste:
 - Shows controller glyphs instead of keyboard keys according to a mapping file
 - Shows controller glyphs on the hotbar if you have the hotbar keys mapped, and supports input groups (e.g. R4 + D-Pad Up)
 
-| Vanilla, after KBM input | With BrrControllerGlyphs |
+| Without BrrControllerGlyphs, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
 | ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.png?raw=true) |
 
@@ -27,7 +27,7 @@ Client-side only: servers and other players don't need it.
 
 Crosshair prompts, the hint bars and the inventory and crafting button badges keep showing controller glyphs after keyboard or mouse input. Setting: **Hint Glyphs > Force controller glyphs in Valheim hints**.
 
-| Vanilla, after KBM input | With BrrControllerGlyphs |
+| Without BrrControllerGlyphs, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
 | ![badges_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_mod.png?raw=true) |
 
@@ -35,7 +35,7 @@ Crosshair prompts, the hint bars and the inventory and crafting button badges ke
 
 Keys your layout sends show as the buttons from your mapping file (see below). Buttons Valheim has no art for (back buttons L4, L5, R4, R5 and the trackpads) get Steam Deck-style glyphs. Setting: **General > Glyphs used by mod** picks `Valheim` art with Steam Deck art for the extra buttons, or `SteamDeck` art for all of them.
 
-| Vanilla | Glyphs used by mod: Valheim | Glyphs used by mod: SteamDeck |
+| Without BrrControllerGlyphs | Glyphs used by mod: Valheim | Glyphs used by mod: SteamDeck |
 | ------------- | ------------- | ------------- |
 | ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_vanilla.png?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_valheim.png?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_steamdeck.png?raw=true) |
 
@@ -43,7 +43,7 @@ Keys your layout sends show as the buttons from your mapping file (see below). B
 
 The hotbar shows your buttons, grouped by the held button: one `R4` beside a run of slots, then each slot's own button. The same goes for AzuExtendedPlayerInventory's quick-slot bar and for both in the inventory. Settings: **Hotbar Glyphs > Force hotbar controller glyphs**, **Hotbar group colors** (`Neutral`, `Palette`, or `Custom` from your mapping's `colors`) and **Hotbar group background** (alpha 0 hides it).
 
-| Vanilla | Hotbar group colors: Neutral | Hotbar group colors: Palette |
+| Without BrrControllerGlyphs | Hotbar group colors: Neutral | Hotbar group colors: Palette |
 | ------------- | ------------- | ------------- |
 | ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_vanilla.png?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_neutral.png?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_palette.png?raw=true) |
 
@@ -59,7 +59,7 @@ Slots that share a held button form a group; slots with a single button stand al
 
 Mods that write a key into their hover text, like `[B] AutoFuel` or `[Z] Favorite`, show your button instead. Setting: **Hint Glyphs > Force controller glyphs in mod hints**.
 
-| Vanilla | With BrrControllerGlyphs |
+| Without BrrControllerGlyphs | With BrrControllerGlyphs |
 | ------------- | ------------- |
 | ![hints_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_vanilla.png?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_mod.png?raw=true) |
 
