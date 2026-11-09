@@ -17,6 +17,7 @@ in-game findings are in the spec: [.claude/specs/controller-glyphs.md](.claude/s
 | `BrrControllerGlyphs.Contract.Tests/` | Reads the installed game DLLs and other mods' DLLs to check every member the plugin patches or reads still exists. Skips when the game or mod isn't installed. |
 | `scripts/` | `publish.ps1` (post-build deploy and packaging) and `make-glyphs.ps1` (makes `Glyphs/` from Kenney's Input Prompts). |
 | `libraries/` | `pdb2mdb.exe`, used by `publish.ps1` for debug symbols. |
+| `docs/images/` | Screenshots for the mod page, with the list of shots in its README. |
 
 ## Setup
 

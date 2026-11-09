@@ -738,10 +738,12 @@ documents for two readers:
     limits (only keys Steam sends are seen; holds and chords aren't; Valheim-art vs mod-art
     mix); reporting issues; credits (Kenney's Input Prompts, CC0); changelog link.
   - Screenshots need to be taken in game; list the shots needed when writing it.
-  - **Written 2026-11-08** to this plan. Screenshots still to take (placeholders in the README):
-    before/after of a prompt after a keyboard-key press; inventory badges after moving the
-    trackpad cursor; a prompt with an R4 + D-pad combo; hotbar and AzuEPI bar with R4/R5 groups
-    (Palette); a fire or chest hover hint from another mod. The layout audit (F9 piece 6) isn't
+  - **Written 2026-11-08** to this plan. Screenshots go in tables like ImpactfulSkills' (one
+    column per state: vanilla, then the mod or each setting value), linked from GitHub as
+    `docs/images/<name>.png?raw=true`; `docs/images/README.md` lists the shots still to take.
+  - **Known issue (user, 2026-11-08):** switching the mod or its features off and on while the
+    game runs can leave labels or hints in the wrong state; a restart fixes it. Listed in the mod
+    page's Known issues until fixed. The layout audit (F9 piece 6) isn't
     in the setup steps until it exists.
 
 ### F10. Mod compat plugin (later, separate mod)

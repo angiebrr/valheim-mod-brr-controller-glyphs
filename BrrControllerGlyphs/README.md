@@ -13,7 +13,9 @@ input was. Keys your layout sends show as the buttons that send them, so hotbar 
 `R4 + D-pad Up`. Your input isn't touched: the trackpad cursor, run toggle and menu navigation
 work exactly as before.
 
-<!-- Screenshot: before/after of the same prompt after a keyboard-key press (keyboard keys vs glyphs). -->
+| Vanilla, after a keyboard key | With BrrControllerGlyphs |
+| ------------- | ------------- |
+| ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/prompt_mod.png?raw=true) |
 
 ## Requirements
 
@@ -33,7 +35,9 @@ Crosshair prompts, the hint bars and the inventory and crafting button badges ke
 controller glyphs after keyboard or mouse input. Setting: **Hint Glyphs > Force controller
 glyphs in Valheim hints**.
 
-<!-- Screenshot: inventory with badges showing after moving the trackpad cursor. -->
+| Vanilla, after moving the trackpad cursor | With BrrControllerGlyphs |
+| ------------- | ------------- |
+| ![badges_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/badges_mod.png?raw=true) |
 
 ### Your buttons instead of keyboard keys
 
@@ -42,7 +46,9 @@ has no art for (back buttons L4, L5, R4, R5 and the trackpads) get Steam Deck-st
 Setting: **General > Glyphs used by mod** picks `Valheim` art with Steam Deck art for the extra
 buttons, or `SteamDeck` art for all of them.
 
-<!-- Screenshot: a prompt with an R4 + D-pad glyph combo. -->
+| Vanilla | Glyphs used by mod: Valheim | Glyphs used by mod: SteamDeck |
+| ------------- | ------------- | ------------- |
+| ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_vanilla.png?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_valheim.png?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_steamdeck.png?raw=true) |
 
 ### Hotbar and quick-slot labels
 
@@ -52,14 +58,18 @@ in the inventory. Settings: **Hotbar Glyphs > Force hotbar controller glyphs**, 
 colors** (`Neutral`, `Palette`, or `Custom` from your mapping's `colors`) and **Hotbar group
 background** (alpha 0 hides it).
 
-<!-- Screenshot: hotbar and AzuEPI quick-slot bar with R4/R5 groups, Palette colors. -->
+| Vanilla | Hotbar group colors: Neutral | Hotbar group colors: Palette |
+| ------------- | ------------- | ------------- |
+| ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_vanilla.png?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_neutral.png?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_palette.png?raw=true) |
 
 ### Other mods' hover hints
 
 Mods that write a key into their hover text, like `[B] AutoFuel` or `[Z] Favorite`, show your
 button instead. Setting: **Hint Glyphs > Force controller glyphs in mod hints**.
 
-<!-- Screenshot: a fire or chest hover hint with the mod's key shown as a glyph. -->
+| Vanilla | With BrrControllerGlyphs |
+| ------------- | ------------- |
+| ![hints_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hints_vanilla.png?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hints_mod.png?raw=true) |
 
 **General > Enabled** turns everything off; so does unplugging the gamepad.
 
@@ -138,6 +148,11 @@ warning in the log.
   makes the mod's glyphs match each other, but Valheim's own prompts keep Valheim's art.
 - Hints from Jotunn's KeyHintManager aren't changed yet.
 - Stick directions and the PlayStation touchpad have no mapping names yet.
+
+## Known issues
+
+- Turning the mod or its features off and on again while the game is running (**Enabled** and the
+  other switches) can leave some labels or hints in the wrong state. Restarting the game fixes it.
 
 ## Reporting issues
 
