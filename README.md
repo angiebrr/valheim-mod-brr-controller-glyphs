@@ -1,11 +1,14 @@
 # BrrControllerGlyphs
 
-A BepInEx/Jötunn mod for Valheim that keeps controller glyphs on for Steam Input layouts that
-also send keyboard keys, and shows those keys as the controller buttons that send them.
+A BepInEx/Jötunn mod for Valheim that keeps controller glyphs on for Steam Input layouts that also send keyboard keys, and shows those keys as the controller buttons that send them.
 
 The player-facing description (features, setup, settings) is the mod's Thunderstore page:
-[BrrControllerGlyphs/README.md](BrrControllerGlyphs/README.md). The design, decisions and
-in-game findings are in the spec: [.claude/specs/controller-glyphs.md](.claude/specs/controller-glyphs.md).
+
+- [BrrControllerGlyphs/README.md](BrrControllerGlyphs/README.md). 
+
+The design, decisions and in-game findings are in the spec: 
+
+- [.claude/specs/controller-glyphs.md](.claude/specs/controller-glyphs.md).
 
 ## Layout
 
@@ -38,11 +41,8 @@ in-game findings are in the spec: [.claude/specs/controller-glyphs.md](.claude/s
    </Project>
    ```
 
-   Use the full path in place of `%APPDATA%`. `DoPrebuild.props` makes Jötunn generate publicized
-   game assemblies on the first build.
-3. To read Valheim's or another mod's code, install ilspycmd
-   (`dotnet tool install -g ilspycmd`) and decompile from
-   `<VALHEIM_INSTALL>\valheim_Data\Managed` into a folder outside the repo.
+   Use the full path in place of `%APPDATA%`. `DoPrebuild.props` makes Jötunn generate publicized game assemblies on the first build.
+3. To read Valheim's or another mod's code, install ilspycmd (`dotnet tool install -g ilspycmd`) and decompile from `<VALHEIM_INSTALL>\valheim_Data\Managed` into a folder outside the repo.
 
 ## Design rules in short
 
@@ -66,27 +66,18 @@ dotnet build BrrControllerGlyphs.sln -c Debug
 dotnet test BrrControllerGlyphs.sln --no-build
 ```
 
-- **Debug** builds copy the DLL and symbols to `<MOD_DEPLOYPATH>\BrrControllerGlyphs`. If
-  Valheim is running it locks the DLL: the build still succeeds but the copy fails, so check the
-  output. Restart the game to load a new build.
-- **Release** builds put the DLL and the mod's README in `BrrControllerGlyphs/Package` and
-  zip it for Thunderstore
-  (`BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.zip`).
+- **Debug** builds copy the DLL and symbols to `<MOD_DEPLOYPATH>\BrrControllerGlyphs`. If Valheim is running it locks the DLL: the build still succeeds but the copy fails, so check the output. Restart the game to load a new build.
+- **Release** builds put the DLL and the mod's README in `BrrControllerGlyphs/Package` and zip it for Thunderstore (`BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.zip`).
 
 ## Testing
 
 - **Unit tests** cover all of Core, written test-first.
-- **Contract tests** catch game and mod updates: run them after Valheim or a supported mod
-  updates, before starting the game.
-- **In game:** `brrcg_selftest` in the F5 console logs PASS/FAIL/INFO lines starting with
-  `[brrcg_selftest]` to `LogOutput.log`. Then check prompts, the hotbar and hover hints in both
-  controller and keyboard/trackpad input.
+- **Contract tests** catch game and mod updates: run them after Valheim or a supported mod updates, before starting the game.
+- **In game:** `brrcg_selftest` in the F5 console logs PASS/FAIL/INFO lines starting with `[brrcg_selftest]` to `LogOutput.log`. Then check prompts, the hotbar and hover hints in both controller and keyboard/trackpad input.
 
 ## Glyph art
 
-`Glyphs/*.png` are made by `scripts/make-glyphs.ps1` from Kenney's
-[Input Prompts](https://kenney.nl/assets/input-prompts) (CC0) and committed. To remake them,
-unzip the pack outside the repo and run:
+`Glyphs/*.png` are made by `scripts/make-glyphs.ps1` from Kenney's [Input Prompts](https://kenney.nl/assets/input-prompts) (CC0) and committed. To remake them, unzip the pack outside the repo and run:
 
 ```bash
 pwsh scripts/make-glyphs.ps1 -KenneyDir <unzipped folder>

@@ -1,10 +1,6 @@
 # Screenshots for the mod page
 
-The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub
-(`blob/main/docs/images/<name>.png?raw=true`), so they appear on Thunderstore once they're on
-`main`. Take each pair from the same spot, with a gamepad connected, cropped to the part that
-changes. PNG, named exactly as below. Restart the game after switching the mod on or off
-(toggling it live can leave labels in the wrong state).
+The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub (`blob/main/docs/images/<name>.png?raw=true`), so they appear on Thunderstore once they're on `main`. Take each pair from the same spot, with a gamepad connected, cropped to the part that changes. PNG, named exactly as below. Restart the game after switching the mod on or off (toggling it live can leave labels in the wrong state).
 
 | File | Shot |
 |---|---|
