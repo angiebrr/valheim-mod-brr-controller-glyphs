@@ -1,10 +1,12 @@
 ﻿# BrrControllerGlyphs
 
-Controller glyphs that stay put, even when your Steam Input layout sends keyboard keys.
+This mod is useful for those who send keyboard keys with their controller or have extra controls that you have mapped but Valheim doesn't have any glyphs for, e.g. Steam Deck, Steam Controller.
 
-I play Valheim on a Steam Controller. My layout sends real gamepad buttons for the core actions and keyboard keys for the extras: hotbar slots on an R4 hold, quick slots on R5, pickup on a back grip, mod hotkeys on trackpad clicks. Every one of those key presses flipped Valheim into keyboard mode. Prompts turned into keyboard keys, and the hotbar and mod hints showed `1`, `Z` or `LeftShift` instead of the button I actually press.
+This mod does a few things and can be enabled/disabled to taste:
 
-This mod keeps Valheim's controller glyphs on while a gamepad is connected, whatever the last input was. Keys your layout sends show as the buttons that send them, so hotbar slot 1 reads `R4 + D-pad Up`. Your input isn't touched: the trackpad cursor, run toggle and menu navigation work exactly as before.
+- Forces controller glyphs to stay visible when a gamepad is connected even if KBM input is detected
+- Shows controller glyphs instead of keyboard keys according to a mapping file
+- Shows controller glyphs on the hotbar if you have the hotbar keys mapped, and supports input groups (e.g. R4 + D-Pad Up)
 
 | Vanilla, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
@@ -110,11 +112,11 @@ The `.cfg` file and Jotunn's Mod Settings show the same list on one line (`E (Az
 
 What it leaves out, so the list stays useful:
 
-- Mouse and joystick buttons, and unbound settings: only keyboard keys can come from your Steam layout.
+- Mouse and joystick buttons, and unbound settings: only keyboard keys can come from your controller.
 - Keys already in your mapping, in any spelling: `LeftControl` and `LeftCtrl`, or `Alpha1` and `1`, are the same key, and your `aliases` count.
 - Keys a mod hard-codes or keeps outside its BepInEx config. Those still show up once you've seen them in a hover hint.
 
-Not every key on the list needs a button. It lists what your mods use, but only keys your Steam layout actually sends belong in the mapping. Ignore the rest; a key you never press has nothing to show.
+Not every key on the list needs a button. It lists what your mods use, but only keys your controller actually sends belong in the mapping. Ignore the rest; a key you never press has nothing to show.
 
 The list updates when you save the mapping and when a hint shows a new missing key. **Mapping status** above it says whether the file loaded (`Loaded 30 keys`) or what's wrong and on which line, and ConfigurationManager shows a **Reload mapping** button next to it.
 
@@ -142,7 +144,7 @@ The list updates when you save the mapping and when a hint shows a new missing k
 ## Compatibility
 
 - **AzuExtendedPlayerInventory:** quick-slot bar and inventory quick slots are labelled.
-- **MyLittleUI:** hover text and chest hints work; this mod runs after it.
+- **MyLittleUI:** hover text and chest hints work.
 - **ConfigurationManager (shudnal):** settings are ordered, with a reload button and the missing-keys list. Jotunn's Mod Settings shows them as plain text.
 - **Mods with keys in their hover text** (AzuAutoStore, AzuCraftyBoxes, AutomaticFuel, ImpactfulSkills, ...) are translated through your mapping.
 
@@ -150,7 +152,7 @@ If a Valheim update changes something the mod patches, only that feature turns o
 
 ## Limits
 
-- The mod only sees the keyboard keys Steam sends. Held buttons, chords and action sets exist only as you write them in the mapping.
+- The mod only sees the keyboard keys your controller sends. Held buttons, chords and action sets from Steam, for example, exist only as you write them in the mapping.
 - Valheim's art and the mod's Steam Deck art differ a little; **Glyphs used by mod** `SteamDeck` makes the mod's glyphs match each other, but Valheim's own prompts keep Valheim's art.
 - Hints from Jotunn's KeyHintManager aren't changed yet.
 - Stick directions and the PlayStation touchpad have no mapping names yet.
