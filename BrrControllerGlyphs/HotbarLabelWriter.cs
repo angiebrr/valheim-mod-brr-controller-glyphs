@@ -183,6 +183,28 @@ namespace BrrControllerGlyphs
         }
 
         /// <summary>
+        /// Puts Valheim's labels back on every bar this writer labelled and removes the prefixes, for
+        /// the plugin's destroy (call after unpatching, so the restore isn't labelled again).
+        /// </summary>
+        internal void RestoreAll()
+        {
+            // Runs once, on destroy: the scene search is fine here
+            foreach (HotkeyBar bar in UnityEngine.Object.FindObjectsOfType<HotkeyBar>())
+            {
+                string barName = bar.name;
+                bool labelled = m_lastStates.TryGetValue(barName, out SlotBarState state) && state.ShowGlyphs;
+                if (labelled)
+                {
+                    m_prefixLabels.Clear(bar.transform);
+                    bar.ToggleBindingHint(!ZInput.IsGamepadActive());
+                }
+            }
+
+            m_messageRoom.Restore();
+            m_lastStates.Clear();
+        }
+
+        /// <summary>
         /// Buttons for one of Valheim's hotbar slots, from the raw key bound to "HotbarN".
         /// </summary>
         /// <param name="slot">Zero-based slot index.</param>

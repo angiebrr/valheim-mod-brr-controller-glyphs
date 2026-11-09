@@ -38,13 +38,19 @@ namespace BrrControllerGlyphs.Patches
         private static void Postfix(UIInputHint __instance)
         {
             GlyphService glyphs = Glyphs;
-            if (glyphs == null || !glyphs.ShowKeyPrompts)
+            if (glyphs == null)
             {
                 return;
             }
 
             try
             {
+                // Inside the try: it reads game state, which a game update could break
+                if (!glyphs.ShowKeyPrompts)
+                {
+                    return;
+                }
+
                 HintVisibility visibility = HintVisibility.Decide(
                     IsHintVisible(__instance),
                     ZInput.IsGamepadActive(),

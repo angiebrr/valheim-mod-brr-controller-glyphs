@@ -112,6 +112,25 @@ namespace BrrControllerGlyphs
         }
 
         /// <summary>
+        /// Puts the vanilla and AzuEPI labels back and removes the prefixes, if this writer labelled
+        /// the grid; for the plugin's destroy (call after unpatching).
+        /// </summary>
+        /// <param name="gui">The inventory screen, or null/destroyed if there is none.</param>
+        internal void Restore(InventoryGui gui)
+        {
+            bool labelled = m_lastState.HasValue && m_lastState.Value.ShowGlyphs;
+            m_lastState = null;
+            InventoryGrid grid = gui ? gui.m_playerGrid : null;
+            if (!labelled || !grid)
+            {
+                return;
+            }
+
+            RestoreTopRow(grid);
+            RestoreQuickSlots();
+        }
+
+        /// <summary>
         /// The label a top-row cell should show.
         /// </summary>
         /// <param name="slot">Zero-based column.</param>

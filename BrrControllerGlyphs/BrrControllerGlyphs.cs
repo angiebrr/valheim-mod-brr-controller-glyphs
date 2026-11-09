@@ -57,6 +57,15 @@ namespace BrrControllerGlyphs
         private const int HintGlyphPercent = 75;
 
         /// <summary>
+        /// Seconds to wait after the mapping file changes before reading it: editors often save in
+        /// several writes (truncate, write, rename), and reading in between sees a partial file.
+        /// </summary>
+        private const float MappingReloadDelaySeconds = 0.5f;
+
+        /// <summary>Starts the tooltip of every setting the mod sets itself.</summary>
+        private const string ReadOnlyPrefix = "Read-only. ";
+
+        /// <summary>
         /// Space each side of a hover-hint glyph, in em: at 75% our glyph was ~35 px wide against
         /// Valheim's ~45 px (hint font ~40 px), so it sat 4 px left and the text after it ~9 px left
         /// of the lines above (in game 2026-11-08).
@@ -84,14 +93,11 @@ namespace BrrControllerGlyphs
         /// <summary>Moves Valheim's top-left messages below prefixes under AzuEPI's bar; undone in OnDestroy.</summary>
         private MessageRoom m_messageRoom;
 
-        /// <summary>
-        /// Seconds to wait after the mapping file changes before reading it: editors often save in
-        /// several writes (truncate, write, rename), and reading in between sees a partial file.
-        /// </summary>
-        private const float MappingReloadDelaySeconds = 0.5f;
+        /// <summary>Hotbar and quick-slot bar labels; null if the reverse patch didn't apply. Restored in OnDestroy.</summary>
+        private HotbarLabelWriter m_hotbarLabels;
 
-        /// <summary>Starts the tooltip of every setting the mod sets itself.</summary>
-        private const string ReadOnlyPrefix = "Read-only. ";
+        /// <summary>Inventory top-row and quick-slot cell labels; null if the reverse patch didn't apply. Restored in OnDestroy.</summary>
+        private InventoryLabelWriter m_inventoryLabels;
 
         /// <summary>The mapping file: loads, reloads, watches and reports status (F9).</summary>
         private MappingFile m_mappingFile;
@@ -210,6 +216,9 @@ namespace BrrControllerGlyphs
                 prefixBackground.SettingChanged += RedrawPrefixes;
             }
 
+            m_hotbarLabels = labels;
+            m_inventoryLabels = inventoryLabels;
+
             // Every switch that changes which glyphs show: cached prompt text must be redrawn live
             m_glyphSettings = new HashSet<ConfigEntryBase> { enabled, keyPrompts, hoverText, buttonGlyphs, hotbarLabels };
             Config.SettingChanged += OnSettingChanged;
@@ -260,9 +269,28 @@ namespace BrrControllerGlyphs
             HotbarLabelsPatch.Writer = null;
             InventoryLabelsPatch.Writer = null;
             HoverTextPatch.Writer = null;
+            RestoreLabels();
             RoundedSprite.Destroy(m_backingSprite);
             m_modSprites?.Destroy();
             m_messageRoom?.Restore();
+        }
+
+        /// <summary>
+        /// Puts Valheim's and AzuEPI's slot labels back and removes the prefixes, after the patches
+        /// are gone. Jotunn can't remove console commands, so those stay until the game restarts.
+        /// </summary>
+        private void RestoreLabels()
+        {
+            // On game quit the HUD may already be half destroyed; nothing to restore then
+            try
+            {
+                m_hotbarLabels?.RestoreAll();
+                m_inventoryLabels?.Restore(InventoryGui.instance);
+            }
+            catch (Exception ex)
+            {
+                Jotunn.Logger.LogWarning($"Couldn't restore slot labels on unload: {ex.Message}");
+            }
         }
 
         /// <summary>

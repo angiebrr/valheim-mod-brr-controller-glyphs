@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -16,7 +17,7 @@ namespace BrrControllerGlyphs.Core
 {
     /// <summary>
     /// Maps keyboard key names (as Valheim and mods display them) to the controller buttons
-    /// my Steam Input layout presses to send that key.
+    /// the player's Steam Input layout presses to send that key.
     /// </summary>
     public sealed class KeyMap
     {
@@ -268,7 +269,20 @@ namespace BrrControllerGlyphs.Core
                 return null;
             }
 
-            return string.Join(ButtonSeparator, buttons.Select(button => FormatButton(button, valheimGlyph, modGlyph, order)));
+            // A loop, not LINQ: this runs on the $KEY_ path, often every frame
+            string first = FormatButton(buttons[0], valheimGlyph, modGlyph, order);
+            if (buttons.Count == 1)
+            {
+                return first;
+            }
+
+            var text = new StringBuilder(first);
+            for (int i = 1; i < buttons.Count; i++)
+            {
+                text.Append(ButtonSeparator).Append(FormatButton(buttons[i], valheimGlyph, modGlyph, order));
+            }
+
+            return text.ToString();
         }
 
         /// <summary>
@@ -318,7 +332,6 @@ namespace BrrControllerGlyphs.Core
         {
             return modGlyph?.Invoke(normalized);
         }
-
 
         /// <summary>
         /// Turns any supported spelling of a key into the normalized name used in <see cref="m_keys"/>.
@@ -372,7 +385,44 @@ namespace BrrControllerGlyphs.Core
         /// <returns>The normalized name.</returns>
         internal static string Normalize(string name)
         {
-            return new string(name.Where(c => c != ' ' && c != '_' && c != '-').ToArray()).ToLowerInvariant();
+            // Most names arrive normalized already (lookups repeat): return those without allocating
+            bool unchanged = true;
+            foreach (char c in name)
+            {
+                if (IsDropped(c) || char.ToLowerInvariant(c) != c)
+                {
+                    unchanged = false;
+                    break;
+                }
+            }
+
+            if (unchanged)
+            {
+                return name;
+            }
+
+            var chars = new char[name.Length];
+            int length = 0;
+            foreach (char c in name)
+            {
+                if (!IsDropped(c))
+                {
+                    chars[length++] = char.ToLowerInvariant(c);
+                }
+            }
+
+            return new string(chars, 0, length);
+        }
+
+        /// <summary>
+        /// Whether <see cref="Normalize"/> drops a character: the separators people write between
+        /// words of a name.
+        /// </summary>
+        /// <param name="c">A character of a key or button name.</param>
+        /// <returns>True for ' ', '_' and '-'.</returns>
+        private static bool IsDropped(char c)
+        {
+            return c == ' ' || c == '_' || c == '-';
         }
 
         /// <summary>

@@ -14,8 +14,8 @@ namespace BrrControllerGlyphs.Patches
     /// F1 + F2: every $KEY_ token resolves through ZInput.GetBoundKeyString, so one postfix
     /// changes the key text in all prompts. Decisions are made by <see cref="BoundKeyResolver"/>.
     /// </summary>
-    // TODO: Localization caches localized strings (LRU of 100). Valheim clears it when the input
-    // layout changes; check in game that connecting/disconnecting a gamepad refreshes prompts.
+    // Localization caches localized text (LRU of 100), so cached prompts keep this postfix's old
+    // result; the plugin's RedrawGlyphs empties that cache whenever the glyphs change.
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetBoundKeyString))]
     internal static class BoundKeyStringPatch
     {

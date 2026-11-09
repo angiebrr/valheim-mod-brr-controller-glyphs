@@ -37,13 +37,19 @@ namespace BrrControllerGlyphs.Patches
         private static void Postfix(UIGamePad __instance)
         {
             GlyphService glyphs = Glyphs;
-            if (glyphs == null || !__instance.m_hint || ZInput.IsGamepadActive() || !glyphs.ShowKeyPrompts)
+            if (glyphs == null || !__instance.m_hint)
             {
                 return;
             }
 
             try
             {
+                // Inside the try: these read game state, which a game update could break
+                if (ZInput.IsGamepadActive() || !glyphs.ShowKeyPrompts)
+                {
+                    return;
+                }
+
                 UIGroupHandler alternativeGroup = __instance.alternativeGroupHandler;
                 bool shown = BadgeVisibility.Show(
                     __instance.IsInteractive(),

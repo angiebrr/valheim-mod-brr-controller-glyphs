@@ -45,6 +45,18 @@ namespace BrrControllerGlyphs
         /// <summary>Like <see cref="m_modGlyph"/>, at the smaller size hover hints use; null without the sprite asset.</summary>
         private readonly Func<string, string> m_hintModGlyph;
 
+        /// <summary><see cref="ValheimGlyph"/> as a delegate, created once (passed on every translation).</summary>
+        private readonly Func<string, string> m_valheimGlyph;
+
+        /// <summary>Valheim's glyph setting when <see cref="m_style"/> was worked out.</summary>
+        private Valheim.SettingsGui.GamepadGlyphs m_styleGlyph;
+
+        /// <summary>Gamepad type when <see cref="m_style"/> was worked out.</summary>
+        private GamepadType m_styleGamepad;
+
+        /// <summary>Valheim's sprite atlas for those two (<see cref="SpriteStyle.For"/>); null until first used.</summary>
+        private string m_style;
+
         /// <summary>Most answers <see cref="m_keyNames"/> keeps before starting over.</summary>
         private const int MaxCachedKeyNames = 256;
 
@@ -82,6 +94,7 @@ namespace BrrControllerGlyphs
             HintKeyTranslator = TranslateHintKey;
             JoyLookup = LookupJoy;
             KeyNameCheck = IsKeyName;
+            m_valheimGlyph = ValheimGlyph;
         }
 
         /// <summary>Number of keys in the loaded mapping.</summary>
@@ -195,7 +208,7 @@ namespace BrrControllerGlyphs
         /// <returns>The mapped display string, or null if the key isn't mapped.</returns>
         internal string TranslateKey(string key)
         {
-            return m_keyMap.Translate(key, ValheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
+            return m_keyMap.Translate(key, m_valheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
         }
 
         /// <summary>
@@ -207,7 +220,7 @@ namespace BrrControllerGlyphs
         // $KEY_ tokens in hover text resolve through TranslateKey (F1/F2) and keep the full size
         internal string TranslateHintKey(string key)
         {
-            return m_keyMap.Translate(key, ValheimGlyph, m_hintModGlyph, m_buttonGlyphs.Value);
+            return m_keyMap.Translate(key, m_valheimGlyph, m_hintModGlyph, m_buttonGlyphs.Value);
         }
 
         /// <summary>The current ButtonGlyphs setting, for the self-test.</summary>
@@ -230,7 +243,7 @@ namespace BrrControllerGlyphs
         /// <returns>The display string, or null for a null or empty list.</returns>
         internal string FormatButtons(IReadOnlyList<string> buttons)
         {
-            return m_keyMap.Format(buttons, ValheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
+            return m_keyMap.Format(buttons, m_valheimGlyph, m_modGlyph, m_buttonGlyphs.Value);
         }
 
         /// <summary>
@@ -250,7 +263,7 @@ namespace BrrControllerGlyphs
         /// <returns>A sprite tag, or null if Valheim has no sprite for the control.</returns>
         private string ValheimGlyph(string control)
         {
-            string style = SpriteStyle.For(ZInput.CurrentGlyph.ToString(), ZInput.ConnectedGamepadType.ToString());
+            string style = CurrentStyle();
             if (ZInput.s_gamepadSpriteMap.TryGetValue(control, out Dictionary<string, string> styles) &&
                 styles.TryGetValue(style, out string spriteName))
             {
@@ -258,6 +271,26 @@ namespace BrrControllerGlyphs
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Valheim's sprite atlas for the current glyph setting and gamepad, worked out again only
+        /// when either changes: enum names allocate, and this runs per button on the $KEY_ path.
+        /// </summary>
+        /// <returns>The atlas name (e.g. "xbox").</returns>
+        private string CurrentStyle()
+        {
+            Valheim.SettingsGui.GamepadGlyphs glyph = ZInput.CurrentGlyph;
+            GamepadType gamepad = ZInput.ConnectedGamepadType;
+            bool changed = m_style == null || glyph != m_styleGlyph || gamepad != m_styleGamepad;
+            if (changed)
+            {
+                m_styleGlyph = glyph;
+                m_styleGamepad = gamepad;
+                m_style = SpriteStyle.For(glyph.ToString(), gamepad.ToString());
+            }
+
+            return m_style;
         }
     }
 }

@@ -17,7 +17,7 @@ namespace BrrControllerGlyphs.Core
     {
         /// <summary>Normalized mapping-file button name to Valheim control name.</summary>
         // TODO: add stick directions (leftStick_up, rightStick_left, ...) and the PlayStation
-        // touchpad (touchpadButton); Valheim has art for them but my layout doesn't need them yet.
+        // touchpad (touchpadButton); Valheim has art for them but no layout has needed them yet.
         private static readonly Dictionary<string, string> Controls = new ()
         {
             { "a", "buttonSouth" },

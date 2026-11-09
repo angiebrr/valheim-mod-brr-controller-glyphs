@@ -30,6 +30,9 @@ namespace BrrControllerGlyphs.Core
         /// </summary>
         public const string CountKey = "Number of Quick Slots";
 
+        /// <summary>Suffix of the config key for a quick slot's display text ("Hotkey 1 Display Text").</summary>
+        public const string DisplayTextSuffix = " Display Text";
+
         /// <summary>
         /// Returns the config key of a quick slot's shortcut.
         /// </summary>
@@ -39,9 +42,6 @@ namespace BrrControllerGlyphs.Core
         {
             return KeyPrefix + (slot + 1);
         }
-
-        /// <summary>Suffix of the config key for a quick slot's display text ("Hotkey 1 Display Text").</summary>
-        public const string DisplayTextSuffix = " Display Text";
 
         /// <summary>
         /// Returns the config key of a quick slot's display text.
