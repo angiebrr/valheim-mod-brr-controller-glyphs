@@ -14,7 +14,7 @@ The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, lin
 | `hotbar_vanilla.png` | Hotbar and AzuEPI quick-slot bar, mod off: `1`–`8` and AzuEPI's key names. |
 | `hotbar_neutral.png` | The same, mod on, **Hotbar group colors** `Neutral`: R4/R5 groups. |
 | `hotbar_palette.png` | The same, **Hotbar group colors** `Palette`. |
-| `hints_vanilla.png` | Another mod's hover hint with a key in it (e.g. `[B]` on a fire), mod off. |
+| `hints_vanilla.png` | Another mod's hover hint with a key in it, mod off, using the gamepad (e.g. AzuCraftyBoxes' `[E + LeftShift] Crafting Chest` on a chest). |
 | `hints_mod.png` | The same with the mod on: your button. |
 
 ## Hotbar groups (HUD and inventory, with and without quick slots)
