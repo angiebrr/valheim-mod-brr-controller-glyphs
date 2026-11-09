@@ -16,3 +16,28 @@ The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, lin
 | `hotbar_palette.png` | The same, **Hotbar group colors** `Palette`. |
 | `hints_vanilla.png` | Another mod's hover hint with a key in it (e.g. `[B]` on a fire), mod off. |
 | `hints_mod.png` | The same with the mod on: your button. |
+
+## Hotbar groups (HUD and inventory, with and without quick slots)
+
+Twelve shots for the grouping table: three mappings × HUD or inventory × with or without AzuExtendedPlayerInventory's quick slots. Use **Hotbar group colors** `Palette` so the groups stand out.
+
+1. Back up your own mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe.
+2. For each example in [`docs/example-mappings`](../example-mappings) (`no-groups`, `one-group`, `multiple-groups`), copy it over `BrrControllerGlyphs.mapping.yaml`. The mapping reloads when saved; check **Mapping status**, and restart if the labels don't update.
+3. With quick slots: AzuEPI's **3 - Quick Slots > Number of Quick Slots** at 6. Without: set it to 0 (restart the game if the bar or cells don't go away).
+4. Take the HUD shot (hotbar, plus AzuEPI's bar under it when on) and the inventory shot (top row, plus the quick-slot cells when on).
+5. Put your own mapping and quick-slot count back afterwards.
+
+| File | Mapping | Screen | Quick slots |
+|---|---|---|---|
+| `groups_none_hud.png` | no-groups | HUD | 0 |
+| `groups_none_hud_quickslots.png` | no-groups | HUD | 6 |
+| `groups_none_inventory.png` | no-groups | Inventory | 0 |
+| `groups_none_inventory_quickslots.png` | no-groups | Inventory | 6 |
+| `groups_one_hud.png` | one-group | HUD | 0 |
+| `groups_one_hud_quickslots.png` | one-group | HUD | 6 |
+| `groups_one_inventory.png` | one-group | Inventory | 0 |
+| `groups_one_inventory_quickslots.png` | one-group | Inventory | 6 |
+| `groups_multiple_hud.png` | multiple-groups | HUD | 0 |
+| `groups_multiple_hud_quickslots.png` | multiple-groups | HUD | 6 |
+| `groups_multiple_inventory.png` | multiple-groups | Inventory | 0 |
+| `groups_multiple_inventory_quickslots.png` | multiple-groups | Inventory | 6 |

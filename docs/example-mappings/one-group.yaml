@@ -1,0 +1,29 @@
+# BrrControllerGlyphs example mapping: one group per bar.
+# The author's Steam Controller layout: hotbar slots on an R4 hold, AzuEPI quick slots on an R5
+# hold, extras on back grips and trackpad clicks. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+
+keys:
+  # Hotbar: hold R4 (one group)
+  "1": [R4, DPadUp]
+  "2": [R4, DPadRight]
+  "3": [R4, DPadDown]
+  "4": [R4, DPadLeft]
+  "5": [R4, Y]
+  "6": [R4, B]
+  "7": [R4, A]
+  "8": [R4, X]
+
+  # AzuEPI quick slots: hold R5 (one group)
+  Keypad1: [R5, DPadUp]
+  Keypad2: [R5, DPadRight]
+  Keypad3: [R5, DPadDown]
+  Keypad4: [R5, DPadLeft]
+  Keypad5: [R5, Y]
+  Keypad6: [R5, B]
+
+  I: [R5, A]           # backpack
+  N: [R5, X]           # ImpactfulSkills AOE toggle
+  Q: L5                # pickup
+  Z: L4                # AzuAutoStore favorite
+  B: LPadUp            # AutomaticFuel torch mode (left trackpad click up)
+  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)

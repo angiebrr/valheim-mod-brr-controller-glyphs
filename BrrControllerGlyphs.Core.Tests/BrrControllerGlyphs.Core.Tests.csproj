@@ -24,6 +24,8 @@
 
   <ItemGroup>
     <None Include="Fixtures\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The mod page's example mappings, checked by ExampleMappingsTests -->
+    <None Include="..\docs\example-mappings\*.yaml" Link="ExampleMappings\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
