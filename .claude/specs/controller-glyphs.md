@@ -674,6 +674,23 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   disconnecting, now runs `RedrawGlyphs` (one `Config.SettingChanged` handler). Its description
   now says what it covers (crosshair hints, hint bars, menu badges) and that the hotbar has its own
   switch.
+- **In game 2026-11-08: `[G] Open Radial Menu` on cooking stations.** My Little UI adds
+  `[$KEY_OpenRadial] $settings_open_radial` to hover hints. Valheim finds a key's controller binding
+  as "Joy" + name, but the radial menu's are `OpenRadial` (keyboard) and `JoyRadial` (controller),
+  so `JoyOpenRadial` doesn't exist and even Valheim's own gamepad mode shows G. Valheim's naming
+  quirk plus My Little UI not handling it; not a config problem. Fixed on our side:
+  `BoundKeyResolver.ControllerNameExceptions` (`OpenRadial` → `JoyRadial`, contract-tested
+  against ZInput's literals; the only keyboard/controller pair that's clearly the same action).
+  Worth reporting to My Little UI's author (shudnal).
+- **In game 2026-11-08: after turning the Valheim-hints switch off, some chests kept the X glyph,
+  others showed E.** My Little UI caches each chest's whole localized hover text per chest
+  (`ChestHoverText.hoverTextCache`, keyed by the chest's ZDO), cleared only when that chest's
+  contents change (`Container.OnContainerChanged` postfix) or its own settings change
+  (`ResetHoverCache`). Chests hovered before the toggle keep the glyph they were cached with. The
+  same happens in vanilla when switching between keyboard and controller (the cached `$KEY_Use`
+  doesn't follow the input mode), so it's My Little UI's bug, exposed by our toggles and gamepad
+  connects. Options: call its `ResetHoverCache` by reflection from `RedrawGlyphs`, put that in the
+  F10 compat plugin, or report upstream (cache should be cleared on `ZInput.OnInputLayoutChanged`).
 - **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
   keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
 
