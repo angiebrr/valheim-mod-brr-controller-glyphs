@@ -952,6 +952,8 @@ thin patches → in-game self-test checks → manual checklist.
    **Repo cleanup and review (same branch):** removed the stub's unused Unity project, rename and
    Linux scripts; `OnDestroy` now restores slot labels and removes prefixes (Jotunn can't remove
    console commands); the `$KEY_` path no longer allocates a delegate and enum names per key.
+   GitHub repo renamed to `valheim-mod-brr-controller-glyphs` (old URL redirects); LICENSE changed
+   from the stub's MIT-0 (Valheim Modding Community) to MIT, Copyright 2026 angiebrr.
 6. **Before sharing the mod:** F9 piece 4. Both READMEs written 2026-11-08 (update with each
    feature).
 7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.

@@ -15,7 +15,7 @@ work exactly as before.
 
 | Vanilla, after a keyboard key | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/prompt_mod.png?raw=true) |
+| ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.png?raw=true) |
 
 ## Requirements
 
@@ -37,7 +37,7 @@ glyphs in Valheim hints**.
 
 | Vanilla, after moving the trackpad cursor | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![badges_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/badges_mod.png?raw=true) |
+| ![badges_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_mod.png?raw=true) |
 
 ### Your buttons instead of keyboard keys
 
@@ -48,7 +48,7 @@ buttons, or `SteamDeck` art for all of them.
 
 | Vanilla | Glyphs used by mod: Valheim | Glyphs used by mod: SteamDeck |
 | ------------- | ------------- | ------------- |
-| ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_vanilla.png?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_valheim.png?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/buttons_steamdeck.png?raw=true) |
+| ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_vanilla.png?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_valheim.png?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_steamdeck.png?raw=true) |
 
 ### Hotbar and quick-slot labels
 
@@ -60,7 +60,7 @@ background** (alpha 0 hides it).
 
 | Vanilla | Hotbar group colors: Neutral | Hotbar group colors: Palette |
 | ------------- | ------------- | ------------- |
-| ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_vanilla.png?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_neutral.png?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hotbar_palette.png?raw=true) |
+| ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_vanilla.png?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_neutral.png?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_palette.png?raw=true) |
 
 ### Other mods' hover hints
 
@@ -69,7 +69,7 @@ button instead. Setting: **Hint Glyphs > Force controller glyphs in mod hints**.
 
 | Vanilla | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![hints_vanilla](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hints_vanilla.png?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/blob/main/docs/images/hints_mod.png?raw=true) |
+| ![hints_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_vanilla.png?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_mod.png?raw=true) |
 
 **General > Enabled** turns everything off; so does unplugging the gamepad.
 
@@ -156,7 +156,7 @@ warning in the log.
 
 ## Reporting issues
 
-Open an issue on [GitHub](https://github.com/angiebrr/valheim-mod-controller-glyph-fixer/issues)
+Open an issue on [GitHub](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/issues)
 with what you saw (a screenshot helps), your mapping file, and the `[brrcg_selftest]` lines from
 `LogOutput.log`.
 
