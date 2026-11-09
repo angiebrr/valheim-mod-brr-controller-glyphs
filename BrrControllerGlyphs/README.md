@@ -143,7 +143,7 @@ The list updates when you save the mapping and when a hint shows a new missing k
 
 ## Compatibility
 
-- **AzuExtendedPlayerInventory:** quick-slot bar and inventory quick slots are labelled.
+- **AzuExtendedPlayerInventory:** the quick-slot bar and inventory quick slots are labelled (the inventory only in its `Legacy` layout for now; see Known issues).
 - **MyLittleUI:** hover text and chest hints work.
 - **ConfigurationManager (shudnal):** settings are ordered, with a reload button and the missing-keys list. Jotunn's Mod Settings shows them as plain text.
 - **Mods with keys in their hover text** (AzuAutoStore, AzuCraftyBoxes, AutomaticFuel, ImpactfulSkills, ...) are translated through your mapping.
@@ -159,7 +159,9 @@ If a Valheim update changes something the mod patches, only that feature turns o
 
 ## Known issues
 
-- Turning the mod or its features off and on again while the game is running (**Enabled** and the other switches) can leave some labels or hints in the wrong state. Restarting the game fixes it.
+- **Switching features while playing:** turning the mod or its features off and on again while the game is running (**Enabled** and the other switches) can leave some labels or hints in the wrong state. Restarting the game fixes it.
+- **AzuExtendedPlayerInventory's inventory layouts:** the inventory labels were built for its `Legacy` layout (**5 - UI Features > Inventory Layout**). In `EquipmentAndQuickSlots` the quick-slot cells keep AzuEPI's own names and the group outline lands on an empty spot; the other layouts (`Default`, `Tabbed`, `LegacyDetached`, `ExtraSlots`) aren't tested yet. Use `Legacy` for now if the inventory looks wrong.
+- **AzuExtendedPlayerInventory's quick-slot bar on the HUD:** to make room for the group labels under the bar, Valheim's top-left messages move down a little. This assumes the bar is in its default place under the hotbar, and if you hide the bar while playing, the messages stay lower until you next load a world.
 
 ## Reporting issues
 
