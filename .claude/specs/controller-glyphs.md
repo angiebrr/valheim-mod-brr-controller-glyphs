@@ -58,8 +58,8 @@ Steam Input's virtual controller connects after plugins load, so the startup lin
 shows none (open question 1, answered).
 
 ### Mapping table (YAML)
-- File: `<profile>/BepInEx/config/angiebrr.BrrControllerGlyphs.mapping.yaml`
-  (next to the `.cfg`).
+- File: `<profile>/BepInEx/config/BrrControllerGlyphs.mapping.yaml`
+  (named after the mod, not the plugin ID, so Gale sorts it next to the mod).
 - **No mapping is built into the mod.** If the file is missing, the plugin writes
   `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
   glyphs (F1) still work; keyboard-only keys stay as keys until the file is edited.
@@ -705,7 +705,7 @@ status, the Reload and Copy buttons, and the new `brrcg_selftest` lines.
 - **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
   keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
 
-**READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
+**READMEs (asked 2026-11-08, written 2026-11-08).** Were the JotunnModStub template; now two
 documents for two readers:
 
 - **Development README** (repo root `README.md`): for me or a contributor. What the mod is in two
@@ -738,6 +738,11 @@ documents for two readers:
     limits (only keys Steam sends are seen; holds and chords aren't; Valheim-art vs mod-art
     mix); reporting issues; credits (Kenney's Input Prompts, CC0); changelog link.
   - Screenshots need to be taken in game; list the shots needed when writing it.
+  - **Written 2026-11-08** to this plan. Screenshots still to take (placeholders in the README):
+    before/after of a prompt after a keyboard-key press; inventory badges after moving the
+    trackpad cursor; a prompt with an R4 + D-pad combo; hotbar and AzuEPI bar with R4/R5 groups
+    (Palette); a fire or chest hover hint from another mod. The layout audit (F9 piece 6) isn't
+    in the setup steps until it exists.
 
 ### F10. Mod compat plugin (later, separate mod)
 A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
@@ -942,6 +947,9 @@ thin patches → in-game self-test checks → manual checklist.
    commands and created objects use the `brrcg_` prefix (`NamePrefix`). Projects, namespaces and
    folders renamed too. No migration: the old .cfg and mapping file were copied to the new names
    once, by hand.
+   **Repo cleanup and review (same branch):** removed the stub's unused Unity project, rename and
+   Linux scripts; `OnDestroy` now restores slot labels and removes prefixes (Jotunn can't remove
+   console commands); the `$KEY_` path no longer allocates a delegate and enum names per key.
 6. **Before sharing the mod:** F9 piece 4. Both READMEs written 2026-11-08 (update with each
    feature).
 7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
