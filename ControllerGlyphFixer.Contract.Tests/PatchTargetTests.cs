@@ -35,6 +35,22 @@ public class PatchTargetTests
         Assert.Equal("System.String", method.ReturnType.FullName);
     }
 
+    /// <summary>
+    /// The binding names in BoundKeyResolver's exceptions (keyboard name and its controller twin)
+    /// are still bound by ZInput.
+    /// </summary>
+    [GameFact]
+    public void Controller_name_exceptions_are_still_ZInput_bindings()
+    {
+        List<string> literals = ModAssemblies.StringLiterals(Path.Combine(GameAssemblies.ManagedDir, "assembly_utils.dll"));
+
+        foreach (KeyValuePair<string, string> pair in Core.BoundKeyResolver.ControllerNameExceptions)
+        {
+            Assert.Contains(pair.Key, literals);
+            Assert.Contains(pair.Value, literals);
+        }
+    }
+
     /// <summary>Members read by GlyphService, the patches and the self-test exist.</summary>
     [GameFact]
     public void ZInput_members_used_for_glyph_mode_exist()
