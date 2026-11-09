@@ -46,6 +46,9 @@ namespace ControllerGlyphFixer.Core
             { "rpadup", "rpad_up" }, { "rpaddown", "rpad_down" }, { "rpadleft", "rpad_left" }, { "rpadright", "rpad_right" },
         };
 
+        /// <summary>Every normalized button name with a mod glyph, aliases included (for the template's list).</summary>
+        public static IReadOnlyCollection<string> ButtonNames => Sprites.Keys;
+
         /// <summary>Every sprite name once, sorted: one embedded image each.</summary>
         public static IReadOnlyList<string> SpriteNames { get; } =
             Sprites.Values.Distinct().OrderBy(name => name, StringComparer.Ordinal).ToArray();

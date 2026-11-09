@@ -2,6 +2,7 @@
 // KeyMapTests.cs: unit tests for parsing the key mapping and translating keys to buttons.
 // ------------------------------------------------------------------------------------------------
 
+using System.Text.RegularExpressions;
 using ControllerGlyphFixer.Core;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +364,24 @@ public class KeyMapTests
     public void Count_is_the_number_of_mapped_keys()
     {
         Assert.Equal(20, SteamController.Count);
+    }
+
+    /// <summary>
+    /// The template's button list names every button that has art, from Valheim or the mod's Steam
+    /// Deck glyphs (aliases included), so it can't go stale when glyphs are added.
+    /// </summary>
+    [Fact]
+    public void Template_lists_every_button_with_art()
+    {
+        string yaml = KeyMapTemplate.Yaml;
+        int start = yaml.IndexOf("# Buttons with art", StringComparison.Ordinal);
+        int end = yaml.IndexOf("# Any other button", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start, "button list block not found");
+
+        var listed = new HashSet<string>(
+            Regex.Split(yaml.Substring(start, end - start), "[^A-Za-z0-9]+").Select(word => word.ToLowerInvariant()));
+
+        Assert.All(ModGlyphs.ButtonNames.Concat(ValheimButtons.ButtonNames), button => Assert.Contains(button, listed));
     }
 
     /// <summary>The template written on first run is valid and maps nothing.</summary>
