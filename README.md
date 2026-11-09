@@ -1,58 +1,83 @@
-# JötunnModStub
+# BrrControllerGlyphs
 
-A Valheim mod stub project using [Jötunn](https://github.com/Valheim-Modding/Jotunn) including build tools and a basic Unity project stub.
-There is no actual plugin content included, just a minimum plugin class. 
+A BepInEx/Jötunn mod for Valheim that keeps controller glyphs on for Steam Input layouts that
+also send keyboard keys, and shows those keys as the controller buttons that send them.
 
-#  Setup Guide
+The player-facing description (features, setup, settings) is the mod's Thunderstore page:
+[BrrControllerGlyphs/README.md](BrrControllerGlyphs/README.md). The design, decisions and
+in-game findings are in the spec: [.claude/specs/controller-glyphs.md](.claude/specs/controller-glyphs.md).
 
-Please see [Jötunn Docs](https://valheim-modding.github.io/Jotunn/guides/overview.html) detailed documentation and setup.
+## Layout
 
-### Post Build automations
+| Folder | What's in it |
+|---|---|
+| `BrrControllerGlyphs.Core/` | All decision logic, `netstandard2.0`, no Unity or Valheim types: the key mapping, prompt and hint rewriting, hotbar grouping, colors, visibility rules. |
+| `BrrControllerGlyphs/` | The plugin (`net48`): a thin shell that reads game state, calls Core and sets text. Harmony postfixes in `Patches/`, glyph PNGs in `Glyphs/`, Thunderstore files in `Package/`. Core's sources are compiled in, so only `BrrControllerGlyphs.dll` ships. |
+| `BrrControllerGlyphs.Core.Tests/` | xUnit tests for Core (`net10.0`), using the mapping in `Fixtures/steam-controller.yaml`. |
+| `BrrControllerGlyphs.Contract.Tests/` | Reads the installed game DLLs and other mods' DLLs to check every member the plugin patches or reads still exists. Skips when the game or mod isn't installed. |
+| `scripts/` | `publish.ps1` (post-build deploy and packaging) and `make-glyphs.ps1` (makes `Glyphs/` from Kenney's Input Prompts). |
+| `libraries/` | `pdb2mdb.exe`, used by `publish.ps1` for debug symbols. |
 
-Included in this repo is a PowerShell script `publish.ps1`.
-The script is referenced in the project file as a post-build event.
-Depending on the chosen configuration in Visual Studio the script executes the following actions.
+## Setup
 
-### Building Debug
+1. Install the .NET SDK (10 or later) and Valheim with a BepInEx profile (the author uses Gale).
+2. Create `Environment.props` in the repo root (it's git-ignored):
 
-The compiled dll and a dll.mdb debug file are copied to `<ValheimDir>\BepInEx\plugins` (or the path set in MOD_DEPLOYPATH).
+   ```xml
+   <?xml version="1.0" encoding="utf-8"?>
+   <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+     <PropertyGroup>
+       <VALHEIM_INSTALL>C:\Program Files (x86)\Steam\steamapps\common\Valheim</VALHEIM_INSTALL>
+       <!-- Gale profile: BepInEx lives here, not in the game folder -->
+       <GALE_PROFILE>%APPDATA%\com.kesomannen.gale\valheim\profiles\Your Profile</GALE_PROFILE>
+       <BEPINEX_PATH>$(GALE_PROFILE)\BepInEx</BEPINEX_PATH>
+       <!-- Debug builds are copied here -->
+       <MOD_DEPLOYPATH>$(BEPINEX_PATH)\plugins</MOD_DEPLOYPATH>
+     </PropertyGroup>
+   </Project>
+   ```
 
-### Building Release
+   Use the full path in place of `%APPDATA%`. `DoPrebuild.props` makes Jötunn generate publicized
+   game assemblies on the first build.
 
-A compressed file with the binaries is created in `<JotunnModStub>\Packages`ready for upload to ThunderStore.
-Dont forget to include your information in the manifest.json and to change the project's readme file.
+## Build, test, deploy
 
-## Developing Assets with Unity
+Always build the solution: Jötunn's build props need `$(SolutionDir)`.
 
-New Assets can be created with Unity and imported into Valheim using the mod.
-A Unity project is included in this repository under `<JotunnModStub>\JotunnModUnity`.
+```bash
+dotnet build BrrControllerGlyphs.sln -c Debug
+```
 
-### Unity Editor Setup
+```bash
+dotnet test BrrControllerGlyphs.sln --no-build
+```
 
-1. [Download](https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe) UnityHub directly from Unity or install it with the Visual Studio Installer via `Individual Components` -> `Visual Studio Tools for Unity`
-2. You will need an Unity account to register your PC and get a free licence. Create the account, login with it in Unity Hub and get your licence via `Settings` -> `Licence Management`
-3. Install Unity Editor version 2022.3.17f
-4. Compile the project. This copies all assemblies into `<JotunnModStub>\JotunnModUnity\Assets\Assemblies`. Don't open Unity yet before this step, it will remove assembly references.
-5. **Warning:** These assembly files are copyrighted material and you can theoretically get into trouble when you distribute them in your github repository. To avoid that there is a .gitignore file in the Unity project folder. Keep that when you clone or copy this repository
-6. Open Unity Hub and add the JotunnModUnity project
-7. Open the project in Unity
-8. Install the `AssetBundle Browser` package in the Unity Editor via `Window`-> `Package Manager` for easy bundle creation
+- **Debug** builds copy the DLL and symbols to `<MOD_DEPLOYPATH>\BrrControllerGlyphs`. If
+  Valheim is running it locks the DLL: the build still succeeds but the copy fails, so check the
+  output. Restart the game to load a new build.
+- **Release** builds put the DLL and the mod's README in `BrrControllerGlyphs/Package` and
+  zip it for Thunderstore
+  (`BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.zip`).
 
-## Debugging
+## Testing
 
-See the Wiki page [Debugging Plugins via IDE](https://github.com/Valheim-Modding/Wiki/wiki/Debugging-Plugins-via-IDE) for more information
+- **Unit tests** cover all of Core, written test-first.
+- **Contract tests** catch game and mod updates: run them after Valheim or a supported mod
+  updates, before starting the game.
+- **In game:** `brrcg_selftest` in the F5 console logs PASS/FAIL/INFO lines starting with
+  `[brrcg_selftest]` to `LogOutput.log`. Then check prompts, the hotbar and hover hints in both
+  controller and keyboard/trackpad input.
 
-## Actions after a game update
+## Glyph art
 
-When Valheim updates it is likely that parts of the assembly files change.
-If this is the case, the references to the assembly files must be renewed in Visual Studio and Unity.
+`Glyphs/*.png` are made by `scripts/make-glyphs.ps1` from Kenney's
+[Input Prompts](https://kenney.nl/assets/input-prompts) (CC0) and committed. To remake them,
+unzip the pack outside the repo and run:
 
-### Prebuild actions
+```bash
+pwsh scripts/make-glyphs.ps1 -KenneyDir <unzipped folder>
+```
 
-1. There is a file called DoPrebuild.props included in the solution. When you set its only value to true, Jötunn will automatically generate publicized assemblies for you. Otherwise you have to do this step manually.
+## License
 
-### Unity actions
-
-1. Copy all `assembly_*.dll` from `<ValheimDir>\valheim_Data\Managed` into `<JotunnModStub>\JotunnModUnity\Assets\Assemblies`. <br />
-  **Do this directly in the filesystem - don't import the dlls in Unity**.
-2. Go to Unity Editor and press `Ctrl+R`. This reloads all files from the filesystem and "re-imports" the copied dlls into the project.
+See [LICENSE](LICENSE). Glyph art: CC0 ([BrrControllerGlyphs/Glyphs/License.txt](BrrControllerGlyphs/Glyphs/License.txt)).
