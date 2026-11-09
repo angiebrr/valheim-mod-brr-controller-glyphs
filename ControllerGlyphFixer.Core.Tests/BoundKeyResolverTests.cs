@@ -58,6 +58,19 @@ public class BoundKeyResolverTests
         Assert.Equal(ASprite, BoundKeyResolver.Resolve("Use", "E", showGlyphs: true, JoyUseOnly, TranslateQ));
     }
 
+    /// <summary>
+    /// Valheim's radial menu binding breaks the "Joy" + name rule (OpenRadial / JoyRadial); My Little
+    /// UI's cooking station hint asks for $KEY_OpenRadial and showed the keyboard key G (in game
+    /// 2026-11-08).
+    /// </summary>
+    [Fact]
+    public void OpenRadial_uses_the_JoyRadial_binding()
+    {
+        static string JoyRadialOnly(string name) => name == "JoyRadial" ? ASprite : "";
+
+        Assert.Equal(ASprite, BoundKeyResolver.Resolve("OpenRadial", "G", showGlyphs: true, JoyRadialOnly, TranslateQ));
+    }
+
     /// <summary>Without a controller binding, the mapped Steam button is shown.</summary>
     [Fact]
     public void Keyboard_only_binding_uses_the_mapping()

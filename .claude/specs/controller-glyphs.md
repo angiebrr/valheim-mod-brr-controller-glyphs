@@ -2,7 +2,7 @@
 
 Status: draft, approved direction, not implemented
 Last updated: 2026-11-08
-Mod: ControllerGlyphFixer (`com.angiebrr.controllerglyphfixer`), BepInEx + Jotunn, Valheim 1.0
+Mod: ControllerGlyphFixer (`angiebrr.ControllerGlyphFixer`, renamed from `com.angiebrr.controllerglyphfixer` 2026-11-08), BepInEx + Jotunn, Valheim 1.0
 
 ## Problem
 
@@ -58,7 +58,7 @@ Steam Input's virtual controller connects after plugins load, so the startup lin
 shows none (open question 1, answered).
 
 ### Mapping table (YAML)
-- File: `<profile>/BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`
+- File: `<profile>/BepInEx/config/angiebrr.ControllerGlyphFixer.mapping.yaml`
   (next to the `.cfg`).
 - **No mapping is built into the mod.** If the file is missing, the plugin writes
   `KeyMapTemplate` (format notes plus commented-out examples; maps nothing). Controller
@@ -167,7 +167,7 @@ EpicLoot.
 ### F3. Hotbar slot labels
 - **Covers:** Valheim's hotbar, AzuExtendedPlayerInventory's quick-slot bar, and in the
   inventory the top row and AzuEPI's quick-slot cells. Config `General.HotbarLabels`; prefix
-  colours `General.PrefixColors`.
+  colors `General.PrefixColors`.
 - **Patches:** postfixes on `HotkeyBar.UpdateIcons(Player)`, `ToggleBindingHint(bool)` and
   `OnEnable()` (all private, `assembly_valheim`). Rewrite each slot's `binding` text; the only
   objects added are the group prefixes and lines under one container per bar (`cgf_PrefixLabels`,
@@ -230,8 +230,8 @@ EpicLoot.
   layout, but Steam Input also has chords and mode shifts, so the mod doesn't assume how
   they're pressed. A *prefix group* is a run of slots; its *prefix* is the label beside it.
   ("Badge" still means the `[R4]` text shown for buttons Valheim has no art for.)
-- **Colours:** `General.PrefixColors` = `Neutral` (default; slot-label colour), `Palette`
-  (built-in colour per prefix button, numbered in prefix-button name order) or `Custom` (mapping
+- **Colors:** `General.PrefixColors` = `Neutral` (default; slot-label color), `Palette`
+  (built-in color per prefix button, numbered in prefix-button name order) or `Custom` (mapping
   file `colors:` section, `"#RRGGBB"`/`"#RRGGBBAA"`; unlisted buttons stay neutral). Keyed by
   the group's first prefix button, so R4 looks the same everywhere. Changing the setting
   rewrites the bars (`HotbarLabelWriter.Invalidate`).
@@ -320,7 +320,7 @@ EpicLoot.
   - Idempotent: rewriting its own output changes nothing.
   - **Leftover repair (2026-11-08):** an unclosed `[` whose opening `<color=…>`/`<b>` tags run
     straight into a `<sprite=` is removed with those tags. That's what Valheim's gamepad cleanup
-    leaves of a hint coloured anything but `yellow` (it strips `"></b></color>]` but only matches
+    leaves of a hint colored anything but `yellow` (it strips `"></b></color>]` but only matches
     `[<color=yellow><b><sprite=`). Other unclosed brackets stay. TODO in code: report it to
     MyLittleUI's author; once fixed upstream the repair finds nothing to do.
   - Whether a piece is a key name is a predicate from the plugin (Unity `KeyCode` names, any
@@ -373,12 +373,12 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   Kenney's art: the plain glyph (letters cut out) plus its `_outline` variant (rim + letters) is
   the solid shape; fill that dark, draw the outline variant over it in light, add a shadow.
 - **Build-time script:** `scripts/make-glyphs.ps1` reads the unpacked Kenney zip (path as a
-  parameter; the zip isn't committed, the script says where to download it), recolours the
+  parameter; the zip isn't committed, the script says where to download it), recolors the
   128 px `Double` PNGs, pads them for the shadow and writes `ControllerGlyphFixer/Glyphs/*.png`.
   The outputs are committed and embedded in the DLL as resources, with Kenney's `License.txt`
   beside them and a credit in the README. 28 images: A/B/X/Y, D-pad, bumpers, triggers,
   View/Options, R4/R5/L4/L5, both trackpads and their directions. Sticks are left out (Kenney has
-  no outline variant to recolour them from), so under `ModGlyphsForAll` they keep Valheim's art.
+  no outline variant to recolor them from), so under `ModGlyphsForAll` they keep Valheim's art.
 - **Which art wins (decided 2026-11-08):** config `General.ButtonGlyphs`:
   - `ValheimFirst` (default): Valheim's sprite where it has one (A/B/X/Y, D-pad, bumpers;
     follows Valheim's Xbox/PlayStation glyph setting), else ours, else the `[badge]`.
@@ -405,8 +405,8 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
     destroyed only when the game quits, so this is accepted, not worked around.
   - If the set can't be built, the plugin logs once and labels fall back to `[badge]` text.
 - **Effects on F3/F4:**
-  - Prefixes show a glyph instead of `[R4]`. `PrefixColors` keeps colouring the prefix's line and
-    text; the glyph itself is not tinted (TMP sprites ignore the text colour unless `tint=1`).
+  - Prefixes show a glyph instead of `[R4]`. `PrefixColors` keeps coloring the prefix's line and
+    text; the glyph itself is not tinted (TMP sprites ignore the text color unless `tint=1`).
   - Recheck in game what F3 postponed: inventory prefix spacing over the panel edge, the 70% label
     size, and the backing width now that the prefix is one glyph.
   - `HintRewriter` already treats `<sprite…>` as a glyph: `[LPad Up] AutoFuel` becomes the glyph
@@ -420,8 +420,8 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
   `UpdateLookupTables()`, the `TMP_SpriteGlyph` / `TMP_SpriteCharacter` constructors, the
   `TMP_CharacterInfo` fields prefixes are measured with, `ImageConversion.LoadImage` /
   `EncodeToPNG` (called by reflection), and `MessageHud.m_messageText`.
-- **Out of scope:** colouring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
-  for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colours.
+- **Out of scope:** coloring glyphs per prefix; other controllers' sets (Xbox/PlayStation art
+  for `ModGlyphsForAll` users on other pads); a setting for the rim and shadow colors.
 - **In game (2026-11-08), tuned over five rounds of screenshots:**
   - Valheim's `xbox` sprite asset has no point size (`button_a`: height 32, bearing 20, scale 2.5,
     point size 0). TMP then fits every sprite's own height to the font ascent, so scaling by
@@ -526,19 +526,27 @@ images instead of `[R4]`-style text badges. No patch: it changes what the mappin
 ### F7. Jotunn KeyHintManager hints (deferred)
 - Tool/building hints registered by mods through Jotunn. First check whether those mods
   declare gamepad buttons in their `ButtonConfig`; otherwise postfix Jotunn's hint update.
+- **No target in my profile (checked 2026-11-08):** no plugin DLL in "QoL Valheim" except Jotunn
+  references `KeyHintManager`, `KeyHintConfig` or `AddKeyHint`. AzuEPI and XPortal use
+  `ButtonConfig` only to register inputs. Revisit if a mod I add registers key hints.
 
 ### F8. Config and mapping generation
-- BepInEx config, `[General]` section:
-  - `Enabled` (bool, default true): master switch.
-  - `KeyPrompts` (F1+F2), `HotbarLabels` (F3), `HoverText` (F4) (bool, default true each).
-  - `PrefixColors` (`Neutral` / `Palette` / `Custom`, default `Neutral`) (F3).
-  - `PrefixBackground` (colour with alpha, default black at 70%) (F3).
-  - `ButtonGlyphs` (`ValheimFirst` / `ModGlyphsForAll`, default `ValheimFirst`) (F5).
+- BepInEx config (renamed 2026-11-08, see "Settings names" under F9; old names in brackets):
+  - `General`: `Enabled` (master switch); `Glyphs used by mod` [ButtonGlyphs] (`Valheim` /
+    `SteamDeck`, default `Valheim`) (F5).
+  - `Hint Glyphs`: `Force controller glyphs in Valheim hints` [KeyPrompts] (F1+F2, F6);
+    `Force controller glyphs in mod hints` [HoverText] (F4).
+  - `Hotbar Glyphs`: `Force hotbar controller glyphs` [HotbarLabels]; `Hotbar group colors`
+    [PrefixColors] (`Neutral` / `Palette` / `Custom`); `Hotbar group background` [PrefixBackground]
+    (color with alpha, default black at 70%) (F3).
+  - `Key Glyph Mapping` (read-only, F9): `Mapping file`, `Mapping status`, `Keys missing from mapping`.
 - Later: a script that generates the YAML mapping from my Steam layout VDF.
+- **Status (2026-11-08):** every entry above is bound. The generator is the same item as F9
+  piece 6 and is tracked there.
 
 ### F9. Helping other users set up their mapping
 Written 2026-11-07, before any of it is built. Today the mapping is a YAML file only:
-`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml`, written from
+`BepInEx/config/com.angiebrr.controllerglyphfixer.mapping.yaml` (now `angiebrr.ControllerGlyphFixer.mapping.yaml`), written from
 `KeyMapTemplate` on first run with every example commented out, read once at startup. A new
 user has to find the file, learn the format, edit it in a text editor and restart the game.
 
@@ -570,24 +578,166 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    `cgf_reloadmapping` console command. On reload: swap the `KeyMap` in `GlyphService`, clear
    Localization's cache, call `HotbarLabelWriter.Invalidate()`. With ConfigurationManager's File
    Editor this gives a full in-game loop: edit, save, see the labels change.
-3. **Key finder** (`cgf_keylog` console command, toggles on/off): logs each keyboard key the game
-   receives, by the name the mapping file uses (e.g. `Keypad1`, `LeftShift`), and whether the
-   mapping has it. Press a button combo on the controller, read which key Steam sent, write
-   `Keypad1: [R5, DPadUp]`. Answers "what key does this button send?" in game.
+3. ~~**Key finder** (`cgf_keylog`)~~ **Dropped 2026-11-08:** a command that watches key presses
+   reads as a keylogger, even one that only names keys while switched on. Replaced by a
+   **shortcut audit**: other mods' keyboard shortcut settings, read once at startup, compared
+   with the mapping. "Which key does this button send?" is answered by the Steam layout file
+   instead (next phase, see piece 6).
 4. **Starter mappings:** a few commented example blocks in the template (Steam Controller back
    buttons + action set, Steam Deck back grips, a DualSense touchpad layout) so users copy the
    closest one instead of starting from nothing.
 5. **Open file / write template buttons** (`CustomDrawer`, ConfigurationManager only): *Open
    mapping file* (opens it in the system's default editor, outside the game) and *Reset to
    template* (with confirmation; backs up the old file first).
-6. **Later:** generate the mapping from the Steam layout VDF (see above), so most users never
-   type buttons at all. Needs research: where Steam stores the active layout for Valheim
-   (app 892970) and how action sets, chords and mode shifts appear in it.
+6. **Next phase (decided 2026-11-08):** audit the Steam layout VDF against the mapping (keys the
+   layout sends that the mapping lacks, entries that disagree), then generate the mapping from it,
+   so most users never type buttons at all. Both need the same parser. Found 2026-11-08: Steam
+   keeps the layouts at `<Steam>\steamapps\common\Steam Controller Configs\<account
+   id>\config\892970\*.vdf`; mine is `FXA9962300C51.vdf` ("Valheim - Gamepad - Base Layout 2 -
+   Action Set Layers", action sets Default / Hotbar / Quick slots) with bindings such as
+   `"key_press B, Torch on/off/timer, , "` and `"xinput_button X, Use, , "`, so the labels I gave
+   each binding are in the file. To research: which file is the active one, and how groups, modes,
+   action sets and layers nest. Read-only, and only Valheim's folder; the README says so.
 
-**User-facing doc** (README / Thunderstore page): what the mod does; "the mapping lives
-outside your Steam layout and must match it"; the four setup steps (open the file, find each
-key with `cgf_keylog`, write the buttons, save and reload); the `labels`/`colors`/`aliases`
-sections; and the limits (only keys Steam sends are seen; holds and chords aren't).
+**Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`).** Seen working in game 2026-11-08:
+the settings sections and names in Mod Config, the missing-keys tree (wrapping is fine), toggling
+glyph settings mid-game (only My Little UI's own chest cache stays stale, see below), and the
+radial menu hint showing LB. Not yet checked: saving the mapping file to reload, an invalid file's
+status, the Reload and Copy buttons, and the new `cgf_selftest` lines.
+- **Settings names (reviewed with me one by one, 2026-11-08):** sections in Title Case, settings in
+  sentence case, all in Core `SettingNames`; US spelling ("color") everywhere. Sections `General`,
+  `Hint Glyphs`, `Hotbar Glyphs`, `Key Glyph Mapping` sort in that order alphabetically (both
+  settings UIs sort by name; unit-tested); `ConfigurationManagerAttributes.Order` keeps each
+  section's order. Settings and values as listed under F8. Notes from the review: the Valheim-hints
+  switch was "Override keyboard prompts" for a while; in game it was unclear what it covered (the
+  hotbar has its own switch), so it moved with the mod-hints switch into `Hint Glyphs` (chosen
+  over "Crosshair Hint Glyphs", which sorts first and undersells hint bars and badges) as `Force
+  controller glyphs in Valheim hints` / `… in mod hints`: "Force" because off leaves Valheim's own
+  behavior rather than forcing keys, and mouse input doesn't switch them back. Descriptions say
+  what off does and that input isn't changed; `Glyphs used by mod` says it only
+  changes glyphs this mod draws (Valheim's own prompts keep Valheim's art, see the
+  `ModGlyphsForAll everywhere` item under F5). **No migration of old names:** this is a local
+  mod, so renamed settings reset to defaults once and the old entries stay in the `.cfg` until
+  it's deleted (decided 2026-11-08; a carry-over through BepInEx's orphaned entries was built and
+  removed). Short PascalCase `.cfg` keys with the long names as `DispName` were considered and
+  dropped: most mods in my profile (Azumatt's, shudnal's) use readable keys with spaces, and one
+  name everywhere is simpler. Tooltips shortened to one or two sentences, and read-only settings'
+  tooltips start with "Read-only." (the .cfg and Jotunn's Mod Settings may not enforce it; asked
+  2026-11-08).
+- **Status:** Core `MappingStatus` ("Loaded 20 keys", or the error plus "Still using the last good
+  mapping"). A failed reload keeps the last good mapping; a failed first load maps nothing, as
+  before. In shudnal's ConfigurationManager `Mapping status` has a *Reload mapping* button
+  (`CustomDrawer`; the reload runs in the next `Update`, not mid-draw); Jotunn's Mod Settings
+  shows the plain text. Read-only values are set without saving the `.cfg` (`SaveOnConfigSet`
+  off around the write), so no disk write runs inside a frame; the `.cfg` catches up on the next
+  save.
+- **Reload:** `MappingFile` watches the file (`FileSystemWatcher` raises a flag; the plugin's
+  `Update` reloads 0.5 s later on the main thread, since editors save in several writes), plus
+  `cgf_reloadmapping`. A reload swaps `GlyphService`'s map, redraws bars, prefixes and hover text,
+  and empties `Localization.m_cache` (the `$KEY_` text cache). `Glyphs used by mod` changes empty
+  it too, which should fix the known limit above (to check in game).
+- **Keys missing from mapping** (one read-only setting, merged 2026-11-08 from "missing hint keys"
+  and "unmapped shortcuts", which read alike): Core `MissingKeys.Find` merges two sources by key,
+  skipping keys the mapping has, `None`, mouse and joystick buttons, and only listing the unmapped
+  keys of a combo. Every spelling of a key is one entry (`KeyMap.KeyId`); `KeyMap` now also
+  accepts Unity KeyCode names, which other mods' settings use, for keys the Input System names
+  differently (`LeftControl`/`LeftCtrl`, `Return`/`Enter`, `KeypadEnter`/`NumpadEnter`,
+  `LeftWindows`/`LeftMeta`, …), found in review 2026-11-08: a key mapped as `LeftCtrl` was
+  listed as missing under `LeftControl`. Each key's uses (and the summary's mods) are sorted
+  alphabetically (asked 2026-11-08):
+  - **Mod keybindings**, read once when the main menu first opens (Jotunn's
+    `GUIManager.OnCustomGUIAvailable`, then unsubscribed; every plugin has bound its config by
+    then): `ModShortcuts` reads each loaded plugin's `KeyboardShortcut` and `KeyCode` settings
+    through `Chainloader.PluginInfos`, read-only, and the log lists each missing key with every
+    setting using it. Not seen: settings a mod keeps in its own file, and hard-coded keys.
+  - **Hover hints** this session: `HoverTextWriter` records each unmapped key's first line, and
+    tells listeners after the hover text is set, catching their errors (review 2026-11-08: a failed
+    `.cfg` save mid-rewrite could leave the previous object's hint on screen). Hover
+    text doesn't say which mod wrote a line, so `HoverTextMods` names the mods with Harmony patches
+    on the hovered object's `GetHoverText` (Harmony IDs shown as plugin names; cached per type;
+    only looked up on a key's first sighting): one mod, "A or B", or none ("UI Hint" alone) when none patch
+    it. A best guess, said in the setting's description. Mods that add hint lines from other
+    methods (e.g. MyLittleUI's smelter patches) aren't named.
+  - **Shown as** a tree by key, chosen 2026-11-08 over a paste-ready YAML stub or a tree by mod
+    after the one-line list was hard to read in game (~20 keys wrapping): the key, then its uses
+    sorted: `├─ AzuCraftyBoxes > UI Hint > Fill all` for hints (`A or B > UI Hint > …` when
+    several mods patch it, `UI Hint > …` when none do; asked 2026-11-08) and `├─ Mod > Setting`
+    for keybindings (the whole shortcut only for combos). Long lines wrap; checked in game, fine. `MonoTextDrawer` draws it in ConfigurationManager in an OS
+    monospace font (Consolas, else Courier New; destroyed with the plugin) with a *Copy* button;
+    the `.cfg` and Jotunn's Mod Settings show the one-line summary ("E (AzuCraftyBoxes, Epic
+    Loot), T (UI Hint)"). A reload re-checks both sources against the new mapping without reading
+    the mods again. My profile has ~60 keybinding settings, most of them keyboard-only
+    conveniences; the description says to add only keys the Steam layout sends.
+- **Template (2026-11-08):** its button list predated F5 and called R4, L5 and the trackpads text
+  badges. It now lists every button with art, grouped (face, bumpers, triggers, sticks, back
+  buttons, menu, D-pad, trackpads) with their other spellings and which art each has; a test
+  fails if a button in `ValheimButtons` or `ModGlyphs` is missing from it. Only new files get
+  the template; an existing mapping file isn't rewritten.
+- **Self-test:** mapping loaded, file watched, Localization cache reachable; INFO lines for the
+  number of keybinding settings read, the mods patching the hovered object's hover text (look at a
+  chest), and the missing keys.
+- **In game 2026-11-08: turning the Valheim-hints switch off mid-game** left chest and fire hints
+  on glyphs while others went to keys: Valheim's `Localize` cache kept text translated while it
+  was on. Every setting that changes which glyphs show (Enabled, both Hint Glyphs switches, Glyphs
+  used by mod, Force hotbar controller glyphs), and a gamepad connecting or
+  disconnecting, now runs `RedrawGlyphs` (one `Config.SettingChanged` handler). Its description
+  now says what it covers (crosshair hints, hint bars, menu badges) and that the hotbar has its own
+  switch.
+- **In game 2026-11-08: `[G] Open Radial Menu` on cooking stations.** My Little UI adds
+  `[$KEY_OpenRadial] $settings_open_radial` to hover hints. Valheim finds a key's controller binding
+  as "Joy" + name, but the radial menu's are `OpenRadial` (keyboard) and `JoyRadial` (controller),
+  so `JoyOpenRadial` doesn't exist and even Valheim's own gamepad mode shows G. Valheim's naming
+  quirk plus My Little UI not handling it; not a config problem. Fixed on our side:
+  `BoundKeyResolver.ControllerNameExceptions` (`OpenRadial` → `JoyRadial`, contract-tested
+  against ZInput's literals; the only keyboard/controller pair that's clearly the same action).
+  Worth reporting to My Little UI's author (shudnal). **Verified in game 2026-11-08:** the hint
+  shows LB.
+- **In game 2026-11-08: after turning the Valheim-hints switch off, some chests kept the X glyph,
+  others showed E.** My Little UI caches each chest's whole localized hover text per chest
+  (`ChestHoverText.hoverTextCache`, keyed by the chest's ZDO), cleared only when that chest's
+  contents change (`Container.OnContainerChanged` postfix) or its own settings change
+  (`ResetHoverCache`). Chests hovered before the toggle keep the glyph they were cached with. The
+  same happens in vanilla when switching between keyboard and controller (the cached `$KEY_Use`
+  doesn't follow the input mode), so it's My Little UI's bug, exposed by our toggles and gamepad
+  connects. Options: call its `ResetHoverCache` by reflection from `RedrawGlyphs`, put that in the
+  F10 compat plugin, or report upstream (cache should be cleared on `ZInput.OnInputLayoutChanged`).
+  **Decided 2026-11-08:** F10 compat plugin (fix 4), not this mod; also worth reporting upstream.
+- **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
+  keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
+
+**READMEs (asked 2026-11-08).** Both are still the JotunnModStub template. Rewrite them as two
+documents for two readers:
+
+- **Development README** (repo root `README.md`): for me or a contributor. What the mod is in two
+  lines and a link to the mod-page README; repo layout (Core, plugin, the two test projects,
+  `scripts/`); setup (`Environment.props` and its four paths, the Gale profile, ilspycmd);
+  build/test/deploy commands and the locked-DLL gotcha; `cgf_selftest` and contract tests after a
+  game update; the design rules in short, pointing to `CLAUDE.md` and the spec for the rest;
+  how the glyph PNGs are made (`scripts/make-glyphs.ps1`, Kenney credit). Drop the template's
+  Unity sections unless the Unity project is used.
+- **Mod-page README** (`ControllerGlyphFixer/README.md`, packaged for Thunderstore): for players.
+  - **Style I like:** ImpactfulSkills (Thunderstore): short tagline and intro, then one section
+    per feature with its settings named right there in the text, a screenshot per feature,
+    console commands, suggested mods to pair with. RimWorld Workshop pages (Vanilla
+    Temperature Expanded, Reel's Facial Animation Textures): friendly first-person prose
+    intro that says the problem the mod solves, requirements at the top, a Q&A FAQ ("Can I add
+    it to an existing save?"), an honest compatibility list and plain disclaimers about what
+    it doesn't do, how to report issues, and credits.
+  - **Contents:** tagline; the problem (Steam Input layouts that mix gamepad buttons and
+    keyboard keys flip Valheim to keyboard prompts) and what the mod does about it, with
+    before/after screenshots; requirements (BepInEx, Jotunn, a controller through Steam Input);
+    features, each with a screenshot and its settings (prompts stay controller glyphs, hotbar
+    and quick-slot labels with group prefixes, hover hints from other mods, glyph art,
+    inventory badges); **setting up your mapping**: "the mapping lives outside your Steam
+    layout and must match it", then the steps (open the file, read each key from Steam's
+    controller configurator or let the layout audit list them, write the buttons, save and see
+    it reload) and the `labels`/`colors`/`aliases` sections;
+    console commands; FAQ (does it change my input mode? does the trackpad cursor still
+    work? why does a hint still show a key? can I use it without a Steam Controller?);
+    compatibility (AzuEPI, MyLittleUI, ConfigurationManager, mods whose hints it rewrites);
+    limits (only keys Steam sends are seen; holds and chords aren't; Valheim-art vs mod-art
+    mix); reporting issues; credits (Kenney's Input Prompts, CC0); changelog link.
+  - Screenshots need to be taken in game; list the shots needed when writing it.
 
 ### F10. Mod compat plugin (later, separate mod)
 A small separate BepInEx plugin for conflicts between other mods in my profile. Not part of
@@ -641,10 +791,21 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
   - **Upstream:** worth reporting to AzuEPI's author (same fix inside its controller, e.g. select
     bar 0 where it first fills `HotkeyBars`). Confirmed in game (2026-11-08): one D-pad left/right
     press clears the second square.
+- **Fix 4, stale chest hints** (needs `shudnal.MyLittleUI`; found 2026-11-08, see F9's in-game
+  findings): My Little UI caches each chest's localized hover text per chest
+  (`ChestHoverText.hoverTextCache`) and only clears it when that chest's contents or its own
+  settings change, so a chest keeps the key glyphs it was cached with after an input switch (in
+  vanilla too) or after ControllerGlyphFixer's glyph settings or the gamepad change.
+  - **Fix:** call its `ChestHoverText.ResetHoverCache()` on `ZInput.OnInputLayoutChanged` and when
+    ControllerGlyphFixer's glyph settings change (watch its config entries through
+    `Chainloader.PluginInfos`, no compile-time reference) and when a gamepad connects or
+    disconnects.
+  - **Upstream:** ask shudnal to clear the cache on `ZInput.OnInputLayoutChanged`; same report as the
+    `$KEY_OpenRadial` / `JoyRadial` mismatch.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
-  chest hints use a non-`yellow` colour (`#ffff00ff`).
+  chest hints use a non-`yellow` color (`#ffff00ff`).
 
 ## Testing strategy
 
@@ -675,7 +836,7 @@ Red → green → refactor for every Core function. Required cases:
   no mapped slots.
 - `PrefixColors.For`: neutral → none; palette in prefix-button name order, unknown buttons none,
   wraps around; custom from `colors:`, unlisted none; multi-button prefixes use the first.
-- `KeyMap` colors section: values matched like button names; invalid colours name the line;
+- `KeyMap` colors section: values matched like button names; invalid colors name the line;
   `PrefixButtons` sorted and distinct.
 - `KeyMap.Buttons` / `KeyMap.Format`: raw button names; formatting matches `Translate`.
 - `SlotLabelRefresh.Decide`: first sight, unchanged (skip), forced, slots rebuilt with the
@@ -764,10 +925,18 @@ thin patches → in-game self-test checks → manual checklist.
    `HotbarLabels` and `HintRewriter`).
 3. **v3:** F6 targeted visibility patches, starting with the inventory screen (in-game finding
    2026-11-02). F5 glyph images (branch `phase-f5-glyphs`, started 2026-11-08).
-4. **v4:** F7, VDF → YAML generator.
-5. **Before sharing the mod:** F9 pieces 1–4 and the user-facing README.
-6. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
-   Also: move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
+4. **v4 (branch `phase-4-mapping-setup`, started 2026-11-08):** F9 pieces 1–3 (mapping status,
+   reload, mod shortcut audit) and the settings reorganisation below. F7 has no target (see F7).
+5. **v5 (next):** F9 piece 6, the Steam layout VDF audit, then the VDF → YAML generator.
+   **Plugin ID renamed (done 2026-11-08, in v4):** ConfigurationManager's file view lists configs
+   by file name, and ours (`com.angiebrr.controllerglyphfixer.cfg`, `….mapping.yaml`) read oddly
+   next to the others' `Author.ModName` style (`Azumatt.AzuAutoStore.yml`,
+   `aedenthorn.AmmoCount.cfg`). Now `angiebrr.ControllerGlyphFixer` (also the Harmony ID). No
+   migration (local mod): the old files are left behind, so the mapping file had to be renamed by
+   hand once. Still to check: why our file showed uncolored where most mods' files are highlighted.
+6. **Before sharing the mod:** F9 piece 4 and both READMEs.
+7. **Later:** F10 mod compat plugin (separate mod): AutomaticFuel smelter hint, chest rename on hold.
+   Settings reorganisation (moved into v4 on 2026-11-08): move the settings into sections (e.g. `General` for the switches, `Hotbar labels` for
    `HotbarLabels`, `PrefixColors`, `PrefixBackground`) with `ConfigurationManagerAttributes.Order`,
    so Mod Config reads in a sensible order. Moving an entry to another section resets it to its
    default once, so do it before others install the mod.

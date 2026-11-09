@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BepInEx;
@@ -32,8 +33,11 @@ namespace ControllerGlyphFixer
     [Jotunn.Utils.NetworkCompatibility(Jotunn.Utils.CompatibilityLevel.NotEnforced, Jotunn.Utils.VersionStrictness.None)]
     internal class ControllerGlyphFixer : BaseUnityPlugin
     {
-        /// <summary>BepInEx plugin ID; also names the config and mapping files. Don't change it.</summary>
-        public const string PluginGUID = "com.angiebrr.controllerglyphfixer";
+        /// <summary>
+        /// BepInEx plugin ID and Harmony ID, in the Author.ModName style most mods use; also names the
+        /// config and mapping files, so changing it starts both from scratch.
+        /// </summary>
+        public const string PluginGUID = "angiebrr.ControllerGlyphFixer";
 
         /// <summary>Display name shown by BepInEx and ConfigurationManager.</summary>
         public const string PluginName = "ControllerGlyphFixer";
@@ -62,23 +66,54 @@ namespace ControllerGlyphFixer
         /// <summary>Harmony instance that owns all of this mod's patches.</summary>
         private readonly Harmony m_harmony = new (PluginGUID);
 
-        /// <summary>Config General.PrefixColors; kept to unsubscribe on destroy.</summary>
+        /// <summary>Config "Hotbar group colors"; kept to unsubscribe on destroy.</summary>
         private ConfigEntry<PrefixColorMode> m_prefixColors;
 
-        /// <summary>Config General.PrefixBackground; kept to unsubscribe on destroy.</summary>
+        /// <summary>Config "Hotbar group background"; kept to unsubscribe on destroy.</summary>
         private ConfigEntry<Color> m_prefixBackground;
 
         /// <summary>The rounded prefix backing, created in Awake and destroyed with the plugin.</summary>
         private Sprite m_backingSprite;
 
-        /// <summary>Config General.ButtonGlyphs, kept to unsubscribe in OnDestroy.</summary>
-        private ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
+        /// <summary>Settings whose change redraws every glyph (see <see cref="OnSettingChanged"/>); set in Awake.</summary>
+        private HashSet<ConfigEntryBase> m_glyphSettings;
 
         /// <summary>The mod's glyph sprite asset (F5); null if it couldn't be built.</summary>
         private ModSpriteAsset m_modSprites;
 
         /// <summary>Moves Valheim's top-left messages below prefixes under AzuEPI's bar; undone in OnDestroy.</summary>
         private MessageRoom m_messageRoom;
+
+        /// <summary>
+        /// Seconds to wait after the mapping file changes before reading it: editors often save in
+        /// several writes (truncate, write, rename), and reading in between sees a partial file.
+        /// </summary>
+        private const float MappingReloadDelaySeconds = 0.5f;
+
+        /// <summary>Starts the tooltip of every setting the mod sets itself.</summary>
+        private const string ReadOnlyPrefix = "Read-only. ";
+
+        /// <summary>The mapping file: loads, reloads, watches and reports status (F9).</summary>
+        private MappingFile m_mappingFile;
+
+        /// <summary>The glyph service, whose mapping a reload replaces.</summary>
+        private GlyphService m_glyphs;
+
+        /// <summary>The hover text writer, whose missing keys show in the settings; kept to unsubscribe.</summary>
+        private HoverTextWriter m_hoverTextWriter;
+
+        /// <summary>Unscaled time at which to reload the changed mapping file; null when none is pending.</summary>
+        private float? m_reloadAt;
+
+        /// <summary>Logs the first failure to empty Localization's text cache in <see cref="RedrawGlyphs"/>.</summary>
+        private readonly PatchErrorLog m_cacheErrorLog = new (
+            "Couldn't empty Localization's text cache; cached prompts keep their old glyphs until the next input switch");
+
+        /// <summary>Draws "Keys missing from mapping" as a monospace tree in ConfigurationManager; owns its font.</summary>
+        private MonoTextDrawer m_missingKeysDrawer;
+
+        /// <summary>Other mods' keybinding settings, read once at the first main menu.</summary>
+        private readonly ModShortcuts m_modShortcuts = new (PluginGUID);
 
         /// <summary>Path of the YAML key mapping file next to the plugin's .cfg.</summary>
         private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
@@ -87,47 +122,53 @@ namespace ControllerGlyphFixer
         /// Called by Unity when BepInEx loads the plugin: builds every object with its
         /// dependencies, then hands them to the patches and commands that use them.
         /// </summary>
-        // TODO(before sharing): sections and ConfigurationManagerAttributes.Order for Mod Config (spec: Phases).
         private void Awake()
         {
-            ConfigEntry<bool> enabled = Config.Bind("General", "Enabled", true,
-                "Master switch. When off, prompts behave like vanilla.");
-            ConfigEntry<bool> keyPrompts = Config.Bind("General", "KeyPrompts", true,
-                "While a gamepad is connected, show controller glyphs in $KEY_ prompts and hint panels even after " +
-                "keyboard input, and show keyboard-only keys as the Steam Input buttons from the mapping file.");
-            ConfigEntry<bool> hotbarLabels = Config.Bind("General", "HotbarLabels", true,
-                "While a gamepad is connected, label hotbar and AzuExtendedPlayerInventory quick slots with the " +
-                "Steam Input buttons from the mapping file instead of keyboard keys or nothing.");
-            ConfigEntry<PrefixColorMode> prefixColors = Config.Bind("General", "PrefixColors", PrefixColorMode.Neutral,
-                "Colour of the prefix and line beside each group of slots. Neutral: the slot-label " +
-                "colour. Palette: a built-in colour per prefix button. Custom: the mapping file's colors section.");
-            ConfigEntry<Color> prefixBackground = Config.Bind("General", "PrefixBackground", new Color(0f, 0f, 0f, 0.7f),
-                "Colour and transparency of the rounded backing behind each group prefix (and its line, for a row). " +
-                "Set the alpha to 0 to hide it.");
+            // Order counts down so Mod Config lists each section's settings as written here
+            ConfigEntry<bool> enabled = Config.Bind(SettingNames.General, SettingNames.Enabled, true, Describe(
+                "Turns the whole mod on or off.", order: 2));
+            ConfigEntry<ButtonGlyphOrder> buttonGlyphs = Config.Bind(SettingNames.General, SettingNames.GlyphsUsedByMod,
+                ButtonGlyphOrder.Valheim, Describe(
+                "Art for the glyphs this mod draws. Valheim: Valheim's, with Steam Deck art for extra buttons (R4, " +
+                "L5, trackpads). SteamDeck: Steam Deck art for all. Valheim's own prompts aren't changed.", order: 1));
 
-            ConfigEntry<bool> hoverText = Config.Bind("General", "HoverText", true,
-                "While controller glyphs are on, show key names that mods write in hover hints (e.g. [B] AutoFuel) as " +
-                "the Steam Input buttons from the mapping file. Needs KeyPrompts on. Keys missing from the mapping are " +
-                "listed in the log.");
+            ConfigEntry<bool> keyPrompts = Config.Bind(SettingNames.HintGlyphs, SettingNames.ForceGlyphsInValheimHints,
+                true, Describe(
+                "With a gamepad connected, Valheim's hints (crosshair, hint bars, menu badges) stay controller " +
+                "glyphs after keyboard or mouse input, with keyboard-only keys as your mapped buttons. Off: " +
+                "Valheim's own behavior. Input isn't changed.", order: 2));
+            ConfigEntry<bool> hoverText = Config.Bind(SettingNames.HintGlyphs, SettingNames.ForceGlyphsInModHints, true,
+                Describe(
+                "Shows keys in other mods' hover hints (e.g. [B] AutoFuel) as your mapped buttons. Needs " +
+                $"{SettingNames.ForceGlyphsInValheimHints}. Off: the mods' key names.", order: 1));
 
-            ConfigEntry<ButtonGlyphOrder> buttonGlyphs = Config.Bind("General", "ButtonGlyphs", ButtonGlyphOrder.ValheimFirst,
-                "Which art shows for controller buttons in hotbar labels, prefixes and hover hints. ValheimFirst: " +
-                "Valheim's glyphs where it has them, this mod's Steam Deck glyphs for the rest (R4/R5, L4/L5, " +
-                "trackpads). ModGlyphsForAll: this mod's glyphs for every button. Buttons with no art show as [text]. " +
-                "Bars and hover hints update at once; a few action prompts update after the next switch between " +
-                "controller and keyboard input.");
+            ConfigEntry<bool> hotbarLabels = Config.Bind(SettingNames.HotbarGlyphs, SettingNames.ForceHotbarGlyphs, true,
+                Describe(
+                "With a gamepad connected, labels the hotbar and AzuExtendedPlayerInventory quick slots with your " +
+                "mapped buttons, grouped by held button (e.g. R4). Off: Valheim's own labels.", order: 3));
+            ConfigEntry<PrefixColorMode> prefixColors = Config.Bind(SettingNames.HotbarGlyphs,
+                SettingNames.HotbarGroupColors, PrefixColorMode.Neutral, Describe(
+                "Color of each group's held button and line. Neutral: label color. Palette: built-in colors. " +
+                "Custom: the mapping file's colors section.", order: 2));
+            ConfigEntry<Color> prefixBackground = Config.Bind(SettingNames.HotbarGlyphs,
+                SettingNames.HotbarGroupBackground, new Color(0f, 0f, 0f, 0.7f), Describe(
+                "Backing behind each group's held button and line. Alpha 0 hides it.", order: 1));
 
             m_prefixColors = prefixColors;
             m_prefixBackground = prefixBackground;
-            m_buttonGlyphs = buttonGlyphs;
+
+            // Reads m_mappingFile only when drawn, after BindMappingFile has set it
+            m_missingKeysDrawer = new MonoTextDrawer(() => m_mappingFile.MissingKeysTree);
+            m_mappingFile = BindMappingFile();
 
             // Built before the services that format buttons; without it, buttons fall back to [badges]
             m_modSprites = ModSpriteAsset.TryCreate();
             Func<string, string> modGlyph = m_modSprites != null ? ModGlyphs.Tag : null;
             Func<string, string> hintModGlyph = m_modSprites != null ? button => ModGlyphs.Tag(button, HintGlyphPercent, HintGlyphPaddingEm) : null;
 
-            var glyphs = new GlyphService(LoadKeyMap(), enabled, keyPrompts, hotbarLabels, prefixColors, hoverText,
-                buttonGlyphs, modGlyph, hintModGlyph);
+            var glyphs = new GlyphService(m_mappingFile.LoadFirst(), enabled, keyPrompts, hotbarLabels, prefixColors,
+                hoverText, buttonGlyphs, modGlyph, hintModGlyph);
+            m_glyphs = glyphs;
 
             BoundKeyStringPatch.Glyphs = glyphs;
             ApplyPatch(typeof(BoundKeyStringPatch));
@@ -136,7 +177,10 @@ namespace ControllerGlyphFixer
             GamePadBadgePatch.Glyphs = glyphs;
             ApplyPatch(typeof(GamePadBadgePatch));
 
-            var hoverTextWriter = new HoverTextWriter(glyphs);
+            var hoverTextMods = new HoverTextMods(PluginGUID);
+            var hoverTextWriter = new HoverTextWriter(glyphs, hoverTextMods);
+            m_hoverTextWriter = hoverTextWriter;
+            hoverTextWriter.MissingKeysChanged += ShowMissingKeys;
             HoverTextPatch.Writer = hoverTextWriter;
             ApplyPatch(typeof(HoverTextPatch));
 
@@ -163,10 +207,16 @@ namespace ControllerGlyphFixer
                 prefixBackground.SettingChanged += RedrawPrefixes;
             }
 
-            buttonGlyphs.SettingChanged += RedrawGlyphs;
+            // Every switch that changes which glyphs show: cached prompt text must be redrawn live
+            m_glyphSettings = new HashSet<ConfigEntryBase> { enabled, keyPrompts, hoverText, buttonGlyphs, hotbarLabels };
+            Config.SettingChanged += OnSettingChanged;
 
             CommandManager.Instance.AddConsoleCommand(
-                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter, m_modSprites));
+                new SelfTestCommand(glyphs, labels, inventoryLabels, quickSlots, prefixLabels, hoverTextWriter, m_modSprites,
+                    m_mappingFile, m_modShortcuts, hoverTextMods));
+            CommandManager.Instance.AddConsoleCommand(new ReloadMappingCommand(ReloadMapping));
+            m_mappingFile.Watch();
+            GUIManager.OnCustomGUIAvailable += AuditModShortcuts;
 
             LogGamepads();
             InputSystem.onDeviceChange += OnDeviceChange;
@@ -180,6 +230,14 @@ namespace ControllerGlyphFixer
         private void OnDestroy()
         {
             InputSystem.onDeviceChange -= OnDeviceChange;
+            GUIManager.OnCustomGUIAvailable -= AuditModShortcuts;
+            m_mappingFile?.Dispose();
+            m_missingKeysDrawer?.Destroy();
+            if (m_hoverTextWriter != null)
+            {
+                m_hoverTextWriter.MissingKeysChanged -= ShowMissingKeys;
+            }
+
             if (m_prefixColors != null)
             {
                 m_prefixColors.SettingChanged -= RedrawPrefixes;
@@ -190,10 +248,7 @@ namespace ControllerGlyphFixer
                 m_prefixBackground.SettingChanged -= RedrawPrefixes;
             }
 
-            if (m_buttonGlyphs != null)
-            {
-                m_buttonGlyphs.SettingChanged -= RedrawGlyphs;
-            }
+            Config.SettingChanged -= OnSettingChanged;
 
             m_harmony.UnpatchSelf();
             BoundKeyStringPatch.Glyphs = null;
@@ -208,16 +263,161 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Redraws everything showing button glyphs after ButtonGlyphs changes: bars and prefixes, and
-        /// the hover text (its writer caches the last rewrite).
+        /// Redraws everything showing button glyphs after a glyph setting, the gamepad or the mapping
+        /// changes: bars, prefixes, the hover text (its writer caches the last rewrite) and Valheim's
+        /// cached prompt text.
         /// </summary>
         /// <param name="sender">The setting.</param>
         /// <param name="args">Unused.</param>
-        // Known limit: $KEY_ text Valheim's Localization cached updates on the next input-mode switch
         private void RedrawGlyphs(object sender, EventArgs args)
         {
             RedrawPrefixes(sender, args);
             HoverTextPatch.Writer?.Invalidate();
+
+            // Localize caches each $KEY_ text with our glyphs in it; forget it so prompts ask again.
+            // If a game update breaks this, cached prompts update on the next input switch instead.
+            try
+            {
+                Localization.instance.m_cache.EvictAll();
+            }
+            catch (Exception ex)
+            {
+                m_cacheErrorLog.LogOnce(ex);
+            }
+        }
+
+        /// <summary>
+        /// Called by Unity every frame: reloads the mapping a moment after the file changed. Does
+        /// nothing else per frame.
+        /// </summary>
+        private void Update()
+        {
+            if (m_mappingFile != null && m_mappingFile.TakeChange())
+            {
+                m_reloadAt = UnityEngine.Time.unscaledTime + MappingReloadDelaySeconds;
+            }
+
+            if (m_reloadAt.HasValue && UnityEngine.Time.unscaledTime >= m_reloadAt.Value)
+            {
+                m_reloadAt = null;
+                ReloadMapping();
+            }
+        }
+
+        /// <summary>
+        /// Reads the other mods' keybinding settings once, when the main menu first opens (every
+        /// plugin has loaded and bound its config by then), logs each key the mapping lacks and
+        /// updates "Keys missing from mapping".
+        /// </summary>
+        private void AuditModShortcuts()
+        {
+            GUIManager.OnCustomGUIAvailable -= AuditModShortcuts;
+            m_modShortcuts.Read();
+
+            IReadOnlyList<MissingKey> missing = MissingKeys.Find(Array.Empty<HintKeyUse>(), m_modShortcuts.Items, m_glyphs.KeyMap);
+            Jotunn.Logger.LogInfo($"Read {m_modShortcuts.Items.Count} keybinding settings from other mods; " +
+                                  $"{missing.Count} of their keys aren't in your mapping");
+            foreach (MissingKey key in missing)
+            {
+                Jotunn.Logger.LogInfo(MissingKeys.LogLine(key));
+            }
+
+            ShowMissingKeys();
+        }
+
+        /// <summary>
+        /// Reads the mapping file again; on success swaps the mapping in and redraws everything that
+        /// shows buttons. On failure the old mapping stays and the status shows the error.
+        /// </summary>
+        /// <returns>The new status line.</returns>
+        private string ReloadMapping()
+        {
+            if (m_mappingFile.TryLoad(out KeyMap map))
+            {
+                m_glyphs.ReplaceKeyMap(map);
+                RedrawGlyphs(this, EventArgs.Empty);
+                ShowMissingKeys();
+            }
+
+            return m_mappingFile.Status;
+        }
+
+        /// <summary>
+        /// Updates "Keys missing from mapping" from the hover hints seen so far, the keybindings read
+        /// at startup, and the mapping in use.
+        /// </summary>
+        private void ShowMissingKeys()
+        {
+            IEnumerable<HintKeyUse> hints = m_hoverTextWriter != null
+                ? m_hoverTextWriter.MissingKeys
+                : Array.Empty<HintKeyUse>();
+            m_mappingFile.ShowMissingKeys(MissingKeys.Find(hints, m_modShortcuts.Items, m_glyphs.KeyMap));
+        }
+
+        /// <summary>
+        /// Binds the read-only Key Glyph Mapping settings and creates the mapping file handler on them.
+        /// </summary>
+        /// <returns>The mapping file handler (not loaded yet).</returns>
+        private MappingFile BindMappingFile()
+        {
+            ConfigEntry<string> file = Config.Bind(SettingNames.KeyGlyphMapping, SettingNames.MappingFile, "", Describe(
+                "Which controller buttons send each key in your Steam layout. Saved edits apply while playing.",
+                order: 3, readOnly: true));
+            ConfigEntry<string> status = Config.Bind(SettingNames.KeyGlyphMapping, SettingNames.MappingStatus, "",
+                Describe("Whether the mapping file loaded, or its error and line.",
+                order: 2, readOnly: true, drawer: DrawMappingStatus));
+            ConfigEntry<string> missingKeys = Config.Bind(SettingNames.KeyGlyphMapping,
+                SettingNames.KeysMissingFromMapping, MappingStatus.None, Describe(
+                "Keys in hover hints and other mods' keybindings that your mapping lacks (a hint's mod is a best " +
+                "guess). Add only keys your Steam layout sends.", order: 1, readOnly: true,
+                drawer: m_missingKeysDrawer.Draw));
+            return new MappingFile(MappingPath, file, status, missingKeys);
+        }
+
+        /// <summary>
+        /// Draws "Mapping status" in shudnal's ConfigurationManager: the status line and a Reload button.
+        /// Jotunn's Mod Settings ignores custom drawers and shows the plain read-only text.
+        /// </summary>
+        /// <param name="entry">The Status entry.</param>
+        // ConfigurationManager disables the GUI for read-only entries (its "Style readonly entries"
+        // setting), and its edit window passes a copy of the entry made when the window opened. So
+        // the label reads the live status, and the button turns the GUI back on for itself. The
+        // reload runs in the next Update, not mid-draw, so the window's layout doesn't change under it.
+        private void DrawMappingStatus(ConfigEntryBase entry)
+        {
+            UnityEngine.GUILayout.BeginVertical();
+            UnityEngine.GUILayout.Label(m_mappingFile.Status);
+
+            bool wasEnabled = UnityEngine.GUI.enabled;
+            UnityEngine.GUI.enabled = true;
+            if (UnityEngine.GUILayout.Button("Reload mapping"))
+            {
+                m_reloadAt = UnityEngine.Time.unscaledTime;
+            }
+
+            UnityEngine.GUI.enabled = wasEnabled;
+            UnityEngine.GUILayout.EndVertical();
+        }
+
+        /// <summary>
+        /// Builds a setting's description with its place in Mod Config.
+        /// </summary>
+        /// <param name="text">Description shown in the settings UIs and the .cfg.</param>
+        /// <param name="order">Higher is listed first within the section.</param>
+        /// <param name="readOnly">True for values the mod sets (no editing, no reset button, and the
+        /// tooltip starts with "Read-only." since the .cfg and some UIs can't enforce it).</param>
+        /// <param name="drawer">Custom drawer for ConfigurationManager, or null for the default.</param>
+        /// <returns>The description.</returns>
+        private static ConfigDescription Describe(string text, int order, bool readOnly = false,
+            Action<ConfigEntryBase> drawer = null)
+        {
+            return new (readOnly ? ReadOnlyPrefix + text : text, null, new ConfigurationManagerAttributes
+            {
+                Order = order,
+                ReadOnly = readOnly,
+                HideDefaultButton = readOnly,
+                CustomDrawer = drawer,
+            });
         }
 
         /// <summary>
@@ -230,34 +430,6 @@ namespace ControllerGlyphFixer
         {
             HotbarLabelsPatch.Writer?.Invalidate();
             InventoryLabelsPatch.Writer?.Invalidate();
-        }
-
-        /// <summary>
-        /// Loads the mapping file, writing the commented template first if it doesn't exist.
-        /// </summary>
-        /// <returns>The parsed map, or an empty map if the file can't be read or parsed.</returns>
-        // TODO: reload the mapping when the file changes (FileSystemWatcher) or via a console
-        // command, so edits don't need a game restart. Localization caches text, so clear it too.
-        private KeyMap LoadKeyMap()
-        {
-            try
-            {
-                if (!File.Exists(MappingPath))
-                {
-                    File.WriteAllText(MappingPath, KeyMapTemplate.Yaml);
-                    Jotunn.Logger.LogInfo($"Wrote an empty key mapping template to {MappingPath}; edit it to add your buttons");
-                }
-
-                KeyMap map = KeyMap.Parse(File.ReadAllText(MappingPath));
-                Jotunn.Logger.LogInfo($"Loaded {map.Count} key mappings from {MappingPath}");
-                return map;
-            }
-            catch (Exception ex) when (ex is KeyMapException || ex is IOException || ex is UnauthorizedAccessException)
-            {
-                Jotunn.Logger.LogError($"Couldn't load key mapping {MappingPath}: {ex.Message}. " +
-                                       "Controller glyphs still work; keyboard-only keys stay as keys.");
-                return KeyMap.Empty;
-            }
         }
 
         /// <summary>
@@ -314,10 +486,26 @@ namespace ControllerGlyphFixer
             if (change == InputDeviceChange.Added || change == InputDeviceChange.Reconnected)
             {
                 Jotunn.Logger.LogInfo($"Gamepad connected: {device.displayName} ({device.layout})");
+                RedrawGlyphs(this, EventArgs.Empty);
             }
             else if (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected)
             {
                 Jotunn.Logger.LogInfo($"Gamepad disconnected: {device.displayName} ({device.layout})");
+                RedrawGlyphs(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Redraws every glyph when a setting that decides which glyphs show changes, so text Valheim
+        /// cached (chest and fire hints) follows it at once instead of at the next input switch.
+        /// </summary>
+        /// <param name="sender">The config file.</param>
+        /// <param name="args">Which setting changed.</param>
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
+        {
+            if (m_glyphSettings.Contains(args.ChangedSetting))
+            {
+                RedrawGlyphs(sender, args);
             }
         }
     }

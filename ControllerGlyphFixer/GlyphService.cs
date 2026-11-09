@@ -18,25 +18,25 @@ namespace ControllerGlyphFixer
     /// </summary>
     internal sealed class GlyphService
     {
-        /// <summary>The loaded key mapping.</summary>
-        private readonly KeyMap m_keyMap;
+        /// <summary>The loaded key mapping; replaced when the mapping file is reloaded.</summary>
+        private KeyMap m_keyMap;
 
-        /// <summary>Config General.Enabled: master switch.</summary>
+        /// <summary>Config "Enabled": master switch.</summary>
         private readonly ConfigEntry<bool> m_enabled;
 
-        /// <summary>Config General.KeyPrompts: controller glyphs in $KEY_ prompts (F1 + F2).</summary>
+        /// <summary>Config "Force controller glyphs in Valheim hints": glyphs in $KEY_ prompts (F1, F2).</summary>
         private readonly ConfigEntry<bool> m_keyPrompts;
 
-        /// <summary>Config General.HotbarLabels: mapped buttons on hotbar and quick slots (F3).</summary>
+        /// <summary>Config "Force hotbar controller glyphs": mapped buttons on hotbar and quick slots (F3).</summary>
         private readonly ConfigEntry<bool> m_hotbarLabels;
 
-        /// <summary>Config General.PrefixColors: how group prefixes and lines are coloured (F3).</summary>
+        /// <summary>Config "Hotbar group colors": how group prefixes and lines are colored (F3).</summary>
         private readonly ConfigEntry<PrefixColorMode> m_prefixColors;
 
-        /// <summary>Config General.HoverText: mapped buttons for key names in hover hints (F4).</summary>
+        /// <summary>Config "Force controller glyphs in mod hints": mapped buttons in hover hints (F4).</summary>
         private readonly ConfigEntry<bool> m_hoverText;
 
-        /// <summary>Config General.ButtonGlyphs: Valheim's art or the mod's tried first (F5).</summary>
+        /// <summary>Config "Glyphs used by mod": Valheim's art or the mod's tried first (F5).</summary>
         private readonly ConfigEntry<ButtonGlyphOrder> m_buttonGlyphs;
 
         /// <summary>The mod's glyph tag for a normalized button (<see cref="ModGlyphs.Tag(string)"/>); null without the sprite asset.</summary>
@@ -58,7 +58,7 @@ namespace ControllerGlyphFixer
         /// <param name="enabled">Config master switch; read live so changes apply immediately.</param>
         /// <param name="keyPrompts">Config switch for F1 + F2; read live.</param>
         /// <param name="hotbarLabels">Config switch for F3; read live.</param>
-        /// <param name="prefixColors">Config colour mode for group prefixes; read live.</param>
+        /// <param name="prefixColors">Config color mode for group prefixes; read live.</param>
         /// <param name="hoverText">Config switch for F4; read live.</param>
         /// <param name="buttonGlyphs">Config art order for mapped buttons (F5); read live.</param>
         /// <param name="modGlyph">The mod's glyph lookup, or null if the sprite asset couldn't be built.</param>
@@ -87,6 +87,20 @@ namespace ControllerGlyphFixer
         /// <summary>Number of keys in the loaded mapping.</summary>
         internal int MappedKeyCount => m_keyMap.Count;
 
+        /// <summary>The loaded key mapping.</summary>
+        internal KeyMap KeyMap => m_keyMap;
+
+        /// <summary>
+        /// Swaps in a reloaded mapping and forgets the key-name answers based on the old one.
+        /// Callers redraw whatever shows buttons.
+        /// </summary>
+        /// <param name="keyMap">The new mapping.</param>
+        internal void ReplaceKeyMap(KeyMap keyMap)
+        {
+            m_keyMap = keyMap ?? throw new ArgumentNullException(nameof(keyMap));
+            m_keyNames.Clear();
+        }
+
         /// <summary><see cref="TranslateKey"/> as a delegate, created once.</summary>
         internal Func<string, string> KeyTranslator { get; }
 
@@ -101,7 +115,7 @@ namespace ControllerGlyphFixer
 
         /// <summary>
         /// Whether hover-text hints should show mapped buttons right now (F4): needs both the $KEY_
-        /// glyphs (KeyPrompts) and the HoverText switch, since it finishes what F1 starts there.
+        /// glyphs (Valheim hints) and the mod hints switch, since it finishes what F1 starts there.
         /// Computed on each read, like <see cref="ShowKeyPrompts"/>.
         /// </summary>
         internal bool ShowHoverText => ShowGlyphs(m_keyPrompts.Value && m_hoverText.Value);
@@ -220,10 +234,10 @@ namespace ControllerGlyphFixer
         }
 
         /// <summary>
-        /// Returns the colour of a group's prefix and line, per the current colour mode.
+        /// Returns the color of a group's prefix and line, per the current color mode.
         /// </summary>
         /// <param name="prefix">The group's prefix buttons.</param>
-        /// <returns>A colour (#RRGGBB or #RRGGBBAA), or null for the slot-label colour.</returns>
+        /// <returns>A color (#RRGGBB or #RRGGBBAA), or null for the slot-label color.</returns>
         internal string PrefixColor(IReadOnlyList<string> prefix)
         {
             return PrefixColors.For(m_prefixColors.Value, prefix, m_keyMap);

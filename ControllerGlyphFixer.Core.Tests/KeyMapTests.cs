@@ -2,6 +2,7 @@
 // KeyMapTests.cs: unit tests for parsing the key mapping and translating keys to buttons.
 // ------------------------------------------------------------------------------------------------
 
+using System.Text.RegularExpressions;
 using ControllerGlyphFixer.Core;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,6 +73,45 @@ public class KeyMapTests
         Assert.Equal(SteamController.Translate(canonical, FakeGlyph), SteamController.Translate(spelling, FakeGlyph));
     }
 
+    /// <summary>
+    /// Unity KeyCode names (what other mods' keybinding settings use) match the Input System names a
+    /// mapping file uses, and the other way round.
+    /// </summary>
+    /// <param name="inFile">Key as written in the mapping file.</param>
+    /// <param name="keyCode">The same key as a KeyCode name.</param>
+    [Theory]
+    [InlineData("LeftCtrl", "LeftControl")]
+    [InlineData("RightCtrl", "RightControl")]
+    [InlineData("Enter", "Return")]
+    [InlineData("NumpadEnter", "KeypadEnter")]
+    [InlineData("NumpadPlus", "KeypadPlus")]
+    [InlineData("NumpadMinus", "KeypadMinus")]
+    [InlineData("NumpadMultiply", "KeypadMultiply")]
+    [InlineData("NumpadDivide", "KeypadDivide")]
+    [InlineData("NumpadPeriod", "KeypadPeriod")]
+    [InlineData("LeftMeta", "LeftWindows")]
+    [InlineData("LeftMeta", "LeftCommand")]
+    [InlineData("RightMeta", "RightWindows")]
+    [InlineData("LeftControl", "LeftCtrl")]
+    public void KeyCode_names_match_input_system_names(string inFile, string keyCode)
+    {
+        KeyMap map = KeyMap.Parse($"keys:\n  {inFile}: L4\n");
+
+        Assert.Equal(new[] { "L4" }, map.Buttons(keyCode));
+        Assert.Equal(map.KeyId(inFile), map.KeyId(keyCode));
+    }
+
+    /// <summary>A key and its file alias have the same identity, so lists can group them.</summary>
+    [Fact]
+    public void Key_id_follows_file_aliases()
+    {
+        KeyMap map = KeyMap.Parse("aliases:\n  Left Shift: LeftShift\nkeys:\n  LeftShift: L4\n");
+
+        Assert.Equal(map.KeyId("LeftShift"), map.KeyId("Left Shift"));
+        Assert.Equal(map.KeyId("1"), map.KeyId("Alpha1"));
+        Assert.NotEqual(map.KeyId("Keypad1"), map.KeyId("1"));
+    }
+
     /// <summary>Keys not in the mapping (and missing-binding messages) translate to null.</summary>
     /// <param name="key">Key name that isn't mapped.</param>
     [Theory]
@@ -85,9 +125,9 @@ public class KeyMapTests
         Assert.Null(SteamController.Translate(key, FakeGlyph));
     }
 
-    /// <summary>The colors section sets a button's colour, matched like other button names.</summary>
+    /// <summary>The colors section sets a button's color, matched like other button names.</summary>
     [Fact]
-    public void Colors_section_sets_button_colours()
+    public void Colors_section_sets_button_colors()
     {
         var map = KeyMap.Parse("colors:\n  R4: \"#9B8CFF\"\n  L 5: \"#5DCAA580\"\nkeys:\n  Q: L5\n");
 
@@ -96,13 +136,13 @@ public class KeyMapTests
         Assert.Null(map.Color("R5"));
     }
 
-    /// <summary>A colour that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
-    /// <param name="color">An invalid colour.</param>
+    /// <summary>A color that isn't #RRGGBB or #RRGGBBAA is an error naming the line.</summary>
+    /// <param name="color">An invalid color.</param>
     [Theory]
     [InlineData("purple")]
     [InlineData("\"#12345\"")]
     [InlineData("\"#GGGGGG\"")]
-    public void Invalid_colours_are_an_error(string color)
+    public void Invalid_colors_are_an_error(string color)
     {
         var ex = Assert.Throws<KeyMapException>(() => KeyMap.Parse($"colors:\n  R4: {color}\n"));
 
@@ -211,25 +251,25 @@ public class KeyMapTests
     private static string Deck(string sprite) => $"<sprite=\"cgf_deck\" name=\"{sprite}\">";
 
     /// <summary>
-    /// ValheimFirst (default): Valheim's art for buttons it has, the mod's glyph for the rest; the
+    /// Valheim (default): Valheim's art for buttons it has, the mod's glyph for the rest; the
     /// glyph replaces the labels-section badge text (LPad Up).
     /// </summary>
     [Fact]
-    public void ValheimFirst_uses_valheim_art_then_ours()
+    public void Valheim_uses_valheim_art_then_ours()
     {
         Assert.Equal(Deck("r4") + " + <dpad_up>", SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag));
         Assert.Equal(Deck("lpad_up"), SteamController.Translate("B", FakeGlyph, ModGlyphs.Tag));
     }
 
-    /// <summary>ModGlyphsForAll: the mod's glyph for every button it has, Valheim's art for the rest.</summary>
+    /// <summary>SteamDeck: the mod's glyph for every button it has, Valheim's art for the rest.</summary>
     [Fact]
-    public void ModGlyphsForAll_uses_ours_then_valheim()
+    public void SteamDeck_uses_ours_then_valheim()
     {
         var map = KeyMap.Parse("keys:\n  Q: LS\n");
 
         Assert.Equal(Deck("r4") + " + " + Deck("dpad_up"),
-            SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
-        Assert.Equal("<leftStickPress>", map.Translate("Q", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
+            SteamController.Translate("1", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
+        Assert.Equal("<leftStickPress>", map.Translate("Q", FakeGlyph, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
     }
 
     /// <summary>
@@ -243,14 +283,14 @@ public class KeyMapTests
 
         Assert.Equal("<dpad_up>", SteamController.Format(new[] { "DPadUp" }, FakeGlyph, NoCall));
         Assert.Equal(Deck("dpad_up"),
-            SteamController.Format(new[] { "DPadUp" }, NoCall, ModGlyphs.Tag, ButtonGlyphOrder.ModGlyphsForAll));
+            SteamController.Format(new[] { "DPadUp" }, NoCall, ModGlyphs.Tag, ButtonGlyphOrder.SteamDeck));
     }
 
     /// <summary>Without the mod's glyphs (the sprite asset couldn't be built), badges stay in either order.</summary>
     /// <param name="order">Lookup order.</param>
     [Theory]
-    [InlineData(ButtonGlyphOrder.ValheimFirst)]
-    [InlineData(ButtonGlyphOrder.ModGlyphsForAll)]
+    [InlineData(ButtonGlyphOrder.Valheim)]
+    [InlineData(ButtonGlyphOrder.SteamDeck)]
     public void No_mod_glyphs_keeps_badges(ButtonGlyphOrder order)
     {
         Assert.Equal("[R4] + <dpad_up>", SteamController.Translate("1", FakeGlyph, null, order));
@@ -259,8 +299,8 @@ public class KeyMapTests
     /// <summary>A button no art covers (a back grip) keeps its badge in either order.</summary>
     /// <param name="order">Lookup order.</param>
     [Theory]
-    [InlineData(ButtonGlyphOrder.ValheimFirst)]
-    [InlineData(ButtonGlyphOrder.ModGlyphsForAll)]
+    [InlineData(ButtonGlyphOrder.Valheim)]
+    [InlineData(ButtonGlyphOrder.SteamDeck)]
     public void Buttons_with_no_art_keep_their_badge(ButtonGlyphOrder order)
     {
         var map = KeyMap.Parse("keys:\n  Q: LG\n");
@@ -324,6 +364,24 @@ public class KeyMapTests
     public void Count_is_the_number_of_mapped_keys()
     {
         Assert.Equal(20, SteamController.Count);
+    }
+
+    /// <summary>
+    /// The template's button list names every button that has art, from Valheim or the mod's Steam
+    /// Deck glyphs (aliases included), so it can't go stale when glyphs are added.
+    /// </summary>
+    [Fact]
+    public void Template_lists_every_button_with_art()
+    {
+        string yaml = KeyMapTemplate.Yaml;
+        int start = yaml.IndexOf("# Buttons with art", StringComparison.Ordinal);
+        int end = yaml.IndexOf("# Any other button", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start, "button list block not found");
+
+        var listed = new HashSet<string>(
+            Regex.Split(yaml.Substring(start, end - start), "[^A-Za-z0-9]+").Select(word => word.ToLowerInvariant()));
+
+        Assert.All(ModGlyphs.ButtonNames.Concat(ValheimButtons.ButtonNames), button => Assert.Contains(button, listed));
     }
 
     /// <summary>The template written on first run is valid and maps nothing.</summary>

@@ -35,6 +35,22 @@ public class PatchTargetTests
         Assert.Equal("System.String", method.ReturnType.FullName);
     }
 
+    /// <summary>
+    /// The binding names in BoundKeyResolver's exceptions (keyboard name and its controller twin)
+    /// are still bound by ZInput.
+    /// </summary>
+    [GameFact]
+    public void Controller_name_exceptions_are_still_ZInput_bindings()
+    {
+        List<string> literals = ModAssemblies.StringLiterals(Path.Combine(GameAssemblies.ManagedDir, "assembly_utils.dll"));
+
+        foreach (KeyValuePair<string, string> pair in Core.BoundKeyResolver.ControllerNameExceptions)
+        {
+            Assert.Contains(pair.Key, literals);
+            Assert.Contains(pair.Value, literals);
+        }
+    }
+
     /// <summary>Members read by GlyphService, the patches and the self-test exist.</summary>
     [GameFact]
     public void ZInput_members_used_for_glyph_mode_exist()
@@ -197,6 +213,34 @@ public class PatchTargetTests
         Assert.NotNull(localize);
         Assert.Equal("System.String", localize.ReturnType.FullName);
     }
+
+    /// <summary>
+    /// HoverTextMods finds the hovered object to name the mods patching its hover text (F9).
+    /// </summary>
+    [GameFact]
+    public void Player_hover_object_members_exist()
+    {
+        Type player = GameAssemblies.Type("assembly_valheim", "Player");
+
+        Assert.True(player.GetField("m_localPlayer", Static) != null, "Player.m_localPlayer not found");
+        Assert.Equal("GameObject", player.GetMethod("GetHoverObject", Instance, null, Type.EmptyTypes, null)?.ReturnType.Name);
+        Assert.NotNull(GameAssemblies.Type("assembly_valheim", "Hoverable").GetMethod("GetHoverText"));
+    }
+
+    /// <summary>
+    /// Localize's text cache, which RedrawGlyphs empties after a mapping reload or ButtonGlyphs
+    /// change so cached $KEY_ text picks up the new glyphs (F9).
+    /// </summary>
+    [GameFact]
+    public void Localization_cache_can_be_emptied()
+    {
+        FieldInfo cache = GameAssemblies.Type("assembly_guiutils", "Localization").GetField("m_cache", Instance);
+
+        Assert.True(cache != null, "Localization.m_cache not found");
+        Assert.Equal("LRUCache`1", cache.FieldType.Name);
+        Assert.NotNull(cache.FieldType.GetMethod("EvictAll", Instance, null, Type.EmptyTypes, null));
+    }
+
 
     /// <summary>
     /// Asserts a static property exists with the given type name.

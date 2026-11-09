@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -16,6 +17,26 @@ namespace ControllerGlyphFixer.Core
     {
         /// <summary>Prefix Valheim uses for controller binding names (e.g. "JoyUse").</summary>
         private const string ControllerPrefix = "Joy";
+
+        /// <summary>
+        /// Keyboard bindings whose controller twin isn't "Joy" + name (from ZInput's binding list,
+        /// checked 2026-11-08; contract-tested). Valheim's radial code checks both to open the menu.
+        /// </summary>
+        // FIXME: copied from ZInput.Reset's AddButton calls
+        public static readonly IReadOnlyDictionary<string, string> ControllerNameExceptions = new Dictionary<string, string>
+        {
+            { "OpenRadial", "JoyRadial" },
+        };
+
+        /// <summary>
+        /// The controller binding name for a keyboard binding.
+        /// </summary>
+        /// <param name="name">Keyboard binding name (e.g. "Use").</param>
+        /// <returns>"Joy" + name, or the known exception (OpenRadial: JoyRadial).</returns>
+        private static string ControllerName(string name)
+        {
+            return ControllerNameExceptions.TryGetValue(name, out string controller) ? controller : ControllerPrefix + name;
+        }
 
         /// <summary>
         /// Returns the display string for a binding.
@@ -41,7 +62,7 @@ namespace ControllerGlyphFixer.Core
                 return originalResult;
             }
 
-            string controller = lookupJoy(ControllerPrefix + name);
+            string controller = lookupJoy(ControllerName(name));
             if (!string.IsNullOrEmpty(controller))
             {
                 return controller;

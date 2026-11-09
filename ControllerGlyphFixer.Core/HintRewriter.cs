@@ -73,7 +73,7 @@ namespace ControllerGlyphFixer.Core
         /// <summary>Start of a TextMeshPro sprite tag, which is a glyph.</summary>
         private const string SpriteTagStart = "<sprite";
 
-        /// <summary>Start of a TextMeshPro colour tag.</summary>
+        /// <summary>Start of a TextMeshPro color tag.</summary>
         private const string ColorTagStart = "<color=";
 
         /// <summary>TextMeshPro's bold tag.</summary>
@@ -109,7 +109,7 @@ namespace ControllerGlyphFixer.Core
                 if (close < 0)
                 {
                     // An unclosed "[" whose opening tags run straight into a glyph is what Valheim's
-                    // gamepad cleanup leaves of a hint not coloured "yellow": drop it like vanilla does
+                    // gamepad cleanup leaves of a hint not colored "yellow": drop it like vanilla does
                     int glyph = text[index] == '[' ? LeftoverOpeningEnd(text, index) : -1;
                     if (glyph >= 0)
                     {
@@ -147,12 +147,12 @@ namespace ControllerGlyphFixer.Core
         /// <summary>
         /// Finds where the glyph starts after a leftover "[&lt;color=…&gt;&lt;b&gt;". Valheim's gamepad
         /// mode turns "[&lt;color=yellow&gt;&lt;b&gt;&lt;sprite=" into "&lt;sprite=" and "\"&gt;&lt;/b&gt;&lt;/color&gt;]"
-        /// into "\"&gt;"; with any other colour only the second matches, leaving the opening behind
+        /// into "\"&gt;"; with any other color only the second matches, leaving the opening behind
         /// (MyLittleUI's chest hints use #ffff00ff).
         /// </summary>
         /// <param name="text">The text.</param>
         /// <param name="open">Index of an unclosed "[".</param>
-        /// <returns>Index of the sprite tag right after "[" and opening colour/bold tags, or -1.</returns>
+        /// <returns>Index of the sprite tag right after "[" and opening color/bold tags, or -1.</returns>
         // TODO: report to MyLittleUI's author (shudnal, ChestHoverText): its chest hints use
         // <color=#ffff00ff>, which Valheim's gamepad cleanup doesn't match; <color=yellow> fixes it at
         // the source. Once fixed upstream this repair finds nothing to do.

@@ -11,7 +11,7 @@ namespace ControllerGlyphFixer
 {
     /// <summary>
     /// Builds a white rounded-square sprite with 9-slice borders, so an Image can stretch it to any
-    /// size while keeping its corners. Tinted by the Image's colour. Pixels come from
+    /// size while keeping its corners. Tinted by the Image's color. Pixels come from
     /// <see cref="RoundedCorners.Coverage"/>.
     /// </summary>
     internal static class RoundedSprite

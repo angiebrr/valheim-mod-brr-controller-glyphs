@@ -39,6 +39,9 @@ namespace ControllerGlyphFixer.Core
             { "dpadleft", "dpad_left" },
         };
 
+        /// <summary>Every normalized button name with Valheim art, aliases included (for the template's list).</summary>
+        public static IReadOnlyCollection<string> ButtonNames => Controls.Keys;
+
         /// <summary>
         /// Looks up the Valheim control name for a mapping-file button name.
         /// </summary>
