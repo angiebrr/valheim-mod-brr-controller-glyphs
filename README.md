@@ -39,6 +39,19 @@ in-game findings are in the spec: [.claude/specs/controller-glyphs.md](.claude/s
 
    Use the full path in place of `%APPDATA%`. `DoPrebuild.props` makes Jötunn generate publicized
    game assemblies on the first build.
+3. To read Valheim's or another mod's code, install ilspycmd
+   (`dotnet tool install -g ilspycmd`) and decompile from
+   `<VALHEIM_INSTALL>\valheim_Data\Managed` into a folder outside the repo.
+
+## Design rules in short
+
+- Postfixes only, at low priority; never change Valheim's input mode.
+- Each patch catches its own errors; a patch that can't apply turns off only its feature.
+- Logic lives in Core with tests; the plugin stays thin.
+- Other mods are read at runtime, never referenced at compile time.
+- Everything the mod adds to the UI is removed when glyphs turn off.
+
+[CLAUDE.md](CLAUDE.md) has the full rules and code style; the spec has the reasoning.
 
 ## Build, test, deploy
 
