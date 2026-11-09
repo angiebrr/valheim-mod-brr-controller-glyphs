@@ -691,6 +691,7 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   doesn't follow the input mode), so it's My Little UI's bug, exposed by our toggles and gamepad
   connects. Options: call its `ResetHoverCache` by reflection from `RedrawGlyphs`, put that in the
   F10 compat plugin, or report upstream (cache should be cleared on `ZInput.OnInputLayoutChanged`).
+  **Decided 2026-11-08:** F10 compat plugin (fix 4), not this mod; also worth reporting upstream.
 - **To check in game:** that the first main menu fires `OnCustomGUIAvailable` (the self-test's
   keybinding count says so), and whether Jotunn's Mod Settings honors `ReadOnly`.
 
@@ -780,6 +781,17 @@ ControllerGlyphFixer, whose rules forbid changing other mods' patches or behavio
   - **Upstream:** worth reporting to AzuEPI's author (same fix inside its controller, e.g. select
     bar 0 where it first fills `HotkeyBars`). Confirmed in game (2026-11-08): one D-pad left/right
     press clears the second square.
+- **Fix 4, stale chest hints** (needs `shudnal.MyLittleUI`; found 2026-11-08, see F9's in-game
+  findings): My Little UI caches each chest's localized hover text per chest
+  (`ChestHoverText.hoverTextCache`) and only clears it when that chest's contents or its own
+  settings change, so a chest keeps the key glyphs it was cached with after an input switch (in
+  vanilla too) or after ControllerGlyphFixer's glyph settings or the gamepad change.
+  - **Fix:** call its `ChestHoverText.ResetHoverCache()` on `ZInput.OnInputLayoutChanged` and when
+    ControllerGlyphFixer's glyph settings change (watch its config entries through
+    `Chainloader.PluginInfos`, no compile-time reference) and when a gamepad connects or
+    disconnects.
+  - **Upstream:** ask shudnal to clear the cache on `ZInput.OnInputLayoutChanged`; same report as the
+    `$KEY_OpenRadial` / `JoyRadial` mismatch.
 - **MyLittleUI audit (2026-11-08):** it fully replaces hover text for chests, smelters (add fuel,
   add ore, empty), cooking stations and pickables (name only), so other mods' lines there can be
   lost; it only appends for fermenters, plants, beehives, tameables, characters and eggs. Only its
