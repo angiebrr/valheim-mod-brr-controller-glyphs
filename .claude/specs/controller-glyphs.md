@@ -668,7 +668,11 @@ status, the Reload and Copy buttons, and the new `cgf_selftest` lines.
     Loot), T (UI Hint)"). A reload re-checks both sources against the new mapping without reading
     the mods again. My profile has ~60 keybinding settings, most of them keyboard-only
     conveniences; the description says to add only keys the Steam layout sends.
-- **Template (2026-11-08):** its button list predated F5 and called R4, L5 and the trackpads text  badges. It now lists every button with art, grouped (face, bumpers, triggers, sticks, back  buttons, menu, D-pad, trackpads) with their other spellings and which art each has; a test  fails if a button in `ValheimButtons` or `ModGlyphs` is missing from it. Only new files get  the template; an existing mapping file isn't rewritten.
+- **Template (2026-11-08):** its button list predated F5 and called R4, L5 and the trackpads text
+  badges. It now lists every button with art, grouped (face, bumpers, triggers, sticks, back
+  buttons, menu, D-pad, trackpads) with their other spellings and which art each has; a test
+  fails if a button in `ValheimButtons` or `ModGlyphs` is missing from it. Only new files get
+  the template; an existing mapping file isn't rewritten.
 - **Self-test:** mapping loaded, file watched, Localization cache reachable; INFO lines for the
   number of keybinding settings read, the mods patching the hovered object's hover text (look at a
   chest), and the missing keys.
