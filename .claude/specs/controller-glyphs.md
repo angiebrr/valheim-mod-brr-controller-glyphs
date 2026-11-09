@@ -599,7 +599,11 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
    each binding are in the file. To research: which file is the active one, and how groups, modes,
    action sets and layers nest. Read-only, and only Valheim's folder; the README says so.
 
-**Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`), not yet tested in game:**
+**Built 2026-11-08 (pieces 1–3, branch `phase-4-mapping-setup`).** Seen working in game 2026-11-08:
+the settings sections and names in Mod Config, the missing-keys tree (wrapping is fine), toggling
+glyph settings mid-game (only My Little UI's own chest cache stays stale, see below), and the
+radial menu hint showing LB. Not yet checked: saving the mapping file to reload, an invalid file's
+status, the Reload and Copy buttons, and the new `cgf_selftest` lines.
 - **Settings names (reviewed with me one by one, 2026-11-08):** sections in Title Case, settings in
   sentence case, all in Core `SettingNames`; US spelling ("color") everywhere. Sections `General`,
   `Hint Glyphs`, `Hotbar Glyphs`, `Key Glyph Mapping` sort in that order alphabetically (both
@@ -681,7 +685,8 @@ and the mod's README must say this plainly. The *key* half can be confirmed in g
   quirk plus My Little UI not handling it; not a config problem. Fixed on our side:
   `BoundKeyResolver.ControllerNameExceptions` (`OpenRadial` → `JoyRadial`, contract-tested
   against ZInput's literals; the only keyboard/controller pair that's clearly the same action).
-  Worth reporting to My Little UI's author (shudnal).
+  Worth reporting to My Little UI's author (shudnal). **Verified in game 2026-11-08:** the hint
+  shows LB.
 - **In game 2026-11-08: after turning the Valheim-hints switch off, some chests kept the X glyph,
   others showed E.** My Little UI caches each chest's whole localized hover text per chest
   (`ChestHoverText.hoverTextCache`, keyed by the chest's ZDO), cleared only when that chest's
