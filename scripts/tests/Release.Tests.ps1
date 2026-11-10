@@ -162,6 +162,14 @@ Describe 'Get-SkippedTestCount' {
 
         Get-SkippedTestCount -TrxPath $a, $b | Should -Be 3
     }
+
+    # dotnet test names TRX files like "runner_2026-11-10_net10.0[1].trx"; brackets are wildcards to Get-Content
+    It 'reads TRX files with brackets in their names' {
+        $path = Join-Path $TestDrive 'runner_net10.0[1].trx'
+        [System.IO.File]::WriteAllText($path, '<TestRun><ResultSummary><Counters total="2" executed="2" passed="2" notExecuted="0" /></ResultSummary></TestRun>')
+
+        Get-SkippedTestCount -TrxPath $path | Should -Be 0
+    }
 }
 
 Describe 'Get-SteamBuildId' {

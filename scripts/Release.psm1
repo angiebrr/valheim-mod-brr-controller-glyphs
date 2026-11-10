@@ -172,7 +172,8 @@ function Get-SkippedTestCount {
 
     $total = 0
     foreach ($path in $TrxPath) {
-        $counters = ([xml](Get-Content -Raw $path)).GetElementsByTagName('Counters') | Select-Object -First 1
+        # -LiteralPath: dotnet test names TRX files like "..._net10.0[1].trx", and brackets are wildcards
+        $counters = ([xml](Get-Content -Raw -LiteralPath $path)).GetElementsByTagName('Counters') | Select-Object -First 1
         if ($counters) {
             $total += [int]$counters.GetAttribute('notExecuted')
         }
