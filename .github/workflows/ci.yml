@@ -63,7 +63,7 @@ jobs:
   # publish.ps1 runs the release module in Windows PowerShell 5.1 (the csproj's post-build step), so
   # its tests run there too, not only in pwsh 7
   script-tests:
-    name: Script tests (Windows PowerShell 5.1)
+    name: Script Tests (Windows PowerShell 5.1)
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
