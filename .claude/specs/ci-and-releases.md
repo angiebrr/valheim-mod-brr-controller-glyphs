@@ -1,6 +1,6 @@
 # Spec: CI, releases and Thunderstore publishing
 
-Status: approved 2026-11-09 (with the AI disclosure wording), not implemented; plan in `.claude/plans/2026-11-09-ci-and-releases.md`
+Status: implemented 2026-11-10 (PR #8); plan in `.claude/plans/2026-11-09-ci-and-releases.md`. Publishing waits on a real icon and the Thunderstore team.
 Last updated: 2026-11-09
 Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod page plan)
 
@@ -27,9 +27,9 @@ Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod pa
    - Read the current build ID (`app_info_print`). The cache key is `valheim-server-<buildid>`; on a hit, skip the download.
    - On a miss, download the server and keep only `valheim_server_Data/Managed` (cached).
    - Place it as `<install>/valheim_Data/Managed`, the path Jötunn's `Paths.props`/`JotunnBuildTask` and the contract tests (`GameAssemblies.ManagedDir`) expect.
-2. **BepInEx and AzuEPI** from Thunderstore's package download URLs into a stand-in profile: `<profile>/BepInEx/core` (BepInExPack_Valheim) and `<profile>/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory`. Versions pinned in `.github/ci-packages.json` (one line each to update). BepInExPack matches the `manifest.json` dependency.
+2. **BepInEx and AzuEPI** downloaded into a stand-in profile: `<profile>/BepInEx/core` (BepInExPack_Valheim) and `<profile>/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory`. `.github/ci-packages.json` holds their direct download URLs (one line each to update): BepInExPack from Thunderstore (matching the `manifest.json` dependency), AzuEPI from Hexium (see Findings).
 3. **`Environment.props`** written to the repo root on the runner: `VALHEIM_INSTALL`, `GALE_PROFILE` (the stand-in profile), `BEPINEX_PATH`, `MOD_DEPLOYPATH` (a temp folder). The post-build deploy (`publish.ps1`) only runs on Windows, so nothing is deployed.
-4. **First implementation task:** check the server's `Managed` folder has every assembly the plugin references (`Unity.TextMeshPro`, `Unity.InputSystem`, `UnityEngine.UI`, `UnityEngine.TextCoreFontEngineModule`, the publicized `assembly_*`). If any is missing, stop and ask the user before going further.
+4. **Checked on the first CI run (2026-11-10):** check the server's `Managed` folder has every assembly the plugin references (`Unity.TextMeshPro`, `Unity.InputSystem`, `UnityEngine.UI`, `UnityEngine.TextCoreFontEngineModule`, the publicized `assembly_*`). If any is missing, stop and ask the user before going further.
 
 ### CI workflow (`.github/workflows/ci.yml`)
 
@@ -90,6 +90,13 @@ Started by hand (`workflow_dispatch`) on `main`. Input **mode**: `dry-run` (defa
 
 - CI: its own PR shows it building and running all tests on GitHub (and that the skip check fails when a test is forced to skip, checked once by hand).
 - Release: a `dry-run` on `main` after merging; the zip is imported into Gale and checked in game. A real release only when the user starts one.
+
+## Findings (2026-11-10)
+
+- **The dedicated server has everything the plugin builds against.** CI built the plugin on Ubuntu against the server's `Managed` folder (server build 26266951, 135 files), and all 29 contract tests passed against it.
+- **AzuEPI moved to Hexium.** Azumatt now publishes AzuExtendedPlayerInventory on Hexium (valheim.hexium.gg, a Valheim mod site Gale supports); the Thunderstore listing is deprecated at 2.4.14 and 2.6.6 isn't there. CI downloads 2.6.6 from Hexium's CDN (`https://cdn.hexium.gg/upload/11/2.6.6.zip`, the same DLL as the Gale profile). Hexium serves a Thunderstore-style package list at `https://valheim.hexium.gg/api/v1/package/`. Whether to also publish BrrControllerGlyphs on Hexium is an open question for the user.
+- **tcli 0.2.4** won't combine `--file` with `--package-namespace`, so the team goes into a copy of `thunderstore.toml`.
+- **TRX file names** from `dotnet test` contain brackets (`..._net10.0[1].trx`); PowerShell must read them with `-LiteralPath`.
 
 ## Out of scope
 
