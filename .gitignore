@@ -375,3 +375,4 @@ Environment.props
 */Package/plugins/*
 # copied from the project README by a Release build
 */Package/README.md
+*/Package/CHANGELOG.md

@@ -197,4 +197,42 @@ function Get-SteamBuildId {
     return $match.Groups[1].Value
 }
 
-Export-ModuleMember -Function Get-PluginVersion, Get-ChangelogSection, Test-ReleaseReady, Test-TagUsable, Get-SkippedTestCount, Get-SteamBuildId
+function New-ReleasePackage {
+    <#
+    .SYNOPSIS
+    Writes the Thunderstore zip: manifest.json, icon.png, README.md and CHANGELOG.md at its root and
+    the DLL under plugins/ (installed to BepInEx/plugins). Entry names are written with "/" by hand:
+    Windows PowerShell 5.1's Compress-Archive can write "\", which mod managers don't unpack.
+    #>
+    param(
+        [Parameter(Mandatory)] [string] $Root,
+        [Parameter(Mandatory)] [string] $DllPath,
+        [Parameter(Mandatory)] [string] $OutFile
+    )
+
+    $mod = Join-Path $Root 'BrrControllerGlyphs'
+    $entries = [ordered]@{
+        'manifest.json' = Join-Path $mod 'Package/manifest.json'
+        'icon.png'      = Join-Path $mod 'Package/icon.png'
+        'README.md'     = Join-Path $mod 'README.md'
+        'CHANGELOG.md'  = Join-Path $mod 'CHANGELOG.md'
+        "plugins/$(Split-Path -Leaf $DllPath)" = $DllPath
+    }
+
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    if (Test-Path $OutFile) {
+        Remove-Item $OutFile
+    }
+
+    $archive = [System.IO.Compression.ZipFile]::Open($OutFile, [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($entry in $entries.GetEnumerator()) {
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $entry.Value, $entry.Key) | Out-Null
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
+Export-ModuleMember -Function Get-PluginVersion, Get-ChangelogSection, Test-ReleaseReady, Test-TagUsable, Get-SkippedTestCount, Get-SteamBuildId, New-ReleasePackage

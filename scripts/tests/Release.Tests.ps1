@@ -109,6 +109,23 @@ Describe 'Test-ReleaseReady' {
     }
 }
 
+Describe 'New-ReleasePackage' {
+    It 'writes the Thunderstore layout' {
+        $root = New-FixtureRoot
+        $dll = Join-Path $TestDrive 'BrrControllerGlyphs.dll'
+        [System.IO.File]::WriteAllBytes($dll, [byte[]](1, 2, 3))
+        $zip = Join-Path $TestDrive 'package.zip'
+
+        New-ReleasePackage -Root $root -DllPath $dll -OutFile $zip
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+        try { $names = @($archive.Entries | ForEach-Object FullName | Sort-Object) } finally { $archive.Dispose() }
+        $names | Should -Be @('CHANGELOG.md', 'icon.png', 'manifest.json', 'plugins/BrrControllerGlyphs.dll', 'README.md')
+        ($names | Where-Object { $_ -like '*\*' }) | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Test-TagUsable' {
     BeforeAll {
         $repo = Join-Path $TestDrive 'repo'
