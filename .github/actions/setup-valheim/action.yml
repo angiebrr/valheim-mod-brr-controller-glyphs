@@ -1,0 +1,112 @@
+# ------------------------------------------------------------------------------------------------
+# setup-valheim: makes the game's assemblies, BepInEx and AzuEPI available to the build and the
+# contract tests, without committing any of them (see .claude/specs/ci-and-releases.md).
+# ------------------------------------------------------------------------------------------------
+#
+# - Valheim's assemblies come from the free Valheim Dedicated Server (Steam app 896660, anonymous
+#   login). Only its Managed folder is kept, cached by the server's Steam build ID, so it's
+#   downloaded again only after a Valheim update (or when GitHub evicts the cache).
+# - BepInExPack and AzuEPI come from Thunderstore, at the versions in .github/ci-packages.json.
+# - Environment.props is written at the repo root, as on a developer's machine.
+# Run actions/checkout first: this action uses scripts/Release.psm1.
+
+name: Set up Valheim build files
+description: Downloads (or restores) Valheim's assemblies, BepInEx and AzuEPI, and writes Environment.props.
+
+outputs:
+  server-build-id:
+    description: Steam build ID of the Valheim Dedicated Server the assemblies come from.
+    value: ${{ steps.build-id.outputs.server-build-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install SteamCMD
+      shell: bash
+      run: |
+        # SteamCMD is 32-bit
+        sudo apt-get install -y -qq lib32gcc-s1 > /dev/null
+        mkdir -p "$RUNNER_TEMP/steamcmd"
+        curl -sSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf - -C "$RUNNER_TEMP/steamcmd"
+        # The first run updates SteamCMD itself
+        "$RUNNER_TEMP/steamcmd/steamcmd.sh" +quit > /dev/null
+
+    - name: Read the dedicated server's build ID
+      id: build-id
+      shell: pwsh
+      run: |
+        Import-Module "$env:GITHUB_WORKSPACE/scripts/Release.psm1"
+        # app_info_print sometimes comes back empty on a fresh SteamCMD; retry a few times
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+          $info = & "$env:RUNNER_TEMP/steamcmd/steamcmd.sh" +login anonymous +app_info_update 1 +app_info_print 896660 +quit | Out-String
+          try { $id = Get-SteamBuildId -AppInfoText $info; break }
+          catch { if ($attempt -eq 3) { throw } ; Start-Sleep -Seconds 5 }
+        }
+        Write-Output "Valheim Dedicated Server build $id"
+        "server-build-id=$id" >> $env:GITHUB_OUTPUT
+
+    - name: Restore Valheim's assemblies
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/valheim/valheim_Data/Managed
+        key: valheim-server-${{ steps.build-id.outputs.server-build-id }}
+
+    - name: Download the dedicated server
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        "$RUNNER_TEMP/steamcmd/steamcmd.sh" +force_install_dir "$RUNNER_TEMP/server" +login anonymous +app_update 896660 validate +quit
+        mkdir -p "$RUNNER_TEMP/valheim/valheim_Data"
+        mv "$RUNNER_TEMP/server/valheim_server_Data/Managed" "$RUNNER_TEMP/valheim/valheim_Data/Managed"
+        rm -rf "$RUNNER_TEMP/server"
+
+    - name: Check the assemblies are there
+      shell: bash
+      run: |
+        managed="$RUNNER_TEMP/valheim/valheim_Data/Managed"
+        test -f "$managed/assembly_valheim.dll" || { echo "::error::No assembly_valheim.dll in $managed"; exit 1; }
+        # Linux paths are case-sensitive and Jotunn's props try Valheim_Data before valheim_Data
+        ln -sfn "$RUNNER_TEMP/valheim/valheim_Data" "$RUNNER_TEMP/valheim/Valheim_Data"
+        echo "$(ls "$managed" | wc -l) files in $managed"
+
+    - name: Download BepInEx and AzuEPI
+      shell: pwsh
+      run: |
+        $packages = Get-Content "$env:GITHUB_WORKSPACE/.github/ci-packages.json" -Raw | ConvertFrom-Json
+        $profileDir = "$env:RUNNER_TEMP/profile"
+        $downloads = "$env:RUNNER_TEMP/downloads"
+        New-Item -ItemType Directory -Force $downloads, "$profileDir/BepInEx/plugins" | Out-Null
+
+        # Team-Name-Version -> https://thunderstore.io/package/download/Team/Name/Version/
+        function Get-Package([string] $Id) {
+          $team, $name, $version = $Id -split '-', 3
+          $zip = "$downloads/$Id.zip"
+          Invoke-WebRequest "https://thunderstore.io/package/download/$team/$name/$version/" -OutFile $zip
+          Expand-Archive $zip "$downloads/$Id" -Force
+          return "$downloads/$Id"
+        }
+
+        $bepinex = Get-Package $packages.BepInExPack
+        Copy-Item "$bepinex/BepInExPack_Valheim/BepInEx/*" "$profileDir/BepInEx" -Recurse -Force
+
+        $azuEpi = Get-Package $packages.AzuEPI
+        Copy-Item $azuEpi "$profileDir/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory" -Recurse -Force
+
+        Get-ChildItem "$profileDir/BepInEx/core/BepInEx.dll", "$profileDir/BepInEx/plugins" -Recurse -Filter *.dll | ForEach-Object Name
+
+    - name: Write Environment.props
+      shell: pwsh
+      run: |
+        $props = @"
+        <?xml version="1.0" encoding="utf-8"?>
+        <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+          <PropertyGroup>
+            <VALHEIM_INSTALL>$env:RUNNER_TEMP/valheim</VALHEIM_INSTALL>
+            <GALE_PROFILE>$env:RUNNER_TEMP/profile</GALE_PROFILE>
+            <BEPINEX_PATH>`$(GALE_PROFILE)/BepInEx</BEPINEX_PATH>
+            <MOD_DEPLOYPATH>$env:RUNNER_TEMP/deploy</MOD_DEPLOYPATH>
+          </PropertyGroup>
+        </Project>
+        "@
+        Set-Content "$env:GITHUB_WORKSPACE/Environment.props" $props.Trim()
