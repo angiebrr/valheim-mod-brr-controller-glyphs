@@ -118,7 +118,7 @@ The template lists every button name with art and the key spellings that work. I
 Complete mapping files to copy and adapt; they're the ones behind the hotbar screenshots above. They only show the right buttons if your controller sends these keys from these buttons. The `Keypad` keys are AzuExtendedPlayerInventory's quick slots; without it they're simply unused.
 
 <details>
-<summary>One group per bar (the author's Steam Controller layout): <code>one-group.yaml</code></summary>
+<summary>One group per bar: <code>one-group.yaml</code></summary>
 
 ```yaml
 # BrrControllerGlyphs example mapping: one group per bar.
