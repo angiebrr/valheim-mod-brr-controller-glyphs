@@ -1,6 +1,6 @@
 # Spec: CI, releases and Thunderstore publishing
 
-Status: approved design, not implemented
+Status: approved 2026-11-09 (with the AI disclosure wording), not implemented; plan in `.claude/plans/2026-11-09-ci-and-releases.md`
 Last updated: 2026-11-09
 Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod page plan)
 
