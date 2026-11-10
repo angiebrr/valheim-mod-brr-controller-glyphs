@@ -10,7 +10,7 @@
 # Each Steam Deck glyph is recolored to match Valheim's dark glyphs: Kenney's plain glyph (letters
 # cut out) plus its _outline variant (rim + letters) is the solid shape; it's filled dark, the
 # letters and a thin rim along the shape's edge are light, and a soft shadow goes underneath. Output: one
-# 144 x 144 PNG per sprite in ControllerGlyphFixer/Glyphs (the 128 px glyph with 8 px for the
+# 144 x 144 PNG per sprite in BrrControllerGlyphs/Glyphs (the 128 px glyph with 8 px for the
 # shadow), named as ModGlyphs.SpriteNames, plus Kenney's License.txt. Commit the outputs.
 
 param(
@@ -283,7 +283,7 @@ if (-not (Test-Path $source) -or -not (Test-Path $license)) {
     throw "Not an unzipped Kenney Input Prompts folder (needs 'Steam Deck\Double' and License.txt): $KenneyDir"
 }
 
-$out = Join-Path $PSScriptRoot '..\ControllerGlyphFixer\Glyphs'
+$out = Join-Path $PSScriptRoot '..\BrrControllerGlyphs\Glyphs'
 New-Item -ItemType Directory -Force $out | Out-Null
 Get-ChildItem $out -Filter *.png | Remove-Item
 

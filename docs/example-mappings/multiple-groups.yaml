@@ -1,0 +1,25 @@
+# BrrControllerGlyphs example mapping: two groups per bar.
+# Each bar is split between two held buttons: the hotbar on R4 and L4, AzuEPI's quick slots on R5
+# and L5. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
+
+keys:
+  # Hotbar: slots 1-4 hold R4, slots 5-8 hold L4 (two groups)
+  "1": [R4, DPadUp]
+  "2": [R4, DPadRight]
+  "3": [R4, DPadDown]
+  "4": [R4, DPadLeft]
+  "5": [L4, Y]
+  "6": [L4, B]
+  "7": [L4, A]
+  "8": [L4, X]
+
+  # AzuEPI quick slots: 1-3 hold R5, 4-6 hold L5 (two groups)
+  Keypad1: [R5, DPadUp]
+  Keypad2: [R5, DPadRight]
+  Keypad3: [R5, DPadDown]
+  Keypad4: [L5, Y]
+  Keypad5: [L5, B]
+  Keypad6: [L5, A]
+
+  B: LPadUp            # AutomaticFuel torch mode (left trackpad click up)
+  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)
