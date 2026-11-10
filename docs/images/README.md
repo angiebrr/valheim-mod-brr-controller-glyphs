@@ -6,10 +6,10 @@ The list is in shooting order: four rounds, three restarts. Tick each box as you
 
 ## Before you start
 
-- [ ] Back up your mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe. Rounds 1 and 2 copy the example mappings over it.
-- [ ] Settings in Mod Config (F1): **Enabled** on, **Glyphs used by mod** `Valheim`.
-- [ ] AzuEPI: **3 - Quick Slots > Number of Quick Slots** `6`, **5 - UI Features > Inventory Layout** `Legacy` (other layouts are a known issue).
-- [ ] Stand near a chest, with an item or two on hotbar slots 1–4 and in some quick slots.
+- [x] Back up your mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe. Rounds 1 and 2 copy the example mappings over it.
+- [x] Settings in Mod Config (F1): **Enabled** on, **Glyphs used by mod** `Valheim`.
+- [x] AzuEPI: **3 - Quick Slots > Number of Quick Slots** `6`, **5 - UI Features > Inventory Layout** `Legacy` (other layouts are a known issue).
+- [x] Stand near a chest, with an item or two on hotbar slots 1–4 and in some quick slots.
 
 Other UI mods (e.g. MyLittleUI) can stay on: just keep the same mods for both shots of a pair, since the tables compare with and without this mod only.
 
@@ -28,6 +28,7 @@ Prompts and badges:
 
 - [ ] `prompt_mod.png`: look at the chest, press a key your controller sends (e.g. pickup on L5), and shoot the chest prompt: still glyphs. Crop to Valheim's own lines (`Open`), not AzuCraftyBoxes' line.
 - [ ] `badges_mod.png`: open the inventory, move the trackpad cursor, and shoot the button badges (Y, LSt, RT...) still showing.
+- [ ] `hints_mod.png`: a mod hint written the same way in both input modes, e.g. AutomaticFuel's `[B]` on a fire or AzuCraftyBoxes' fill-all `[LeftShift + Use]` on a fire or smelter. Press a gamepad button first. (Not the Crafting Chest hint: AzuCraftyBoxes writes it differently per input mode.)
 
 Mapping check (Mod Config, **Key Glyph Mapping**):
 
@@ -64,6 +65,7 @@ Groups with quick slots (`groups_one_*_quickslots` are done):
 - [ ] `buttons_vanilla.png`: close-up of hotbar slots 1–4, same crop as `buttons_valheim`.
 - [ ] `prompt_vanilla.png`: the chest prompt after pressing the same key as for `prompt_mod`: keyboard keys. Same crop.
 - [ ] `badges_vanilla.png`: the inventory after moving the trackpad cursor: badges gone. Same crop as `badges_mod`.
+- [ ] `hints_vanilla.png`: the same hint as `hints_mod`, same crop, after pressing a gamepad button.
 
 ## Round 4: back to normal (restart 3)
 
@@ -72,7 +74,6 @@ Groups with quick slots (`groups_one_*_quickslots` are done):
 
 ## Done already
 
-- [x] `hints_vanilla.png`, `hints_mod.png`: AzuCraftyBoxes' Crafting Chest hint, mod off and on.
 - [x] `groups_one_hud_quickslots.png`, `groups_one_inventory_quickslots.png`: your mapping with quick slots. Optional: retake in Round 1 with `Palette`, so all the group shots match.
 
 ## What each table shows

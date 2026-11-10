@@ -17,7 +17,7 @@ This mod does a few things and can be enabled/disabled to taste:
 - [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
 - [Jotunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/)
 - [YamlDotNet](https://thunderstore.io/c/valheim/p/ValheimModding/YamlDotNet/)
-- A controller through Steam Input (Steam Controller, Steam Deck, or any pad with a Steam layout that sends keyboard keys)
+- A controller that sends keyboard keys or mouse input (e.g. Steam Deck, Steam Controller, gamepad with Steam Input, etc.)
 
 Client-side only: servers and other players don't need it.
 
@@ -154,6 +154,7 @@ If a Valheim update changes something the mod patches, only that feature turns o
 
 - The mod only sees the keyboard keys your controller sends. Held buttons, chords and action sets from Steam, for example, exist only as you write them in the mapping.
 - Valheim's art and the mod's Steam Deck art differ a little; **Glyphs used by mod** `SteamDeck` makes the mod's glyphs match each other, but Valheim's own prompts keep Valheim's art.
+- Some mods change their hints, and their controls, with Valheim's input mode. This mod keeps the glyphs on but never changes that mode, so after keyboard or trackpad input those mods show their keyboard version. For example, AzuCraftyBoxes' Crafting Chest hint reads `LT + X` on a gamepad but `[E + LeftShift]` after keyboard input, and then only E + LeftShift toggles the chest. Keys your controller sends show as your buttons (`LeftShift` as your trackpad click); the rest stay as keys. Press any gamepad button to switch back.
 - Hints from Jotunn's KeyHintManager aren't changed yet.
 - Stick directions and the PlayStation touchpad have no mapping names yet.
 
