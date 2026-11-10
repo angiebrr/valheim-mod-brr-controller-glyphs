@@ -371,7 +371,5 @@ FodyWeavers.xsd
 # not the valheim path file
 Environment.props
 
-# not the generated dll for thunderstore
-*/Package/plugins/*
-# copied from the project README by a Release build
-*/Package/README.md
+# written by Invoke-Pester -CI
+testResults.xml

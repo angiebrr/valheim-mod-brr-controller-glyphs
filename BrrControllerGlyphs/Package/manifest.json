@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "BrrControllerGlyphs",
   "description": "Keeps controller glyphs on for Steam Input layouts that also send keyboard keys, and shows those keys as the controller buttons that send them.",
   "version_number": "0.0.1",

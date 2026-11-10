@@ -22,6 +22,8 @@ The spec is the source of truth for features, decisions and findings: `.claude/s
 - If Valheim is running it locks the DLL and the copy fails ("user-mapped section open") while the build still succeeds. Check the deployed DLL matches the build before saying it's deployed.
 - The game loads the DLL only at startup: the user must restart Valheim to test a new build.
 - Only commit after a build that printed "Build succeeded" and passing tests.
+- Release scripts (`scripts/Release.psm1`) have Pester tests: `Invoke-Pester scripts/tests`.
+- CI (`.github/workflows/ci.yml`) builds and runs every test on each PR and push to `main`, and fails if any test was skipped; it must be green before merging. Releases go through the Release workflow; the routine is in the developer README's "CI and releases" section.
 
 ## In-game testing
 

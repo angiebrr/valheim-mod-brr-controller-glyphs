@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------------------------
+# publish.ps1: post-build step (from the JotunnModStub template): Debug builds are copied to the
+# BepInEx plugins folder, Release builds write the Thunderstore zip with scripts/Release.psm1.
+# ------------------------------------------------------------------------------------------------
+
 param(
     [Parameter(Mandatory)]
     [ValidateSet('Debug','Release')]
@@ -55,15 +60,10 @@ if ($Target.Equals("Debug")) {
 }
 
 if($Target.Equals("Release")) {
-    Write-Host "Packaging for ThunderStore..."
-    $Package="Package"
-    $PackagePath="$ProjectPath\$Package"
-
-    Write-Host "$PackagePath\$TargetAssembly"
-    New-Item -Type Directory -Path "$PackagePath\plugins" -Force
-    Copy-Item -Path "$TargetPath\$TargetAssembly" -Destination "$PackagePath\plugins\$TargetAssembly" -Force
-    Copy-Item -Path "$ProjectPath\README.md" -Destination "$PackagePath\README.md" -Force
-    Compress-Archive -Path "$PackagePath\*" -DestinationPath "$TargetPath\$name.zip" -Force
+    # Same zip as the release workflow builds (scripts/Release.psm1)
+    Write-Host "Packaging for Thunderstore: $TargetPath\$name.zip"
+    Import-Module "$PSScriptRoot\Release.psm1" -Force
+    New-ReleasePackage -Root "$ProjectPath\.." -DllPath "$TargetPath\$TargetAssembly" -OutFile "$TargetPath\$name.zip"
 }
 
 # Pop Location

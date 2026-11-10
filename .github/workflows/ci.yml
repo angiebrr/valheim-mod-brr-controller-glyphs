@@ -1,0 +1,79 @@
+# ------------------------------------------------------------------------------------------------
+# ci.yml: builds the whole solution with the game's assemblies and runs every test.
+# ------------------------------------------------------------------------------------------------
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Solution and Run Tests
+    runs-on: ubuntu-latest
+    # A hung SteamCMD would otherwise hold the runner for GitHub's 6-hour default
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Valheim build files
+        uses: ./.github/actions/setup-valheim
+
+      - name: Build
+        run: dotnet build BrrControllerGlyphs.sln -c Release
+
+      - name: Test
+        run: dotnet test BrrControllerGlyphs.sln -c Release --no-build --logger trx --results-directory TestResults
+
+      # The contract tests skip themselves without the game or a mod; in CI that would pass silently
+      - name: Fail if any test was skipped
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/Release.psm1
+          $skipped = Get-SkippedTestCount -TrxPath (Get-ChildItem TestResults/*.trx).FullName
+          if ($skipped -ne 0) {
+            Write-Output "::error::$skipped tests were skipped; CI must run them all"
+            exit 1
+          }
+
+      - name: Release script tests
+        shell: pwsh
+        run: Invoke-Pester scripts/tests -CI
+
+      - name: Upload the plugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrrControllerGlyphs-dll
+          path: BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.dll
+
+  # publish.ps1 runs the release module in Windows PowerShell 5.1 (the csproj's post-build step), so
+  # its tests run there too, not only in pwsh 7
+  script-tests:
+    name: Script Tests (Windows PowerShell 5.1)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Release script tests in Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          # Windows PowerShell ships Pester 3; the tests need Pester 5
+          Install-Module Pester -MinimumVersion 5.5.0 -MaximumVersion 5.99.99 -Scope CurrentUser -Force -SkipPublisherCheck
+          Import-Module Pester -MinimumVersion 5.5.0
+          $PSVersionTable.PSVersion.ToString()
+          Invoke-Pester scripts/tests -CI
