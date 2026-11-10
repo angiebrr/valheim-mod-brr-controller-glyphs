@@ -6,7 +6,9 @@
 # - Valheim's assemblies come from the free Valheim Dedicated Server (Steam app 896660, anonymous
 #   login). Only its Managed folder is kept, cached by the server's Steam build ID, so it's
 #   downloaded again only after a Valheim update (or when GitHub evicts the cache).
-# - BepInExPack and AzuEPI come from Thunderstore, at the versions in .github/ci-packages.json.
+# - BepInExPack and AzuEPI are downloaded from the URLs in .github/ci-packages.json: BepInExPack
+#   from Thunderstore, AzuEPI from Hexium (valheim.hexium.gg), where Azumatt publishes it now (the
+#   Thunderstore listing is deprecated at 2.4.14).
 # - Environment.props is written at the repo root, as on a developer's machine.
 # Run actions/checkout first: this action uses scripts/Release.psm1.
 
@@ -78,19 +80,18 @@ runs:
         $downloads = "$env:RUNNER_TEMP/downloads"
         New-Item -ItemType Directory -Force $downloads, "$profileDir/BepInEx/plugins" | Out-Null
 
-        # Team-Name-Version -> https://thunderstore.io/package/download/Team/Name/Version/
-        function Get-Package([string] $Id) {
-          $team, $name, $version = $Id -split '-', 3
-          $zip = "$downloads/$Id.zip"
-          Invoke-WebRequest "https://thunderstore.io/package/download/$team/$name/$version/" -OutFile $zip
-          Expand-Archive $zip "$downloads/$Id" -Force
-          return "$downloads/$Id"
+        # Downloads a package zip from its URL and unpacks it; returns the folder
+        function Get-Package([string] $Key) {
+          $zip = "$downloads/$Key.zip"
+          Invoke-WebRequest $packages.$Key -OutFile $zip
+          Expand-Archive $zip "$downloads/$Key" -Force
+          return "$downloads/$Key"
         }
 
-        $bepinex = Get-Package $packages.BepInExPack
+        $bepinex = Get-Package 'BepInExPack'
         Copy-Item "$bepinex/BepInExPack_Valheim/BepInEx/*" "$profileDir/BepInEx" -Recurse -Force
 
-        $azuEpi = Get-Package $packages.AzuEPI
+        $azuEpi = Get-Package 'AzuEPI'
         Copy-Item $azuEpi "$profileDir/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory" -Recurse -Force
 
         Get-ChildItem "$profileDir/BepInEx/core/BepInEx.dll", "$profileDir/BepInEx/plugins" -Recurse -Filter *.dll | ForEach-Object Name
