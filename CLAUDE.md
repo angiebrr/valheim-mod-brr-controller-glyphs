@@ -12,7 +12,7 @@ The spec is the source of truth for features, decisions and findings: `.claude/s
 - `BrrControllerGlyphs.Contract.Tests/`: reads the installed game DLLs (and other mods' DLLs in the Gale profile) with MetadataLoadContext to check every member we patch or read still exists. Tests skip when the game or mod isn't installed.
 - `scripts/`: `publish.ps1` (from the JotunnModStub template) deploys Debug builds and packages Release builds; `make-glyphs.ps1` makes the glyph PNGs. `libraries/` holds `pdb2mdb.exe` for it.
 - READMEs: the root one is for developers; `BrrControllerGlyphs/README.md` is the Thunderstore page (its plan is in the spec, F9). Update the mod page when a feature or setting changes.
-- Names: the mod is BrrControllerGlyphs (plugin ID `angiebrr.BrrControllerGlyphs`); everything it adds to the game (commands, assets, objects) starts with `NamePrefix.Value` (`brrcg_`).
+- Names: the mod is BrrControllerGlyphs (plugin ID `brr.angiebrr.BrrControllerGlyphs`); everything it adds to the game (commands, assets, objects) starts with `NamePrefix.Value` (`brrcg_`).
 
 ## Build, test, deploy
 

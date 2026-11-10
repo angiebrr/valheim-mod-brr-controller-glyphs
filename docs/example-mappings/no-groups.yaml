@@ -1,6 +1,6 @@
 # BrrControllerGlyphs example mapping: no groups.
 # Every slot is a single button (trackpad clicks and back grips), so nothing is held and each slot
-# shows its own glyph. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+# shows its own glyph. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
 
 keys:
   # Hotbar: left trackpad for 1-4, right trackpad for 5-8

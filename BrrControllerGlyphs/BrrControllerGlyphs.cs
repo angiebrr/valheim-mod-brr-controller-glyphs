@@ -34,12 +34,12 @@ namespace BrrControllerGlyphs
     internal class BrrControllerGlyphs : BaseUnityPlugin
     {
         /// <summary>
-        /// BepInEx plugin ID and Harmony ID, in the Author.ModName style most mods use; also names the
-        /// .cfg file, so changing it starts the settings from scratch.
+        /// BepInEx plugin ID and Harmony ID; also names the .cfg and mapping files, so changing it starts
+        /// both from scratch. Starts with "brr." so both files sort together and next to the mod.
         /// </summary>
-        public const string PluginGUID = "angiebrr.BrrControllerGlyphs";
+        public const string PluginGUID = "brr.angiebrr.BrrControllerGlyphs";
 
-        /// <summary>Display name shown by BepInEx and ConfigurationManager; also names the mapping file.</summary>
+        /// <summary>Display name shown by BepInEx and ConfigurationManager.</summary>
         public const string PluginName = "BrrControllerGlyphs";
 
         /// <summary>Plugin version; also used for the assembly version.</summary>
@@ -122,10 +122,10 @@ namespace BrrControllerGlyphs
         private readonly ModShortcuts m_modShortcuts = new (PluginGUID);
 
         /// <summary>
-        /// Path of the YAML key mapping file in the config folder. Named after the mod, not the plugin
-        /// ID, so Gale's config list sorts it next to the mod's own entry.
+        /// Path of the YAML key mapping file in the config folder, named like the .cfg so the two sit
+        /// side by side in file lists.
         /// </summary>
-        private string MappingPath => Path.Combine(Paths.ConfigPath, PluginName + ".mapping.yaml");
+        private string MappingPath => Path.Combine(Paths.ConfigPath, PluginGUID + ".mapping.yaml");
 
         /// <summary>
         /// Called by Unity when BepInEx loads the plugin: builds every object with its

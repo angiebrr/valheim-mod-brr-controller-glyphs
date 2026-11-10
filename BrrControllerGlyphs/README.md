@@ -91,7 +91,7 @@ Mods that write a key into their hover text, like `[B] AutoFuel` or `[Z] Favorit
 
 The mod can't read your Steam layout. The mapping is a separate file that lists which buttons send which keyboard keys, so it has to match your layout, and you update it when you change the layout.
 
-1. Start the game once. The mod writes a template to `BepInEx/config/BrrControllerGlyphs.mapping.yaml`. It maps nothing yet, so the glyphs already stay on and keyboard keys still show as keys.
+1. Start the game once. The mod writes a template to `BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml`. It maps nothing yet, so the glyphs already stay on and keyboard keys still show as keys.
 2. Open Steam's controller configurator for Valheim and note each keyboard key your layout sends, and the button (or held button plus button) that sends it.
 3. Write them under `keys`, one button or a list of buttons pressed together:
 
@@ -123,7 +123,7 @@ Complete mapping files to copy and adapt; they're the ones behind the hotbar scr
 ```yaml
 # BrrControllerGlyphs example mapping: one group per bar.
 # The author's Steam Controller layout: hotbar slots on an R4 hold, AzuEPI quick slots on an R5
-# hold, extras on back grips and trackpad clicks. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+# hold, extras on back grips and trackpad clicks. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
 
 keys:
   # Hotbar: hold R4 (one group)
@@ -160,7 +160,7 @@ keys:
 ```yaml
 # BrrControllerGlyphs example mapping: two groups per bar.
 # Each bar is split between two held buttons: the hotbar on R4 and L4, AzuEPI's quick slots on R5
-# and L5. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+# and L5. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
 
 keys:
   # Hotbar: slots 1-4 hold R4, slots 5-8 hold L4 (two groups)
@@ -193,7 +193,7 @@ keys:
 ```yaml
 # BrrControllerGlyphs example mapping: no groups.
 # Every slot is a single button (trackpad clicks and back grips), so nothing is held and each slot
-# shows its own glyph. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+# shows its own glyph. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
 
 keys:
   # Hotbar: left trackpad for 1-4, right trackpad for 5-8

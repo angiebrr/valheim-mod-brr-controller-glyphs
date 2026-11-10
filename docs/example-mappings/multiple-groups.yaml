@@ -1,6 +1,6 @@
 # BrrControllerGlyphs example mapping: two groups per bar.
 # Each bar is split between two held buttons: the hotbar on R4 and L4, AzuEPI's quick slots on R5
-# and L5. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+# and L5. Copy to BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml.
 
 keys:
   # Hotbar: slots 1-4 hold R4, slots 5-8 hold L4 (two groups)

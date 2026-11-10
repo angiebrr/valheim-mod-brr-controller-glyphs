@@ -6,7 +6,7 @@ The list is in shooting order: four rounds, three restarts. Tick each box as you
 
 ## Before you start
 
-- [x] Back up your mapping: copy `BepInEx/config/BrrControllerGlyphs.mapping.yaml` somewhere safe. Rounds 1 and 2 copy the example mappings over it.
+- [x] Back up your mapping: copy `BepInEx/config/brr.angiebrr.BrrControllerGlyphs.mapping.yaml` somewhere safe. Rounds 1 and 2 copy the example mappings over it.
 - [x] Settings in Mod Config (F1): **Enabled** on, **Glyphs used by mod** `Valheim`.
 - [x] AzuEPI: **3 - Quick Slots > Number of Quick Slots** `6`, **5 - UI Features > Inventory Layout** `Legacy` (other layouts are a known issue).
 - [x] Stand near a chest, with an item or two on hotbar slots 1–4 and in some quick slots.
@@ -37,7 +37,7 @@ Mapping check (Mod Config, **Key Glyph Mapping**):
 
 Groups with quick slots (`groups_one_*_quickslots` are done):
 
-- [x] Copy `docs/example-mappings/no-groups.yaml` over `BrrControllerGlyphs.mapping.yaml` and save; **Mapping status** should say it loaded.
+- [x] Copy `docs/example-mappings/no-groups.yaml` over `brr.angiebrr.BrrControllerGlyphs.mapping.yaml` and save; **Mapping status** should say it loaded.
 - [x] `groups_none_hud_quickslots.jpg`: the hotbar and AzuEPI's bar.
 - [x] `groups_none_inventory_quickslots.jpg`: the inventory's top row and AzuEPI's quick-slot cells.
 - [x] Copy `multiple-groups.yaml` over the mapping and save.
