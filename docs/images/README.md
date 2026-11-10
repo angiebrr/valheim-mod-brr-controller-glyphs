@@ -78,7 +78,6 @@ Groups with quick slots (`groups_one_*_quickslots` are done):
 - `hotbar_neutral` and `hotbar_palette` are the same outdoor spot, from 2000 × 1250 copies scaled up to the other HUD crops' size. `groups_one_inventory_quickslots` is from the earlier batch (also `Palette`).
 - `badges_mod` uses the no-groups mapping, the only inventory shot with the mod on and 6 quick slots in the batch. Retake with your own mapping if the different labels distract.
 
-
 ## What each table shows
 
 | Table on the mod page | Files |
