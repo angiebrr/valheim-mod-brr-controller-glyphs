@@ -1,0 +1,151 @@
+# ------------------------------------------------------------------------------------------------
+# release.yml: checks, builds and packages a release; tags it, creates the GitHub release and
+# publishes the same zip to Thunderstore. Started by hand from the Actions tab, on main.
+# ------------------------------------------------------------------------------------------------
+#
+# Routine: a PR bumps PluginVersion and manifest.json and adds the CHANGELOG.md section; after it's
+# merged, run this in dry-run, import the zip in Gale and check it, then run it to release.
+# Publishing needs the THUNDERSTORE_TEAM repository variable and the TCLI_AUTH_TOKEN secret (a
+# Thunderstore team service account token); without them the publish step is skipped.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run: check and build the zip only. release: also tag and create the GitHub release. release + publish: also upload to Thunderstore."
+        type: choice
+        options:
+          - dry-run
+          - release
+          - release + publish
+        default: dry-run
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only release from main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run the Release workflow on main (it ran on ${{ github.ref }})"
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check the package
+        id: check
+        shell: pwsh
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          Import-Module ./scripts/Release.psm1
+          $problems = @(Test-ReleaseReady -Root .)
+          foreach ($problem in $problems) { Write-Output "::error::$problem" }
+          if ($problems.Count -gt 0) { exit 1 }
+
+          $version = Get-PluginVersion -SourcePath BrrControllerGlyphs/BrrControllerGlyphs.cs
+          if ($env:MODE -ne 'dry-run' -and -not (Test-TagUsable -Tag "v$version" -Commit $env:GITHUB_SHA)) {
+            Write-Output "::error::Tag v$version already exists on another commit; bump the version"
+            exit 1
+          }
+
+          Write-Output "Releasing $version ($env:MODE)"
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Set up Valheim build files
+        uses: ./.github/actions/setup-valheim
+
+      - name: Build
+        run: dotnet build BrrControllerGlyphs.sln -c Release
+
+      - name: Test
+        run: dotnet test BrrControllerGlyphs.sln -c Release --no-build --logger trx --results-directory TestResults
+
+      - name: Fail if any test was skipped
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/Release.psm1
+          $skipped = Get-SkippedTestCount -TrxPath (Get-ChildItem TestResults/*.trx).FullName
+          if ($skipped -ne 0) {
+            Write-Output "::error::$skipped tests were skipped; a release must run them all"
+            exit 1
+          }
+
+      - name: Package
+        id: package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          Import-Module ./scripts/Release.psm1
+          $zip = "BrrControllerGlyphs-$env:VERSION.zip"
+          New-ReleasePackage -Root . -DllPath BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.dll -OutFile $zip
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrrControllerGlyphs-${{ steps.check.outputs.version }}
+          path: ${{ steps.package.outputs.zip }}
+
+      - name: Tag and create the GitHub release
+        if: inputs.mode != 'dry-run'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+          ZIP: ${{ steps.package.outputs.zip }}
+        run: |
+          Import-Module ./scripts/Release.psm1
+          $tag = "v$env:VERSION"
+          Get-ChangelogSection -ChangelogPath BrrControllerGlyphs/CHANGELOG.md -Version $env:VERSION | Set-Content notes.md
+
+          # A re-run after a failed publish finds the tag and release already there
+          git rev-parse -q --verify "refs/tags/$tag" > $null
+          if ($LASTEXITCODE -ne 0) {
+            git tag $tag $env:GITHUB_SHA
+            git push origin $tag
+          }
+
+          gh release view $tag > $null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $env:ZIP --clobber
+          }
+          else {
+            gh release create $tag $env:ZIP --title "BrrControllerGlyphs $env:VERSION" --notes-file notes.md
+          }
+
+      - name: Publish to Thunderstore
+        if: inputs.mode == 'release + publish'
+        shell: pwsh
+        env:
+          THUNDERSTORE_TEAM: ${{ vars.THUNDERSTORE_TEAM }}
+          TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
+          ZIP: ${{ steps.package.outputs.zip }}
+        run: |
+          if (-not $env:THUNDERSTORE_TEAM -or -not $env:TCLI_AUTH_TOKEN) {
+            Write-Output "::notice::Skipped publishing: set the THUNDERSTORE_TEAM repository variable and the TCLI_AUTH_TOKEN secret first"
+            exit 0
+          }
+
+          dotnet tool install -g tcli --version 0.2.4
+          # tcli doesn't take --package-namespace with --file, so the team goes into the config
+          (Get-Content thunderstore.toml) -replace '^namespace = ""$', "namespace = `"$env:THUNDERSTORE_TEAM`"" |
+            Set-Content "$env:RUNNER_TEMP/thunderstore.toml"
+          tcli publish --file $env:ZIP --config-path "$env:RUNNER_TEMP/thunderstore.toml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

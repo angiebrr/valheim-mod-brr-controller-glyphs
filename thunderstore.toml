@@ -1,0 +1,19 @@
+# ------------------------------------------------------------------------------------------------
+# thunderstore.toml: Thunderstore CLI (tcli) settings for the release workflow's publish step.
+# ------------------------------------------------------------------------------------------------
+# The version, dependencies and description come from the zip's manifest.json. tcli doesn't allow
+# --package-namespace with --file, so release.yml writes the THUNDERSTORE_TEAM repository variable
+# into namespace below before publishing.
+
+[general]
+repository = "https://thunderstore.io"
+
+[package]
+namespace = ""
+name = "BrrControllerGlyphs"
+
+[publish]
+communities = ["valheim"]
+
+[publish.categories]
+valheim = ["mods", "client-side", "tweaks", "ai-generated"]
