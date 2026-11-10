@@ -48,8 +48,11 @@ namespace BrrControllerGlyphs
         /// </summary>
         private readonly InventoryElement[] m_cellBySlot = new InventoryElement[QuickSlotKeys.MaxSlots];
 
-        /// <summary>State when the grid's labels were last handled; null before the first time.</summary>
-        private SlotBarState? m_lastState;
+        /// <summary>The player grid's key in <see cref="m_states"/>.</summary>
+        private const string GridKey = "PlayerGrid";
+
+        /// <summary>The grid's state when its labels were last handled.</summary>
+        private readonly SlotLabelTracker m_states = new ();
 
         /// <summary>
         /// Creates the writer.
@@ -82,8 +85,7 @@ namespace BrrControllerGlyphs
 
             List<InventoryElement> cells = grid.m_elements;
             SlotBarState current = BindingLabels.State(cells.Count, cells.Count > 0 ? cells[0] : null, m_glyphs.ShowHotbarLabels);
-            SlotLabelAction action = SlotLabelRefresh.Decide(m_lastState, current, force: false);
-            m_lastState = current;
+            SlotLabelAction action = m_states.Next(GridKey, current, force: false);
             if (action == SlotLabelAction.Skip)
             {
                 return;
@@ -103,12 +105,12 @@ namespace BrrControllerGlyphs
         }
 
         /// <summary>
-        /// Forgets what was written, so the labels are rewritten on the next update (e.g. after a
-        /// prefix setting changes).
+        /// Redoes the labels on the next update (after a setting that changes them): rewritten while
+        /// glyphs are on, restored if they just turned off.
         /// </summary>
         internal void Invalidate()
         {
-            m_lastState = null;
+            m_states.Invalidate();
         }
 
         /// <summary>
@@ -118,8 +120,8 @@ namespace BrrControllerGlyphs
         /// <param name="gui">The inventory screen, or null/destroyed if there is none.</param>
         internal void Restore(InventoryGui gui)
         {
-            bool labelled = m_lastState.HasValue && m_lastState.Value.ShowGlyphs;
-            m_lastState = null;
+            bool labelled = m_states.Labelled(GridKey);
+            m_states.Clear();
             InventoryGrid grid = gui ? gui.m_playerGrid : null;
             if (!labelled || !grid)
             {

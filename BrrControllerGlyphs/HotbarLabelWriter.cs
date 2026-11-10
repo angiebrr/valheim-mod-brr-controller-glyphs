@@ -44,11 +44,8 @@ namespace BrrControllerGlyphs
         /// <summary>Moves Valheim's top-left messages below prefixes under AzuEPI's bar.</summary>
         private readonly MessageRoom m_messageRoom;
 
-        /// <summary>
-        /// Per bar name: state when its labels were last handled. Keyed by name, not instance, so it
-        /// holds at most two entries even though bars are recreated on every world load.
-        /// </summary>
-        private readonly Dictionary<string, SlotBarState> m_lastStates = new ();
+        /// <summary>Each bar's state when its labels were last handled, by bar name (at most two).</summary>
+        private readonly SlotLabelTracker m_states = new ();
 
         /// <summary>
         /// Creates the writer.
@@ -96,12 +93,9 @@ namespace BrrControllerGlyphs
 
             SlotBarState current = BindingLabels.State(bar.m_elements.Count,
                 bar.m_elements.Count > 0 ? bar.m_elements[0].m_go : null, m_glyphs.ShowHotbarLabels);
-            SlotBarState? last = m_lastStates.TryGetValue(barName, out SlotBarState previous) ? previous : null;
 
-            // Recorded first: Restore calls ToggleBindingHint, which re-enters this method
-            m_lastStates[barName] = current;
-
-            switch (SlotLabelRefresh.Decide(last, current, force))
+            // Next records the state first: Restore calls ToggleBindingHint, which re-enters this method
+            switch (m_states.Next(barName, current, force))
             {
                 case SlotLabelAction.Write:
                     WriteLabels(bar, barName);
@@ -174,12 +168,12 @@ namespace BrrControllerGlyphs
         }
 
         /// <summary>
-        /// Forgets what was written, so every bar is rewritten on its next update (e.g. after the
-        /// prefix color setting changes).
+        /// Redoes every bar on its next update (after a setting that changes the labels): rewritten
+        /// while glyphs are on, restored to Valheim's if they just turned off.
         /// </summary>
         internal void Invalidate()
         {
-            m_lastStates.Clear();
+            m_states.Invalidate();
         }
 
         /// <summary>
@@ -189,11 +183,9 @@ namespace BrrControllerGlyphs
         internal void RestoreAll()
         {
             // Runs once, on destroy: the scene search is fine here
-            foreach (HotkeyBar bar in UnityEngine.Object.FindObjectsOfType<HotkeyBar>())
+            foreach (HotkeyBar bar in UnityEngine.Object.FindObjectsByType<HotkeyBar>(FindObjectsSortMode.None))
             {
-                string barName = bar.name;
-                bool labelled = m_lastStates.TryGetValue(barName, out SlotBarState state) && state.ShowGlyphs;
-                if (labelled)
+                if (m_states.Labelled(bar.name))
                 {
                     m_prefixLabels.Clear(bar.transform);
                     bar.ToggleBindingHint(!ZInput.IsGamepadActive());
@@ -201,7 +193,7 @@ namespace BrrControllerGlyphs
             }
 
             m_messageRoom.Restore();
-            m_lastStates.Clear();
+            m_states.Clear();
         }
 
         /// <summary>
