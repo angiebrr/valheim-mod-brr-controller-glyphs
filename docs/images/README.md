@@ -19,7 +19,7 @@ Switching settings live can leave labels stale (known issue). If a shot looks wr
 
 Hotbar colors and art (HUD):
 
-- [ ] **Hotbar group colors** `Neutral` → `hotbar_neutral.jpg`: the hotbar and AzuEPI's bar under it, with the R4 and R5 groups.
+- [x] **Hotbar group colors** `Neutral` → `hotbar_neutral.jpg`: the hotbar and AzuEPI's bar under it, with the R4 and R5 groups.
 - [x] **Hotbar group colors** `Palette` → `hotbar_palette.jpg`: the same view. Leave `Palette` on from here.
 - [x] `buttons_valheim.jpg`: close-up of hotbar slots 1–4 and the R4 prefix (R4 in Steam Deck art, D-pad in Valheim's art).
 - [x] **Glyphs used by mod** `SteamDeck` → `buttons_steamdeck.jpg`: the same close-up (all Steam Deck art). Set it back to `Valheim`.
@@ -75,9 +75,8 @@ Groups with quick slots (`groups_one_*_quickslots` are done):
 ## Notes on the shots taken (2026-11-09)
 
 - Taken with Steam's screenshot key at 2560 × 1600 and cropped at full size; saved as JPEG (the screenshots are JPEG already, and PNG made the folder 15 MB instead of 2 MB).
-- `groups_one_hud_quickslots` and `hotbar_palette` are the same shot. `groups_one_inventory_quickslots` is from the earlier batch (also `Palette`).
+- `hotbar_neutral` and `hotbar_palette` are the same outdoor spot, from 2000 × 1250 copies scaled up to the other HUD crops' size. `groups_one_inventory_quickslots` is from the earlier batch (also `Palette`).
 - `badges_mod` uses the no-groups mapping, the only inventory shot with the mod on and 6 quick slots in the batch. Retake with your own mapping if the different labels distract.
-- Still to take: `hotbar_neutral`.
 
 
 ## What each table shows
