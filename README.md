@@ -89,7 +89,7 @@ dotnet test BrrControllerGlyphs.sln --no-build
 2. Run Release in **dry-run**: it checks the package against Thunderstore's rules, builds, tests and uploads the zip as an artifact. Import the zip in Gale (Import local mod) and check it in game.
 3. Run Release in **release + publish** (or **release** for a GitHub release only): it tags `vx.y.z`, creates the GitHub release with the changelog section and the zip, and uploads the same zip to Thunderstore. A failed run can be re-run; it reuses the tag and release.
 
-Publishing needs two repository settings (Settings > Secrets and variables > Actions): the variable `THUNDERSTORE_TEAM` (the Thunderstore team; it can't be renamed later) and the secret `TCLI_AUTH_TOKEN` (thunderstore.io: Settings > Teams > your team > Service Accounts > Add service account). Without them the publish step is skipped with a notice.
+Publishing needs two repository settings (Settings > Secrets and variables > Actions): the secret `THUNDERSTORE_TEAM` (the Thunderstore team; it can't be renamed later) and another secret `TCLI_AUTH_TOKEN` (thunderstore.io: Settings > Teams > your team > Service Accounts > Add service account). Without them the publish step is skipped with a notice.
 
 ## Glyph art
 
