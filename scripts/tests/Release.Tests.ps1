@@ -77,11 +77,39 @@ Describe 'Get-ChangelogSection' {
     It "doesn't match a longer version" {
         Get-ChangelogSection -ChangelogPath $path -Version '1.0.1' | Should -BeNullOrEmpty
     }
+
+    It 'returns nothing for a heading with no lines before the next one' {
+        $empty = Join-Path $TestDrive 'CHANGELOG-empty.md'
+        Write-Text $empty "# Changelog`n`n## 1.0.2`n## 1.0.1`n`n- Old`n"
+
+        Get-ChangelogSection -ChangelogPath $empty -Version '1.0.2' | Should -BeNullOrEmpty
+    }
+
+    It 'returns nothing for a heading on the last line' {
+        $last = Join-Path $TestDrive 'CHANGELOG-last.md'
+        Write-Text $last "# Changelog`n`n## 1.0.2"
+
+        Get-ChangelogSection -ChangelogPath $last -Version '1.0.2' | Should -BeNullOrEmpty
+    }
 }
 
 Describe 'Test-ReleaseReady' {
     It 'passes a valid package' {
         Test-ReleaseReady -Root (New-FixtureRoot) | Should -BeNullOrEmpty
+    }
+
+    # release.yml collects the problems with @(...) and fails when there are any
+    It 'returns one item per problem' {
+        @(Test-ReleaseReady -Root (New-FixtureRoot)).Count | Should -Be 0
+        @(Test-ReleaseReady -Root (New-FixtureRoot -ReadmeBom -ChangelogBom)).Count | Should -Be 2
+    }
+
+    It 'reports a BOM in the manifest' {
+        $root = New-FixtureRoot
+        $manifest = "$root/BrrControllerGlyphs/Package/manifest.json"
+        Write-Text $manifest ([System.IO.File]::ReadAllText($manifest)) -Bom
+
+        ((Test-ReleaseReady -Root $root) -join "`n") | Should -BeLike '*manifest.json starts with a BOM*'
     }
 
     It 'reports <Case>' -ForEach @(
@@ -101,7 +129,8 @@ Describe 'Test-ReleaseReady' {
     }
 
     It 'reports the placeholder icon' {
-        $stub = [System.IO.File]::ReadAllBytes("$PSScriptRoot/../../BrrControllerGlyphs/Package/icon.png")
+        # The JotunnModStub icon, kept as a fixture so the real icon can replace it in the package
+        $stub = [System.IO.File]::ReadAllBytes("$PSScriptRoot/fixtures/stub-icon.png")
 
         $problems = Test-ReleaseReady -Root (New-FixtureRoot -IconBytes $stub)
 

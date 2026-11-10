@@ -1,7 +1,7 @@
 # Spec: CI, releases and Thunderstore publishing
 
 Status: implemented 2026-11-10 (PR #8); plan in `.claude/plans/2026-11-09-ci-and-releases.md`. Publishing waits on a real icon and the Thunderstore team.
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod page plan)
 
 ## Goal
@@ -48,7 +48,7 @@ Started by hand (`workflow_dispatch`) on `main`. Input **mode**: `dry-run` (defa
 - `BrrControllerGlyphs/CHANGELOG.md` has a `## x.y.z` section for that version.
 - `manifest.json`: `name` is letters, digits and underscores; `description` is 250 characters or less; `dependencies` are `Team-Package-x.y.z`.
 - `icon.png` is exactly 256 × 256 PNG and not the JotunnModStub placeholder (compared by hash).
-- `README.md` and `CHANGELOG.md` are UTF-8 without BOM.
+- `README.md`, `CHANGELOG.md` and `manifest.json` are UTF-8 without BOM.
 - Tag `vx.y.z` doesn't exist, or already points at this commit (so a failed run can be re-run).
 
 ### Build and package
@@ -63,7 +63,7 @@ Started by hand (`workflow_dispatch`) on `main`. Input **mode**: `dry-run` (defa
 
 ### Publish (`release + publish` only)
 
-- Thunderstore CLI (`dotnet tool install -g tcli`): `tcli publish --file <zip>`, with `thunderstore.toml` giving the repository, the `valheim` community and categories `mods`, `client-side`, `tweaks`, `ai-generated`. Team from `--package-namespace ${{ vars.THUNDERSTORE_TEAM }}`; version and dependencies come from the zip's `manifest.json`.
+- Thunderstore CLI (`dotnet tool install -g tcli`): `tcli publish --file <zip>`, with `thunderstore.toml` giving the repository, the `valheim` community and categories `mods`, `client-side`, `tweaks`, `ai-generated`. Team from `THUNDERSTORE_TEAM`, written into `namespace` in a copy of `thunderstore.toml` (tcli won't take `--package-namespace` with `--file`); version and dependencies come from the zip's `manifest.json`.
 - Token: repository secret `TCLI_AUTH_TOKEN`, from a team service account (thunderstore.io: Settings > Teams > team > Service Accounts > Add service account).
 - If `THUNDERSTORE_TEAM` or the secret isn't set, the step is skipped with a notice (the GitHub release still happens).
 - The upload is not marked NSFW.
@@ -77,7 +77,7 @@ Started by hand (`workflow_dispatch`) on `main`. Input **mode**: `dry-run` (defa
 
 ## Part 3: making the package fit Thunderstore
 
-- **`BrrControllerGlyphs/CHANGELOG.md`:** newest first, `## x.y.z` per version with Added / Changed / Fixed lists; starts with `0.0.1` (or the first published version). The mod page's Changelog section is removed. Release builds (`publish.ps1`) also copy it into `Package/` (git-ignored like the README copy).
+- **`BrrControllerGlyphs/CHANGELOG.md`:** newest first, `## x.y.z` per version with Added / Changed / Fixed lists; starts with `0.0.1` (or the first published version). The mod page's Changelog section is removed. `publish.ps1`'s Release build and the Release workflow both write the zip with `New-ReleasePackage`, straight from the sources (nothing is copied into `Package/`).
 - **Mod page fixes** (Thunderstore's Markdown, per its guide):
   - `> [!IMPORTANT]` isn't supported: becomes `> **Important:** …`.
   - In-page heading links don't work: remove the table of contents; links like "see Checking your mapping" become plain text ("see the *Checking your mapping against your mods* section for more").

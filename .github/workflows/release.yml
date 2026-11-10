@@ -115,19 +115,24 @@ jobs:
           $tag = "v$env:VERSION"
           Get-ChangelogSection -ChangelogPath BrrControllerGlyphs/CHANGELOG.md -Version $env:VERSION | Set-Content notes.md
 
+          # Native commands don't stop a pwsh step on failure; check each one, so a failed tag push
+          # can't fall through to gh creating the tag itself on a different commit
+          function Assert-Ok([string] $What) { if ($LASTEXITCODE -ne 0) { Write-Output "::error::$What failed"; exit 1 } }
+
           # A re-run after a failed publish finds the tag and release already there
           git rev-parse -q --verify "refs/tags/$tag" > $null
           if ($LASTEXITCODE -ne 0) {
-            git tag $tag $env:GITHUB_SHA
-            git push origin $tag
+            git tag $tag $env:GITHUB_SHA; Assert-Ok "git tag $tag"
+            git push origin $tag; Assert-Ok "git push origin $tag"
           }
 
           gh release view $tag > $null 2>&1
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag $env:ZIP --clobber
+            gh release upload $tag $env:ZIP --clobber; Assert-Ok "gh release upload"
           }
           else {
-            gh release create $tag $env:ZIP --title "BrrControllerGlyphs $env:VERSION" --notes-file notes.md
+            gh release create $tag $env:ZIP --target $env:GITHUB_SHA --title "BrrControllerGlyphs $env:VERSION" --notes-file notes.md
+            Assert-Ok "gh release create"
           }
 
       - name: Publish to Thunderstore

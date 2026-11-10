@@ -75,7 +75,14 @@ function Get-ChangelogSection {
         if ($lines[$i] -match '^##\s') { $end = $i; break }
     }
 
-    return ($lines[$start..($end - 1)] -join "`n").Trim()
+    # A heading with nothing under it (next heading straight after, or end of file) is no section;
+    # without this the range below would run backwards
+    if ($end -le $start) {
+        return $null
+    }
+
+    $section = ($lines[$start..($end - 1)] -join "`n").Trim()
+    return $(if ($section) { $section } else { $null })
 }
 
 function Test-ReleaseReady {
@@ -109,7 +116,7 @@ function Test-ReleaseReady {
         $problems.Add("CHANGELOG.md has no section for $pluginVersion")
     }
 
-    foreach ($file in 'README.md', 'CHANGELOG.md') {
+    foreach ($file in 'README.md', 'CHANGELOG.md', 'Package/manifest.json') {
         $path = Join-Path $mod $file
         if ((Test-Path $path) -and (Test-Bom $path)) {
             $problems.Add("$file starts with a BOM (save it as UTF-8 without BOM)")
@@ -144,7 +151,8 @@ function Test-ReleaseReady {
         $problems.Add("icon.png is still the JotunnModStub placeholder ('MOD STUB'); add the mod's own icon")
     }
 
-    return , $problems.ToArray()
+    # Emitted one by one, so @(Test-ReleaseReady ...) counts the problems
+    return $problems.ToArray()
 }
 
 function Test-TagUsable {
