@@ -219,6 +219,12 @@ function New-ReleasePackage {
         [Parameter(Mandatory)] [string] $OutFile
     )
 
+    # .NET resolves relative paths against the process directory, not PowerShell's location
+    $resolve = { param($path) $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path) }
+    $Root = & $resolve $Root
+    $DllPath = & $resolve $DllPath
+    $OutFile = & $resolve $OutFile
+
     $mod = Join-Path $Root 'BrrControllerGlyphs'
     $entries = [ordered]@{
         'manifest.json' = Join-Path $mod 'Package/manifest.json'

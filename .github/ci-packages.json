@@ -1,4 +1,10 @@
 {
-  "BepInExPack": "https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2360/",
-  "AzuEPI": "https://cdn.hexium.gg/upload/11/2.6.6.zip"
+  "BepInExPack": {
+    "url": "https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2360/",
+    "sha256": "6bca77b1016acfe0ffaebb6534c84b12ae8d12e5a96abbf59ec6e4526204fc6f"
+  },
+  "AzuEPI": {
+    "url": "https://cdn.hexium.gg/upload/11/2.6.6.zip",
+    "sha256": "699c88b562e7515a6b330c9c9c8d9ce831efcd9b50cf31ab7a44e7268fd2555c"
+  }
 }

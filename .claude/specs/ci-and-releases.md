@@ -27,7 +27,7 @@ Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod pa
    - Read the current build ID (`app_info_print`). The cache key is `valheim-server-<buildid>`; on a hit, skip the download.
    - On a miss, download the server and keep only `valheim_server_Data/Managed` (cached).
    - Place it as `<install>/valheim_Data/Managed`, the path Jötunn's `Paths.props`/`JotunnBuildTask` and the contract tests (`GameAssemblies.ManagedDir`) expect.
-2. **BepInEx and AzuEPI** downloaded into a stand-in profile: `<profile>/BepInEx/core` (BepInExPack_Valheim) and `<profile>/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory`. `.github/ci-packages.json` holds their direct download URLs (one line each to update): BepInExPack from Thunderstore (matching the `manifest.json` dependency), AzuEPI from Hexium (see Findings).
+2. **BepInEx and AzuEPI** downloaded into a stand-in profile: `<profile>/BepInEx/core` (BepInExPack_Valheim) and `<profile>/BepInEx/plugins/Azumatt-AzuExtendedPlayerInventory`. `.github/ci-packages.json` holds their direct download URLs and SHA-256 hashes (checked after download, so a replaced file fails loudly): BepInExPack from Thunderstore (matching the `manifest.json` dependency), AzuEPI from Hexium (see Findings).
 3. **`Environment.props`** written to the repo root on the runner: `VALHEIM_INSTALL`, `GALE_PROFILE` (the stand-in profile), `BEPINEX_PATH`, `MOD_DEPLOYPATH` (a temp folder). The post-build deploy (`publish.ps1`) only runs on Windows, so nothing is deployed.
 4. **Checked on the first CI run (2026-11-10):** check the server's `Managed` folder has every assembly the plugin references (`Unity.TextMeshPro`, `Unity.InputSystem`, `UnityEngine.UI`, `UnityEngine.TextCoreFontEngineModule`, the publicized `assembly_*`). If any is missing, stop and ask the user before going further.
 
@@ -37,6 +37,7 @@ Related: `.claude/specs/controller-glyphs.md` (the mod itself; F9 has the mod pa
 - **Steps:** checkout, .NET 10 SDK, setup action, `dotnet build BrrControllerGlyphs.sln -c Release`, `dotnet test BrrControllerGlyphs.sln -c Release --no-build`.
 - **No silent skips:** the job fails if any test was skipped (the contract tests skip without the game or a mod).
 - **Artifact:** uploads `BrrControllerGlyphs.dll`, so a PR's build can be tried in game.
+- **Windows PowerShell 5.1 job** (added 2026-11-10 from the final review): runs the release script tests where `publish.ps1` runs them. Jobs time out after 30 minutes (Windows: 15), so a hung SteamCMD can't hold a runner for hours.
 
 ## Part 2: release workflow (`.github/workflows/release.yml`)
 

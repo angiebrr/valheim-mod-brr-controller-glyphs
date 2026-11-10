@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------------------------
+# publish.ps1: post-build step (from the JotunnModStub template): Debug builds are copied to the
+# BepInEx plugins folder, Release builds write the Thunderstore zip with scripts/Release.psm1.
+# ------------------------------------------------------------------------------------------------
+
 param(
     [Parameter(Mandatory)]
     [ValidateSet('Debug','Release')]

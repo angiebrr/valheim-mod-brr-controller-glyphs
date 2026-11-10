@@ -20,6 +20,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A hung SteamCMD would otherwise hold the runner for GitHub's 6-hour default
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -56,3 +58,20 @@ jobs:
         with:
           name: BrrControllerGlyphs-dll
           path: BrrControllerGlyphs/bin/Release/net48/BrrControllerGlyphs.dll
+
+  # publish.ps1 runs the release module in Windows PowerShell 5.1 (the csproj's post-build step), so
+  # its tests run there too, not only in pwsh 7
+  windows-powershell:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Release script tests in Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          # Windows PowerShell ships Pester 3; the tests need Pester 5
+          Install-Module Pester -MinimumVersion 5.5.0 -MaximumVersion 5.99.99 -Scope CurrentUser -Force -SkipPublisherCheck
+          Import-Module Pester -MinimumVersion 5.5.0
+          $PSVersionTable.PSVersion.ToString()
+          Invoke-Pester scripts/tests -CI

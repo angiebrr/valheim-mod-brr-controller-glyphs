@@ -6,9 +6,10 @@
 # - Valheim's assemblies come from the free Valheim Dedicated Server (Steam app 896660, anonymous
 #   login). Only its Managed folder is kept, cached by the server's Steam build ID, so it's
 #   downloaded again only after a Valheim update (or when GitHub evicts the cache).
-# - BepInExPack and AzuEPI are downloaded from the URLs in .github/ci-packages.json: BepInExPack
-#   from Thunderstore, AzuEPI from Hexium (valheim.hexium.gg), where Azumatt publishes it now (the
-#   Thunderstore listing is deprecated at 2.4.14).
+# - BepInExPack and AzuEPI are downloaded from the URLs in .github/ci-packages.json and checked
+#   against its SHA-256 hashes: BepInExPack from Thunderstore, AzuEPI from Hexium
+#   (valheim.hexium.gg), where Azumatt publishes it now (the Thunderstore listing is deprecated
+#   at 2.4.14).
 # - Environment.props is written at the repo root, as on a developer's machine.
 # Run actions/checkout first: this action uses scripts/Release.psm1.
 
@@ -27,6 +28,7 @@ runs:
       shell: bash
       run: |
         # SteamCMD is 32-bit
+        sudo apt-get update -qq > /dev/null
         sudo apt-get install -y -qq lib32gcc-s1 > /dev/null
         mkdir -p "$RUNNER_TEMP/steamcmd"
         curl -sSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf - -C "$RUNNER_TEMP/steamcmd"
@@ -80,10 +82,15 @@ runs:
         $downloads = "$env:RUNNER_TEMP/downloads"
         New-Item -ItemType Directory -Force $downloads, "$profileDir/BepInEx/plugins" | Out-Null
 
-        # Downloads a package zip from its URL and unpacks it; returns the folder
+        # Downloads a package zip, checks its SHA-256 (so a replaced file fails loudly) and unpacks it;
+        # returns the folder
         function Get-Package([string] $Key) {
           $zip = "$downloads/$Key.zip"
-          Invoke-WebRequest $packages.$Key -OutFile $zip
+          Invoke-WebRequest $packages.$Key.url -OutFile $zip
+          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
+          if ($hash -ne $packages.$Key.sha256) {
+            throw "$Key download does not match ci-packages.json: SHA-256 $hash, expected $($packages.$Key.sha256)"
+          }
           Expand-Archive $zip "$downloads/$Key" -Force
           return "$downloads/$Key"
         }

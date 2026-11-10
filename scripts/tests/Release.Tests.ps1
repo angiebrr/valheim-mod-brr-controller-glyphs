@@ -153,6 +153,25 @@ Describe 'New-ReleasePackage' {
         $names | Should -Be @('CHANGELOG.md', 'icon.png', 'manifest.json', 'plugins/BrrControllerGlyphs.dll', 'README.md')
         ($names | Where-Object { $_ -like '*\*' }) | Should -BeNullOrEmpty
     }
+
+    # .NET resolves relative paths against the process directory, which Push-Location doesn't change
+    It 'writes a relative OutFile into the current location, also on a second run' {
+        $root = New-FixtureRoot
+        $dll = Join-Path $TestDrive 'BrrControllerGlyphs.dll'
+        [System.IO.File]::WriteAllBytes($dll, [byte[]](1, 2, 3))
+        $here = New-Item -ItemType Directory (Join-Path $TestDrive 'out') -Force
+
+        Push-Location $here
+        try {
+            New-ReleasePackage -Root $root -DllPath $dll -OutFile 'package.zip'
+            New-ReleasePackage -Root $root -DllPath $dll -OutFile 'package.zip'
+        }
+        finally {
+            Pop-Location
+        }
+
+        Join-Path $here 'package.zip' | Should -Exist
+    }
 }
 
 Describe 'Test-TagUsable' {
