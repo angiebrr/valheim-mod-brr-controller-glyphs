@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   build:
+    name: Build Solution and Run Tests
     runs-on: ubuntu-latest
     # A hung SteamCMD would otherwise hold the runner for GitHub's 6-hour default
     timeout-minutes: 30
