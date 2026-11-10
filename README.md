@@ -15,7 +15,7 @@ The design, decisions and in-game findings are in the spec:
 | Folder | What's in it |
 |---|---|
 | `BrrControllerGlyphs.Core/` | All decision logic, `netstandard2.0`, no Unity or Valheim types: the key mapping, prompt and hint rewriting, hotbar grouping, colors, visibility rules. |
-| `BrrControllerGlyphs/` | The plugin (`net48`): a thin shell that reads game state, calls Core and sets text. Harmony postfixes in `Patches/`, glyph PNGs in `Glyphs/`, Thunderstore files in `Package/`. Core's sources are compiled in, so only `BrrControllerGlyphs.dll` ships. |
+| `BrrControllerGlyphs/` | The plugin (`net48`): a thin shell that reads game state, calls Core and sets text. Harmony postfixes in `Patches/`, glyph PNGs in `Glyphs/`, Thunderstore files in `Package/` (`icon.psd` is the icon's Photopea source; only `icon.png` is packaged). Core's sources are compiled in, so only `BrrControllerGlyphs.dll` ships. |
 | `BrrControllerGlyphs.Core.Tests/` | xUnit tests for Core (`net10.0`), using the mapping in `Fixtures/steam-controller.yaml`. |
 | `BrrControllerGlyphs.Contract.Tests/` | Reads the installed game DLLs and other mods' DLLs to check every member the plugin patches or reads still exists. Skips when the game or mod isn't installed. |
 | `scripts/` | `publish.ps1` (post-build deploy and packaging), `Release.psm1` (release checks and the Thunderstore zip; Pester tests in `scripts/tests/`) and `make-glyphs.ps1` (makes `Glyphs/` from Kenney's Input Prompts). |

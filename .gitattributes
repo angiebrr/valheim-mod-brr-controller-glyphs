@@ -82,3 +82,5 @@
 .gitattributes export-ignore
 .gitignore     export-ignore
 .gitkeep       export-ignore
+# Image sources (Photopea/Photoshop) are binary
+*.psd binary
