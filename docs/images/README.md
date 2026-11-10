@@ -13,7 +13,7 @@ The list is in shooting order: four rounds, three restarts. Tick each box as you
 
 Other UI mods (e.g. MyLittleUI) can stay on: just keep the same mods for both shots of a pair, since the tables compare with and without this mod only.
 
-Switching settings live can leave labels stale (known issue). If a shot looks wrong after a change, reopen the inventory, and if that doesn't fix it, restart.
+Settings apply live. If a shot looks wrong after a change, reopen the inventory, and if that doesn't fix it, restart.
 
 ## Round 1: mod on, your mapping, quick slots 6 (no restart)
 
