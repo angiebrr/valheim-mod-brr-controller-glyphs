@@ -91,6 +91,110 @@ The template lists every button name with art and the key spellings that work. I
 - `colors`: a color per held button for **Hotbar group colors** `Custom`, e.g. `R4: "#9B8CFF"`.
 - `aliases`: another spelling of a key, for a mod that writes it oddly, e.g. `Pickup: Q`.
 
+### Example mappings
+
+Complete mapping files to copy and adapt; they're the ones behind the hotbar screenshots above. They only show the right buttons if your controller sends these keys from these buttons. The `Keypad` keys are AzuExtendedPlayerInventory's quick slots; without it they're simply unused.
+
+<details>
+<summary>One group per bar (the author's Steam Controller layout): <code>one-group.yaml</code></summary>
+
+```yaml
+# BrrControllerGlyphs example mapping: one group per bar.
+# The author's Steam Controller layout: hotbar slots on an R4 hold, AzuEPI quick slots on an R5
+# hold, extras on back grips and trackpad clicks. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+
+keys:
+  # Hotbar: hold R4 (one group)
+  "1": [R4, DPadUp]
+  "2": [R4, DPadRight]
+  "3": [R4, DPadDown]
+  "4": [R4, DPadLeft]
+  "5": [R4, Y]
+  "6": [R4, B]
+  "7": [R4, A]
+  "8": [R4, X]
+
+  # AzuEPI quick slots: hold R5 (one group)
+  Keypad1: [R5, DPadUp]
+  Keypad2: [R5, DPadRight]
+  Keypad3: [R5, DPadDown]
+  Keypad4: [R5, DPadLeft]
+  Keypad5: [R5, Y]
+  Keypad6: [R5, B]
+
+  I: [R5, A]           # backpack
+  N: [R5, X]           # ImpactfulSkills AOE toggle
+  Q: L5                # pickup
+  Z: L4                # AzuAutoStore favorite
+  B: LPadUp            # AutomaticFuel torch mode (left trackpad click up)
+  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)
+```
+
+</details>
+
+<details>
+<summary>Two groups per bar: <code>multiple-groups.yaml</code></summary>
+
+```yaml
+# BrrControllerGlyphs example mapping: two groups per bar.
+# Each bar is split between two held buttons: the hotbar on R4 and L4, AzuEPI's quick slots on R5
+# and L5. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+
+keys:
+  # Hotbar: slots 1-4 hold R4, slots 5-8 hold L4 (two groups)
+  "1": [R4, DPadUp]
+  "2": [R4, DPadRight]
+  "3": [R4, DPadDown]
+  "4": [R4, DPadLeft]
+  "5": [L4, Y]
+  "6": [L4, B]
+  "7": [L4, A]
+  "8": [L4, X]
+
+  # AzuEPI quick slots: 1-3 hold R5, 4-6 hold L5 (two groups)
+  Keypad1: [R5, DPadUp]
+  Keypad2: [R5, DPadRight]
+  Keypad3: [R5, DPadDown]
+  Keypad4: [L5, Y]
+  Keypad5: [L5, B]
+  Keypad6: [L5, A]
+
+  B: LPadUp            # AutomaticFuel torch mode (left trackpad click up)
+  LeftShift: LPadDown  # AzuCraftyBoxes fill all (left trackpad click down)
+```
+
+</details>
+
+<details>
+<summary>No groups (single buttons): <code>no-groups.yaml</code></summary>
+
+```yaml
+# BrrControllerGlyphs example mapping: no groups.
+# Every slot is a single button (trackpad clicks and back grips), so nothing is held and each slot
+# shows its own glyph. Copy to BepInEx/config/BrrControllerGlyphs.mapping.yaml.
+
+keys:
+  # Hotbar: left trackpad for 1-4, right trackpad for 5-8
+  "1": LPadUp
+  "2": LPadRight
+  "3": LPadDown
+  "4": LPadLeft
+  "5": RPadUp
+  "6": RPadRight
+  "7": RPadDown
+  "8": RPadLeft
+
+  # AzuEPI quick slots: back grips and trackpad presses
+  Keypad1: L4
+  Keypad2: R4
+  Keypad3: L5
+  Keypad4: R5
+  Keypad5: LPad
+  Keypad6: RPad
+```
+
+</details>
+
 ## Checking your mapping against your mods
 
 Other mods bring their own keys, and it's easy to miss one when you write your mapping. The mod checks your mapping against two sources and lists every keyboard key that's used but not mapped, so you can see what's left to add.

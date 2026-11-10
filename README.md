@@ -21,7 +21,7 @@ The design, decisions and in-game findings are in the spec:
 | `scripts/` | `publish.ps1` (post-build deploy and packaging) and `make-glyphs.ps1` (makes `Glyphs/` from Kenney's Input Prompts). |
 | `libraries/` | `pdb2mdb.exe`, used by `publish.ps1` for debug symbols. |
 | `docs/images/` | Screenshots for the mod page, with the list of shots in its README. |
-| `docs/example-mappings/` | Example mapping files (no groups, one group, multiple groups) for the hotbar screenshots; `ExampleMappingsTests` checks they group as named. |
+| `docs/example-mappings/` | Example mapping files (no groups, one group, multiple groups) for the hotbar screenshots; `ExampleMappingsTests` checks they group as named and that the mod page shows each one word for word (update both together). |
 
 ## Setup
 

@@ -26,6 +26,7 @@
     <None Include="Fixtures\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
     <!-- The mod page's example mappings, checked by ExampleMappingsTests -->
     <None Include="..\docs\example-mappings\*.yaml" Link="ExampleMappings\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\BrrControllerGlyphs\README.md" Link="ModPage\README.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

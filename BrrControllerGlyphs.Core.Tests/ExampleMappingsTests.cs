@@ -61,6 +61,31 @@ public class ExampleMappingsTests
         Assert.Equal(groups, quickSlots.Groups.Count);
     }
 
+    /// <summary>The mod page shows each example file word for word, so the two can't drift apart.</summary>
+    /// <param name="name">Example file name.</param>
+    [Theory]
+    [InlineData("no-groups")]
+    [InlineData("one-group")]
+    [InlineData("multiple-groups")]
+    public void Mod_page_shows_the_example(string name)
+    {
+        string example = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "ExampleMappings", name + ".yaml"));
+        string readme = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "ModPage", "README.md"));
+
+        Assert.Contains(Normalized(example), Normalized(readme));
+    }
+
+    /// <summary>
+    /// Text with Windows line endings turned into "\n" and trailing whitespace trimmed, so a checkout's
+    /// line endings don't matter.
+    /// </summary>
+    /// <param name="text">File contents.</param>
+    /// <returns>The normalized text.</returns>
+    private static string Normalized(string text)
+    {
+        return text.Replace("\r\n", "\n").TrimEnd();
+    }
+
     /// <summary>The one-group example is the author's layout, the same as the test fixture.</summary>
     [Fact]
     public void One_group_example_matches_the_fixture()
