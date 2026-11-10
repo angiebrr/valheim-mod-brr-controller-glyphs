@@ -12,6 +12,28 @@ This mod does a few things and can be enabled/disabled to taste:
 | ------------- | ------------- |
 | ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.jpg?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.jpg?raw=true) |
 
+> [!IMPORTANT]
+> This mod does NOT change what your controller sends. Map your extra buttons to keyboard keys using something like the [Steam Input Configurator](https://steamcommunity.com/groups/steam_hardware/announcements/detail/508485755865138099) (or similar), then tell this mod which buttons send which keys in its mapping file, so it can show the right glyphs.
+
+- [BrrControllerGlyphs](#brrcontrollerglyphs)
+  - [Requirements](#requirements)
+  - [Features](#features)
+    - [Prompts stay controller glyphs](#prompts-stay-controller-glyphs)
+    - [Your buttons instead of keyboard keys](#your-buttons-instead-of-keyboard-keys)
+    - [Hotbar and quick-slot labels](#hotbar-and-quick-slot-labels)
+    - [Other mods' hover hints](#other-mods-hover-hints)
+  - [Setting up your mapping](#setting-up-your-mapping)
+    - [Example mappings](#example-mappings)
+  - [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)
+  - [Console commands (F5)](#console-commands-f5)
+  - [FAQ](#faq)
+  - [Compatibility](#compatibility)
+  - [Limits](#limits)
+  - [Known issues](#known-issues)
+  - [Reporting issues](#reporting-issues)
+  - [Credits](#credits)
+  - [Changelog](#changelog)
+
 ## Requirements
 
 - [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
