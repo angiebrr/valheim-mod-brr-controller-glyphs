@@ -141,12 +141,12 @@ jobs:
         if: inputs.mode == 'release + publish'
         shell: pwsh
         env:
-          THUNDERSTORE_TEAM: ${{ vars.THUNDERSTORE_TEAM }}
+          THUNDERSTORE_TEAM: ${{ secrets.THUNDERSTORE_TEAM }}
           TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
           ZIP: ${{ steps.package.outputs.zip }}
         run: |
           if (-not $env:THUNDERSTORE_TEAM -or -not $env:TCLI_AUTH_TOKEN) {
-            Write-Output "::notice::Skipped publishing: set the THUNDERSTORE_TEAM repository variable and the TCLI_AUTH_TOKEN secret first"
+            Write-Output "::notice::Skipped publishing: set the THUNDERSTORE_TEAM secret and the TCLI_AUTH_TOKEN secret first"
             exit 0
           }
 
