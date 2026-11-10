@@ -1,4 +1,4 @@
-﻿# BrrControllerGlyphs
+# BrrControllerGlyphs
 
 This mod is useful for those who send keyboard keys with their controller or have extra controls that you have mapped but Valheim doesn't have any glyphs for, e.g. Steam Deck, Steam Controller.
 
@@ -12,27 +12,7 @@ This mod does a few things and can be enabled/disabled to taste:
 | ------------- | ------------- |
 | ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.jpg?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.jpg?raw=true) |
 
-> [!IMPORTANT]
-> This mod does NOT change what your controller sends. Map your extra buttons to keyboard keys using something like the [Steam Input Configurator](https://steamcommunity.com/groups/steam_hardware/announcements/detail/508485755865138099) (or similar), then tell this mod which buttons send which keys in its mapping file, so it can show the right glyphs.
-
-- [BrrControllerGlyphs](#brrcontrollerglyphs)
-  - [Requirements](#requirements)
-  - [Features](#features)
-    - [Prompts stay controller glyphs](#prompts-stay-controller-glyphs)
-    - [Your buttons instead of keyboard keys](#your-buttons-instead-of-keyboard-keys)
-    - [Hotbar and quick-slot labels](#hotbar-and-quick-slot-labels)
-    - [Other mods' hover hints](#other-mods-hover-hints)
-  - [Setting up your mapping](#setting-up-your-mapping)
-    - [Example mappings](#example-mappings)
-  - [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)
-  - [Console commands (F5)](#console-commands-f5)
-  - [FAQ](#faq)
-  - [Compatibility](#compatibility)
-  - [Limits](#limits)
-  - [Known issues](#known-issues)
-  - [Reporting issues](#reporting-issues)
-  - [Credits](#credits)
-  - [Changelog](#changelog)
+> **Important:** This mod does NOT change what your controller sends. Map your extra buttons to keyboard keys using something like the [Steam Input Configurator](https://steamcommunity.com/groups/steam_hardware/announcements/detail/508485755865138099) (or similar), then tell this mod which buttons send which keys in its mapping file, so it can show the right glyphs.
 
 ## Requirements
 
@@ -105,7 +85,7 @@ The mod can't read your Steam layout. The mapping is a separate file that lists 
    ```
 
 4. Save. The mapping reloads while you play, and **Key Glyph Mapping > Mapping status** says whether it loaded or which line is wrong.
-5. Play a while, then look at **Keys missing from mapping** (see [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)). Add only keys your layout actually sends.
+5. Play a while, then look at **Keys missing from mapping** (see the *Checking your mapping against your mods* section for more). Add only keys your layout actually sends.
 
 The template lists every button name with art and the key spellings that work. It also has three optional sections:
 
@@ -118,7 +98,7 @@ The template lists every button name with art and the key spellings that work. I
 Complete mapping files to copy and adapt; they're the ones behind the hotbar screenshots above. They only show the right buttons if your controller sends these keys from these buttons. The `Keypad` keys are AzuExtendedPlayerInventory's quick slots; without it they're simply unused.
 
 <details>
-<summary>One group per bar: <code>one-group.yaml</code></summary>
+<summary>One group per bar: one-group.yaml</summary>
 
 ```yaml
 # BrrControllerGlyphs example mapping: one group per bar.
@@ -155,7 +135,7 @@ keys:
 </details>
 
 <details>
-<summary>Two groups per bar: <code>multiple-groups.yaml</code></summary>
+<summary>Two groups per bar: multiple-groups.yaml</summary>
 
 ```yaml
 # BrrControllerGlyphs example mapping: two groups per bar.
@@ -188,7 +168,7 @@ keys:
 </details>
 
 <details>
-<summary>No groups (single buttons): <code>no-groups.yaml</code></summary>
+<summary>No groups (single buttons): no-groups.yaml</summary>
 
 ```yaml
 # BrrControllerGlyphs example mapping: no groups.
@@ -261,7 +241,7 @@ The list updates when you save the mapping and when a hint shows a new missing k
 
 **Does the trackpad cursor still work?** Yes, in menus and the inventory, as before.
 
-**Why does a hint still show a key?** That key isn't in your mapping, or the mod writes it in a way the mapping doesn't match. Check **Keys missing from mapping** (see [Checking your mapping against your mods](#checking-your-mapping-against-your-mods)), then add the key or an alias.
+**Why does a hint still show a key?** That key isn't in your mapping, or the mod writes it in a way the mapping doesn't match. Check **Keys missing from mapping** (see the *Checking your mapping against your mods* section for more), then add the key or an alias.
 
 **Can I use it without a Steam Controller?** Yes. Any gamepad keeps its glyphs; the mapping is only needed for keys your layout sends.
 
@@ -293,10 +273,16 @@ If a Valheim update changes something the mod patches, only that feature turns o
 
 Open an issue on [GitHub](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/issues) with what you saw (a screenshot helps), your mapping file, and the `[brrcg_selftest]` lines from `LogOutput.log`.
 
+## Made with AI help
+
+I built this mod with help from Claude Code, Anthropic's AI coding assistant. I designed it, decided how everything should look and behave, and tested each feature in game with my own Steam Controller setup; the AI helped write the code and these docs.
+
+It isn't a one-shot generated mod. It was built from a written design, feature by feature, with:
+
+- about 360 automated tests for its logic, plus checks that every game method it relies on still exists after a Valheim update;
+- only additive game patches (postfixes), so it doesn't replace Valheim's code, and each feature turns itself off safely if a game update breaks it;
+- the full source on GitHub, if you'd like to look.
+
 ## Credits
 
 Controller glyphs made from [Input Prompts](https://kenney.nl/assets/input-prompts) by Kenney (CC0). Built with [Jötunn](https://github.com/Valheim-Modding/Jotunn).
-
-## Changelog
-
-- **0.0.1:** first version.
