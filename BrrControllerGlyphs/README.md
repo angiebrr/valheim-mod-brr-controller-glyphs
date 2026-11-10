@@ -10,7 +10,7 @@ This mod does a few things and can be enabled/disabled to taste:
 
 | Without BrrControllerGlyphs, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.png?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.png?raw=true) |
+| ![prompt_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_vanilla.jpg?raw=true) | ![prompt_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/prompt_mod.jpg?raw=true) |
 
 ## Requirements
 
@@ -29,7 +29,7 @@ Crosshair prompts, the hint bars and the inventory and crafting button badges ke
 
 | Without BrrControllerGlyphs, after KBM input | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![badges_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_vanilla.png?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_mod.png?raw=true) |
+| ![badges_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_vanilla.jpg?raw=true) | ![badges_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/badges_mod.jpg?raw=true) |
 
 ### Your buttons instead of keyboard keys
 
@@ -37,7 +37,7 @@ Keys your layout sends show as the buttons from your mapping file (see below). B
 
 | Without BrrControllerGlyphs | Glyphs used by mod: Valheim | Glyphs used by mod: SteamDeck |
 | ------------- | ------------- | ------------- |
-| ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_vanilla.png?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_valheim.png?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_steamdeck.png?raw=true) |
+| ![buttons_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_vanilla.jpg?raw=true) | ![buttons_valheim](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_valheim.jpg?raw=true) | ![buttons_steamdeck](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/buttons_steamdeck.jpg?raw=true) |
 
 ### Hotbar and quick-slot labels
 
@@ -45,15 +45,15 @@ The hotbar shows your buttons, grouped by the held button: one `R4` beside a run
 
 | Without BrrControllerGlyphs | Hotbar group colors: Neutral | Hotbar group colors: Palette |
 | ------------- | ------------- | ------------- |
-| ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_vanilla.png?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_neutral.png?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_palette.png?raw=true) |
+| ![hotbar_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_vanilla.jpg?raw=true) | ![hotbar_neutral](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_neutral.jpg?raw=true) | ![hotbar_palette](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hotbar_palette.jpg?raw=true) |
 
 Slots that share a held button form a group; slots with a single button stand alone. How your bars group follows your mapping (example mappings: [no-groups](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/example-mappings/no-groups.yaml), [one-group](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/example-mappings/one-group.yaml), [multiple-groups](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/example-mappings/multiple-groups.yaml)). Quick slots are AzuExtendedPlayerInventory's.
 
 | Mapping | HUD | HUD with quick slots | Inventory | Inventory with quick slots |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
-| No groups | ![groups_none_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_hud.png?raw=true) | ![groups_none_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_hud_quickslots.png?raw=true) | ![groups_none_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_inventory.png?raw=true) | ![groups_none_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_inventory_quickslots.png?raw=true) |
-| One group | ![groups_one_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_hud.png?raw=true) | ![groups_one_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_hud_quickslots.png?raw=true) | ![groups_one_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_inventory.png?raw=true) | ![groups_one_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_inventory_quickslots.png?raw=true) |
-| Multiple groups | ![groups_multiple_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_hud.png?raw=true) | ![groups_multiple_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_hud_quickslots.png?raw=true) | ![groups_multiple_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_inventory.png?raw=true) | ![groups_multiple_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_inventory_quickslots.png?raw=true) |
+| No groups | ![groups_none_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_hud.jpg?raw=true) | ![groups_none_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_hud_quickslots.jpg?raw=true) | ![groups_none_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_inventory.jpg?raw=true) | ![groups_none_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_none_inventory_quickslots.jpg?raw=true) |
+| One group | ![groups_one_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_hud.jpg?raw=true) | ![groups_one_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_hud_quickslots.jpg?raw=true) | ![groups_one_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_inventory.jpg?raw=true) | ![groups_one_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_one_inventory_quickslots.jpg?raw=true) |
+| Multiple groups | ![groups_multiple_hud](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_hud.jpg?raw=true) | ![groups_multiple_hud_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_hud_quickslots.jpg?raw=true) | ![groups_multiple_inventory](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_inventory.jpg?raw=true) | ![groups_multiple_inventory_quickslots](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/groups_multiple_inventory_quickslots.jpg?raw=true) |
 
 ### Other mods' hover hints
 
@@ -61,7 +61,7 @@ Mods that write a key into their hover text, like `[B] AutoFuel` or `[Z] Favorit
 
 | Without BrrControllerGlyphs | With BrrControllerGlyphs |
 | ------------- | ------------- |
-| ![hints_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_vanilla.png?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_mod.png?raw=true) |
+| ![hints_vanilla](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_vanilla.jpg?raw=true) | ![hints_mod](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/hints_mod.jpg?raw=true) |
 
 **General > Enabled** turns everything off; so does unplugging the gamepad.
 
@@ -226,7 +226,7 @@ The list updates when you save the mapping and when a hint shows a new missing k
 
 | Keys missing from mapping | Mapping status after a typo |
 | ------------- | ------------- |
-| ![audit_missing_keys](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_missing_keys.png?raw=true) | ![audit_status_error](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_status_error.png?raw=true) |
+| ![audit_missing_keys](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_missing_keys.jpg?raw=true) | ![audit_status_error](https://github.com/angiebrr/valheim-mod-brr-controller-glyphs/blob/main/docs/images/audit_status_error.jpg?raw=true) |
 
 ## Console commands (F5)
 

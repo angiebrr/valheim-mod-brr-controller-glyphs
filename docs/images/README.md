@@ -1,6 +1,6 @@
 # Screenshots for the mod page
 
-The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub (`blob/main/docs/images/<name>.png?raw=true`), so they appear on Thunderstore once they're on `main`. Save each as PNG in this folder, named exactly as below, cropped to the part that changes. Take each pair from the same spot with the same crop, with the gamepad connected.
+The mod page (`BrrControllerGlyphs/README.md`) shows these images in tables, linked from GitHub (`blob/main/docs/images/<name>.jpg?raw=true`), so they appear on Thunderstore once they're on `main`. Save each as JPEG in this folder, named exactly as below, cropped to the part that changes. Take each pair from the same spot with the same crop, with the gamepad connected.
 
 The list is in shooting order: four rounds, three restarts. Tick each box as you go.
 
@@ -19,62 +19,66 @@ Switching settings live can leave labels stale (known issue). If a shot looks wr
 
 Hotbar colors and art (HUD):
 
-- [ ] **Hotbar group colors** `Neutral` → `hotbar_neutral.png`: the hotbar and AzuEPI's bar under it, with the R4 and R5 groups.
-- [ ] **Hotbar group colors** `Palette` → `hotbar_palette.png`: the same view. Leave `Palette` on from here.
-- [ ] `buttons_valheim.png`: close-up of hotbar slots 1–4 and the R4 prefix (R4 in Steam Deck art, D-pad in Valheim's art).
-- [ ] **Glyphs used by mod** `SteamDeck` → `buttons_steamdeck.png`: the same close-up (all Steam Deck art). Set it back to `Valheim`.
+- [ ] **Hotbar group colors** `Neutral` → `hotbar_neutral.jpg`: the hotbar and AzuEPI's bar under it, with the R4 and R5 groups.
+- [x] **Hotbar group colors** `Palette` → `hotbar_palette.jpg`: the same view. Leave `Palette` on from here.
+- [x] `buttons_valheim.jpg`: close-up of hotbar slots 1–4 and the R4 prefix (R4 in Steam Deck art, D-pad in Valheim's art).
+- [x] **Glyphs used by mod** `SteamDeck` → `buttons_steamdeck.jpg`: the same close-up (all Steam Deck art). Set it back to `Valheim`.
 
 Prompts and badges:
 
-- [ ] `prompt_mod.png`: look at the chest, press a key your controller sends (e.g. pickup on L5), and shoot the chest prompt: still glyphs. Crop to Valheim's own lines (`Open`), not AzuCraftyBoxes' line.
-- [ ] `badges_mod.png`: open the inventory, move the trackpad cursor, and shoot the button badges (Y, LSt, RT...) still showing.
-- [ ] `hints_mod.png`: a mod hint written the same way in both input modes, e.g. AutomaticFuel's `[B]` on a fire or AzuCraftyBoxes' fill-all `[LeftShift + Use]` on a fire or smelter. Press a gamepad button first. (Not the Crafting Chest hint: AzuCraftyBoxes writes it differently per input mode.)
+- [x] `prompt_mod.jpg`: look at the chest, press a key your controller sends (e.g. pickup on L5), and shoot the chest prompt: still glyphs. Crop to Valheim's own lines (`Open`), not AzuCraftyBoxes' line.
+- [x] `badges_mod.jpg`: open the inventory, move the trackpad cursor, and shoot the button badges (Y, LSt, RT...) still showing.
+- [x] `hints_mod.jpg`: a mod hint written the same way in both input modes, e.g. AutomaticFuel's `[B]` on a fire or AzuCraftyBoxes' fill-all `[LeftShift + Use]` on a fire or smelter. Press a gamepad button first. (Not the Crafting Chest hint: AzuCraftyBoxes writes it differently per input mode.)
 
 Mapping check (Mod Config, **Key Glyph Mapping**):
 
-- [ ] `audit_missing_keys.png`: **Keys missing from mapping** with a few keys and their uses. Hover a few things with mod hints first so hint uses show up.
-- [ ] `audit_status_error.png`: break the mapping file (delete a `:` or a `]`), save, and shoot **Mapping status** with the error, line and **Reload mapping** button. Then fix the file and save.
+- [x] `audit_missing_keys.jpg`: **Keys missing from mapping** with a few keys and their uses. Hover a few things with mod hints first so hint uses show up.
+- [x] `audit_status_error.jpg`: break the mapping file (delete a `:` or a `]`), save, and shoot **Mapping status** with the error, line and **Reload mapping** button. Then fix the file and save.
 
 Groups with quick slots (`groups_one_*_quickslots` are done):
 
-- [ ] Copy `docs/example-mappings/no-groups.yaml` over `BrrControllerGlyphs.mapping.yaml` and save; **Mapping status** should say it loaded.
-- [ ] `groups_none_hud_quickslots.png`: the hotbar and AzuEPI's bar.
-- [ ] `groups_none_inventory_quickslots.png`: the inventory's top row and AzuEPI's quick-slot cells.
-- [ ] Copy `multiple-groups.yaml` over the mapping and save.
-- [ ] `groups_multiple_hud_quickslots.png`
-- [ ] `groups_multiple_inventory_quickslots.png`
-- [ ] Put your own mapping back.
+- [x] Copy `docs/example-mappings/no-groups.yaml` over `BrrControllerGlyphs.mapping.yaml` and save; **Mapping status** should say it loaded.
+- [x] `groups_none_hud_quickslots.jpg`: the hotbar and AzuEPI's bar.
+- [x] `groups_none_inventory_quickslots.jpg`: the inventory's top row and AzuEPI's quick-slot cells.
+- [x] Copy `multiple-groups.yaml` over the mapping and save.
+- [x] `groups_multiple_hud_quickslots.jpg`
+- [x] `groups_multiple_inventory_quickslots.jpg`
+- [x] Put your own mapping back.
 
 ## Round 2: no quick slots (restart 1)
 
-- [ ] Set AzuEPI's **Number of Quick Slots** to `0`, quit and restart.
-- [ ] `groups_one_hud.png`: your mapping, the hotbar alone.
-- [ ] `groups_one_inventory.png`: the inventory's top row.
-- [ ] Copy `no-groups.yaml` over the mapping and save.
-- [ ] `groups_none_hud.png`
-- [ ] `groups_none_inventory.png`
-- [ ] Copy `multiple-groups.yaml` over the mapping and save.
-- [ ] `groups_multiple_hud.png`
-- [ ] `groups_multiple_inventory.png`
-- [ ] Put your own mapping back.
+- [x] Set AzuEPI's **Number of Quick Slots** to `0`, quit and restart.
+- [x] `groups_one_hud.jpg`: your mapping, the hotbar alone.
+- [x] `groups_one_inventory.jpg`: the inventory's top row.
+- [x] Copy `no-groups.yaml` over the mapping and save.
+- [x] `groups_none_hud.jpg`
+- [x] `groups_none_inventory.jpg`
+- [x] Copy `multiple-groups.yaml` over the mapping and save.
+- [x] `groups_multiple_hud.jpg`
+- [x] `groups_multiple_inventory.jpg`
+- [x] Put your own mapping back.
 
 ## Round 3: mod off (restart 2)
 
-- [ ] Set AzuEPI's **Number of Quick Slots** back to `6` and the mod's **Enabled** off, quit and restart.
-- [ ] `hotbar_vanilla.png`: the hotbar and AzuEPI's bar, same view as `hotbar_neutral`.
-- [ ] `buttons_vanilla.png`: close-up of hotbar slots 1–4, same crop as `buttons_valheim`.
-- [ ] `prompt_vanilla.png`: the chest prompt after pressing the same key as for `prompt_mod`: keyboard keys. Same crop.
-- [ ] `badges_vanilla.png`: the inventory after moving the trackpad cursor: badges gone. Same crop as `badges_mod`.
-- [ ] `hints_vanilla.png`: the same hint as `hints_mod`, same crop, after pressing a gamepad button.
+- [x] Set AzuEPI's **Number of Quick Slots** back to `6` and the mod's **Enabled** off, quit and restart.
+- [x] `hotbar_vanilla.jpg`: the hotbar and AzuEPI's bar, same view as `hotbar_neutral`.
+- [x] `buttons_vanilla.jpg`: close-up of hotbar slots 1–4, same crop as `buttons_valheim`.
+- [x] `prompt_vanilla.jpg`: the chest prompt after pressing the same key as for `prompt_mod`: keyboard keys. Same crop.
+- [x] `badges_vanilla.jpg`: the inventory after moving the trackpad cursor: badges gone. Same crop as `badges_mod`.
+- [x] `hints_vanilla.jpg`: the same hint as `hints_mod`, same crop, after pressing a gamepad button.
 
 ## Round 4: back to normal (restart 3)
 
-- [ ] Turn **Enabled** back on, quit and restart.
-- [ ] Check your mapping is your own and **Mapping status** says it loaded.
+- [x] Turn **Enabled** back on, quit and restart.
+- [x] Check your mapping is your own and **Mapping status** says it loaded.
 
-## Done already
+## Notes on the shots taken (2026-11-09)
 
-- [x] `groups_one_hud_quickslots.png`, `groups_one_inventory_quickslots.png`: your mapping with quick slots. Optional: retake in Round 1 with `Palette`, so all the group shots match.
+- Taken with Steam's screenshot key at 2560 × 1600 and cropped at full size; saved as JPEG (the screenshots are JPEG already, and PNG made the folder 15 MB instead of 2 MB).
+- `groups_one_hud_quickslots` and `hotbar_palette` are the same shot. `groups_one_inventory_quickslots` is from the earlier batch (also `Palette`).
+- `badges_mod` uses the no-groups mapping, the only inventory shot with the mod on and 6 quick slots in the batch. Retake with your own mapping if the different labels distract.
+- Still to take: `hotbar_neutral`.
+
 
 ## What each table shows
 
